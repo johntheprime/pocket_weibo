@@ -6,7 +6,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,16 +17,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -58,9 +61,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MeScreen(
-    onNavigateToIdentities: () -> Unit,
+    onNavigateToMyPosts: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -109,7 +113,7 @@ fun MeScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(60.dp)
-                                        .background(GrayLight, CircleShape),
+                                        .background(GrayLight, androidx.compose.foundation.shape.CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(text = "?", fontSize = 24.sp, color = GrayMiddle)
@@ -154,13 +158,14 @@ fun MeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     color = Surface
                 ) {
-                    LazyRow(
+                    androidx.compose.foundation.layout.FlowRow(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(identities) { identity ->
+                        identities.forEach { identity ->
                             IdentityChip(
                                 identity = identity,
                                 isActive = identity.id == activeIdentity?.id,
@@ -171,9 +176,7 @@ fun MeScreen(
                                 }
                             )
                         }
-                        item {
-                            AddIdentityChip(onClick = { showAddDialog = true })
-                        }
+                        AddIdentityChip(onClick = { showAddDialog = true })
                     }
                 }
             }
@@ -193,16 +196,14 @@ fun MeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     color = Surface
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "查看所有发布的内容",
-                            fontSize = 15.sp,
-                            color = GrayDark,
-                            modifier = Modifier.clickable { }
-                        )
-                    }
+                    Text(
+                        text = "查看所有发布的内容",
+                        fontSize = 15.sp,
+                        color = GrayDark,
+                        modifier = Modifier
+                            .clickable { onNavigateToMyPosts() }
+                            .padding(16.dp)
+                    )
                 }
             }
         }
@@ -227,7 +228,7 @@ fun MeScreen(
 }
 
 @Composable
-private fun IdentityChip(
+private fun RowScope.IdentityChip(
     identity: IdentityEntity,
     isActive: Boolean,
     onClick: () -> Unit
@@ -259,7 +260,7 @@ private fun AddIdentityChip(onClick: () -> Unit) {
         Box(
             modifier = Modifier
                 .size(50.dp)
-                .background(GrayLight, CircleShape),
+                .background(GrayLight, androidx.compose.foundation.shape.CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -288,7 +289,7 @@ private fun AddIdentityDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(16.dp),
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
             color = Surface
         ) {
             Column(
@@ -327,17 +328,18 @@ private fun AddIdentityDialog(
                 )
 
                 LazyRow(
+                    modifier = Modifier.padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(AvatarColors) { color ->
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
-                                .background(color, CircleShape)
+                                .background(color, androidx.compose.foundation.shape.CircleShape)
                                 .clickable { selectedColor = color }
                                 .then(
                                     if (color == selectedColor) {
-                                        Modifier.border(2.dp, GrayDark, CircleShape)
+                                        Modifier.border(2.dp, GrayDark, androidx.compose.foundation.shape.CircleShape)
                                     } else {
                                         Modifier
                                     }
