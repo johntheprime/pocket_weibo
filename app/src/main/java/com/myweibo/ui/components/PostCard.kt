@@ -19,12 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.myweibo.data.local.dao.PostWithIdentity
 import com.myweibo.ui.theme.GrayMiddle
 import com.myweibo.ui.theme.GrayDark
-import com.myweibo.ui.theme.WeiboOrange
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -35,93 +35,102 @@ fun PostCard(
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
     onShareClick: () -> Unit,
+    onPostClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(12.dp)
+            .clickable(onClick = onPostClick)
     ) {
-        Row(
-            verticalAlignment = Alignment.Top
-        ) {
-            Avatar(
-                name = post.identityName,
-                color = Color(post.identityAvatarColor),
-                size = 50.dp
-            )
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 10.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = post.identityName,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = GrayDark
-                    )
-                    Text(
-                        text = " · ${formatTime(post.createdAt)}",
-                        fontSize = 12.sp,
-                        color = GrayMiddle
-                    )
-                }
-
-                Text(
-                    text = post.content,
-                    fontSize = 14.sp,
-                    color = GrayDark,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
-            }
-        }
-
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+                .padding(12.dp)
         ) {
-            ActionItem(
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = "转发",
-                        tint = GrayMiddle,
-                        modifier = Modifier.size(20.dp)
+            Row(
+                verticalAlignment = Alignment.Top
+            ) {
+                Avatar(
+                    name = post.identityName,
+                    color = Color(post.identityAvatarColor),
+                    size = 50.dp
+                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = post.identityName,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GrayDark
+                        )
+                        Text(
+                            text = " · ${formatTime(post.createdAt)}",
+                            fontSize = 12.sp,
+                            color = GrayMiddle
+                        )
+                    }
+
+                    Text(
+                        text = post.content,
+                        fontSize = 14.sp,
+                        color = GrayDark,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 6.dp)
                     )
-                },
-                text = "转发",
-                onClick = onShareClick
-            )
-            ActionItem(
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.ChatBubbleOutline,
-                        contentDescription = "评论",
-                        tint = GrayMiddle,
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
-                text = post.commentCount.toString(),
-                onClick = onCommentClick
-            )
-            ActionItem(
-                icon = {
-                    Icon(
-                        imageVector = if (post.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "点赞",
-                        tint = if (post.isLiked) Color(0xFFFF5136) else GrayMiddle,
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
-                text = if (post.likeCount > 0) post.likeCount.toString() else "赞",
-                onClick = onLikeClick
-            )
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                ActionItem(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "转发",
+                            tint = GrayMiddle,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    text = "转发",
+                    onClick = onShareClick
+                )
+                ActionItem(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.ChatBubbleOutline,
+                            contentDescription = "评论",
+                            tint = GrayMiddle,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    text = post.commentCount.toString(),
+                    onClick = onCommentClick
+                )
+                ActionItem(
+                    icon = {
+                        Icon(
+                            imageVector = if (post.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "点赞",
+                            tint = if (post.isLiked) Color(0xFFFF5136) else GrayMiddle,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    },
+                    text = if (post.likeCount > 0) post.likeCount.toString() else "赞",
+                    onClick = onLikeClick
+                )
+            }
         }
     }
 }

@@ -44,6 +44,7 @@ import com.myweibo.ui.theme.WeiboOrange
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    onPostClick: (Long) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -103,7 +104,8 @@ fun HomeScreen(
                             post = post,
                             onLikeClick = { viewModel.toggleLike(post.id) },
                             onCommentClick = { viewModel.openComments(post.id) },
-                            onShareClick = { sharePost(context, post.identityName, post.content) }
+                            onShareClick = { sharePost(context, post.identityName, post.content) },
+                            onPostClick = { onPostClick(post.id) }
                         )
                         Divider(thickness = 6.dp, color = Background)
                     }

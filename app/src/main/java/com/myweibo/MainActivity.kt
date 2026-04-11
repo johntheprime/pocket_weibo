@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import com.myweibo.ui.components.MainTab
 import com.myweibo.ui.components.WeiboBottomTabBar
 import com.myweibo.ui.screens.compose.ComposeScreen
+import com.myweibo.ui.screens.detail.PostDetailScreen
 import com.myweibo.ui.screens.discover.DiscoverScreen
 import com.myweibo.ui.screens.home.HomeScreen
 import com.myweibo.ui.screens.me.MeScreen
@@ -40,11 +41,12 @@ fun MainScreen() {
     var selectedTab by remember { mutableStateOf(MainTab.HOME) }
     var showCompose by remember { mutableStateOf(false) }
     var showMyPosts by remember { mutableStateOf(false) }
+    var postDetailId by remember { mutableStateOf<Long?>(null) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (!showCompose && !showMyPosts) {
+            if (!showCompose && !showMyPosts && postDetailId == null) {
                 WeiboBottomTabBar(
                     selectedTab = selectedTab,
                     onTabSelected = { tab ->
@@ -58,6 +60,13 @@ fun MainScreen() {
         }
     ) { paddingValues ->
         when {
+            postDetailId != null -> {
+                PostDetailScreen(
+                    postId = postDetailId!!,
+                    onBack = { postDetailId = null },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
             showCompose -> {
                 ComposeScreen(
                     onDismiss = { showCompose = false },
@@ -67,12 +76,16 @@ fun MainScreen() {
             showMyPosts -> {
                 MyPostsScreen(
                     onBack = { showMyPosts = false },
+                    onPostClick = { postId -> postDetailId = postId },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
             else -> {
                 when (selectedTab) {
-                    MainTab.HOME -> HomeScreen(modifier = Modifier.padding(paddingValues))
+                    MainTab.HOME -> HomeScreen(
+                        onPostClick = { postId -> postDetailId = postId },
+                        modifier = Modifier.padding(paddingValues)
+                    )
                     MainTab.MESSAGE -> MessageScreen(modifier = Modifier.padding(paddingValues))
                     MainTab.DISCOVER -> DiscoverScreen(modifier = Modifier.padding(paddingValues))
                     MainTab.ME -> MeScreen(
