@@ -98,6 +98,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
+                        .padding(vertical = 8.dp)
                 ) {
                     items(posts, key = { it.id }) { post ->
                         PostCard(
@@ -107,7 +108,6 @@ fun HomeScreen(
                             onShareClick = { sharePost(context, post.identityName, post.content) },
                             onPostClick = { onPostClick(post.id) }
                         )
-                        Divider(thickness = 6.dp, color = Background)
                     }
                 }
             }

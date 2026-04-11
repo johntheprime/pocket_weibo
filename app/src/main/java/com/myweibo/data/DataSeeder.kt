@@ -8,7 +8,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlin.random.Random
 
 object DataSeeder {
 
@@ -232,8 +231,8 @@ object DataSeeder {
                                     identityId = identityId,
                                     content = content,
                                     createdAt = System.currentTimeMillis() - (posts.size - postIndex) * 3600000L,
-                                    likeCount = Random.nextInt(10, 1000),
-                                    commentCount = Random.nextInt(0, 50)
+                                    likeCount = 0,
+                                    commentCount = 0
                                 )
                                 repository.insertPost(post)
                             }

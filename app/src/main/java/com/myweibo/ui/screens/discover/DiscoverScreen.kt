@@ -53,6 +53,7 @@ import com.myweibo.ui.theme.WeiboOrange
 
 @Composable
 fun DiscoverScreen(
+    onPostClick: (Long) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -64,6 +65,7 @@ fun DiscoverScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val trendingIdentities by viewModel.trendingIdentities.collectAsState()
+    val trendingPosts by viewModel.trendingPosts.collectAsState()
     val focusManager = LocalFocusManager.current
 
     Column(
@@ -107,9 +109,11 @@ fun DiscoverScreen(
         if (searchQuery.isEmpty()) {
             TrendingContent(
                 trendingIdentities = trendingIdentities,
+                trendingPosts = trendingPosts,
                 onIdentityClick = { identity ->
                     viewModel.updateSearchQuery(identity.name)
-                }
+                },
+                onPostClick = onPostClick
             )
         } else {
             SearchResultsContent(
@@ -125,7 +129,9 @@ fun DiscoverScreen(
 @Composable
 private fun TrendingContent(
     trendingIdentities: List<IdentityEntity>,
-    onIdentityClick: (IdentityEntity) -> Unit
+    trendingPosts: List<com.myweibo.data.local.dao.PostWithIdentity>,
+    onIdentityClick: (IdentityEntity) -> Unit,
+    onPostClick: (Long) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize()
@@ -156,8 +162,28 @@ private fun TrendingContent(
             }
         }
         
+        if (trendingPosts.isNotEmpty()) {
+            item {
+                Divider(modifier = Modifier.padding(top = 20.dp))
+                Text(
+                    text = "热门微博",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GrayDark,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                )
+            }
+            
+            items(trendingPosts) { post ->
+                TrendingPostItem(
+                    post = post,
+                    onClick = { onPostClick(post.id) }
+                )
+            }
+        }
+        
         item {
-            Divider(modifier = Modifier.padding(top = 24.dp))
+            Divider(modifier = Modifier.padding(top = 20.dp))
             Text(
                 text = "搜索提示",
                 fontSize = 14.sp,
@@ -245,6 +271,68 @@ private fun SearchHintItem(
                     color = GrayMiddle,
                     modifier = Modifier.padding(top = 2.dp)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrendingPostItem(
+    post: com.myweibo.data.local.dao.PostWithIdentity,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        color = Color.White
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Avatar(
+                name = post.identityName,
+                color = Color(0xFF4A90D9),
+                size = 40.dp,
+                avatarResName = post.identityAvatarResName
+            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp)
+            ) {
+                Text(
+                    text = post.identityName,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GrayDark
+                )
+                Text(
+                    text = post.content,
+                    fontSize = 13.sp,
+                    color = GrayDark,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                Row(
+                    modifier = Modifier.padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "${post.likeCount} 赞",
+                        fontSize = 12.sp,
+                        color = GrayMiddle
+                    )
+                    Text(
+                        text = "${post.commentCount} 评论",
+                        fontSize = 12.sp,
+                        color = GrayMiddle
+                    )
+                }
             }
         }
     }

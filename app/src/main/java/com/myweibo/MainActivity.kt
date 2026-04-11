@@ -123,7 +123,10 @@ fun MainScreen() {
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.MESSAGE -> MessageScreen(modifier = Modifier.padding(paddingValues))
-                        MainTab.DISCOVER -> DiscoverScreen(modifier = Modifier.padding(paddingValues))
+                        MainTab.DISCOVER -> DiscoverScreen(
+                            onPostClick = { postId -> postDetailId = postId },
+                            modifier = Modifier.padding(paddingValues)
+                        )
                         MainTab.ME -> MeScreen(
                             onNavigateToMyPosts = { showMyPosts = true },
                             onNavigateToIdentities = { showIdentityList = true },

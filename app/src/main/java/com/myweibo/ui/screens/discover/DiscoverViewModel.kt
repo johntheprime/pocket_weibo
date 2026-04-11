@@ -28,6 +28,9 @@ class DiscoverViewModel(private val repository: WeiboRepository) : ViewModel() {
     private val _trendingIdentities = MutableStateFlow<List<IdentityEntity>>(emptyList())
     val trendingIdentities: StateFlow<List<IdentityEntity>> = _trendingIdentities.asStateFlow()
     
+    private val _trendingPosts = MutableStateFlow<List<PostWithIdentity>>(emptyList())
+    val trendingPosts: StateFlow<List<PostWithIdentity>> = _trendingPosts.asStateFlow()
+    
     init {
         loadTrending()
         observeSearch()
@@ -37,6 +40,11 @@ class DiscoverViewModel(private val repository: WeiboRepository) : ViewModel() {
         viewModelScope.launch {
             repository.allIdentities.collect { identities ->
                 _trendingIdentities.value = identities.take(5)
+            }
+        }
+        viewModelScope.launch {
+            repository.allPosts.collect { posts ->
+                _trendingPosts.value = posts.take(10)
             }
         }
     }
