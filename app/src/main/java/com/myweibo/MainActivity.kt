@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.myweibo.ui.components.MainTab
+import com.myweibo.ui.components.SwipeBackHandler
 import com.myweibo.ui.components.WeiboBottomTabBar
 import com.myweibo.ui.screens.compose.ComposeScreen
 import com.myweibo.ui.screens.detail.PostDetailScreen
@@ -43,6 +44,16 @@ fun MainScreen() {
     var showMyPosts by remember { mutableStateOf(false) }
     var postDetailId by remember { mutableStateOf<Long?>(null) }
 
+    fun navigateBack() {
+        when {
+            postDetailId != null -> postDetailId = null
+            showMyPosts -> showMyPosts = false
+            showCompose -> showCompose = false
+        }
+    }
+
+    val canSwipeBack = postDetailId != null || showMyPosts || showCompose
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
@@ -59,40 +70,45 @@ fun MainScreen() {
             }
         }
     ) { paddingValues ->
-        when {
-            postDetailId != null -> {
-                PostDetailScreen(
-                    postId = postDetailId!!,
-                    onBack = { postDetailId = null },
-                    modifier = Modifier.padding(paddingValues)
-                )
-            }
-            showCompose -> {
-                ComposeScreen(
-                    onDismiss = { showCompose = false },
-                    modifier = Modifier.padding(paddingValues)
-                )
-            }
-            showMyPosts -> {
-                MyPostsScreen(
-                    onBack = { showMyPosts = false },
-                    onPostClick = { postId -> postDetailId = postId },
-                    modifier = Modifier.padding(paddingValues)
-                )
-            }
-            else -> {
-                when (selectedTab) {
-                    MainTab.HOME -> HomeScreen(
+        SwipeBackHandler(
+            onSwipeBack = { navigateBack() },
+            enabled = canSwipeBack
+        ) {
+            when {
+                postDetailId != null -> {
+                    PostDetailScreen(
+                        postId = postDetailId!!,
+                        onBack = { postDetailId = null },
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                }
+                showCompose -> {
+                    ComposeScreen(
+                        onDismiss = { showCompose = false },
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                }
+                showMyPosts -> {
+                    MyPostsScreen(
+                        onBack = { showMyPosts = false },
                         onPostClick = { postId -> postDetailId = postId },
                         modifier = Modifier.padding(paddingValues)
                     )
-                    MainTab.MESSAGE -> MessageScreen(modifier = Modifier.padding(paddingValues))
-                    MainTab.DISCOVER -> DiscoverScreen(modifier = Modifier.padding(paddingValues))
-                    MainTab.ME -> MeScreen(
-                        onNavigateToMyPosts = { showMyPosts = true },
-                        modifier = Modifier.padding(paddingValues)
-                    )
-                    MainTab.PLUS -> {}
+                }
+                else -> {
+                    when (selectedTab) {
+                        MainTab.HOME -> HomeScreen(
+                            onPostClick = { postId -> postDetailId = postId },
+                            modifier = Modifier.padding(paddingValues)
+                        )
+                        MainTab.MESSAGE -> MessageScreen(modifier = Modifier.padding(paddingValues))
+                        MainTab.DISCOVER -> DiscoverScreen(modifier = Modifier.padding(paddingValues))
+                        MainTab.ME -> MeScreen(
+                            onNavigateToMyPosts = { showMyPosts = true },
+                            modifier = Modifier.padding(paddingValues)
+                        )
+                        MainTab.PLUS -> {}
+                    }
                 }
             }
         }
