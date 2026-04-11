@@ -120,8 +120,7 @@ fun PostCard(
                     )
                 },
                 text = if (post.likeCount > 0) post.likeCount.toString() else "赞",
-                onClick = onLikeClick,
-                tint = if (post.isLiked) Color(0xFFFF5136) else GrayMiddle
+                onClick = onLikeClick
             )
         }
     }

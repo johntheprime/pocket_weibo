@@ -1,7 +1,6 @@
 package com.myweibo.ui.screens.home
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,9 +11,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PersonSearch
-import androidx.compose.material.icons.filled.Popup
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Divider
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,11 +23,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.myweibo.MyWeiboApp
-import com.myweibo.data.local.dao.PostWithIdentity
 import com.myweibo.ui.components.PostCard
 import com.myweibo.ui.components.WeiboTitleBar
 import com.myweibo.ui.theme.Background
@@ -63,7 +59,7 @@ fun HomeScreen(
             },
             rightIcon = {
                 Icon(
-                    imageVector = Icons.Default.Popup,
+                    imageVector = Icons.Default.MoreVert,
                     contentDescription = "更多",
                     tint = WeiboOrange,
                     modifier = Modifier.size(24.dp)
@@ -71,7 +67,7 @@ fun HomeScreen(
             }
         )
 
-        HorizontalDivider(thickness = 0.5.dp)
+        Divider(thickness = 0.5.dp)
 
         if (posts.isEmpty()) {
             EmptyFeed()
@@ -88,7 +84,7 @@ fun HomeScreen(
                         onCommentClick = { /* TODO */ },
                         onShareClick = { /* TODO */ }
                     )
-                    HorizontalDivider(thickness = 6.dp, color = Background)
+                    Divider(thickness = 6.dp, color = Background)
                 }
             }
         }

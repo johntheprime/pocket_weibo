@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -13,11 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.mail
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.mail
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
@@ -63,8 +64,8 @@ fun WeiboBottomTabBar(
         )
         TabItem(
             title = MainTab.MESSAGE.title,
-            selectedIcon = Icons.Filled.mail,
-            unselectedIcon = Icons.Outlined.mail,
+            selectedIcon = Icons.Filled.Email,
+            unselectedIcon = Icons.Outlined.Email,
             isSelected = selectedTab == MainTab.MESSAGE,
             onClick = { onTabSelected(MainTab.MESSAGE) }
         )
@@ -114,7 +115,7 @@ fun WeiboBottomTabBar(
 }
 
 @Composable
-private fun TabItem(
+private fun RowScope.TabItem(
     title: String,
     selectedIcon: ImageVector,
     unselectedIcon: ImageVector,

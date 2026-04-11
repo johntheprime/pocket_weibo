@@ -22,7 +22,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -140,7 +140,7 @@ fun MeScreen(
             }
 
             item {
-                HorizontalDivider()
+                Divider()
                 Text(
                     text = "身份管理",
                     fontSize = 14.sp,
@@ -179,7 +179,7 @@ fun MeScreen(
             }
 
             item {
-                HorizontalDivider()
+                Divider()
                 Text(
                     text = "我的发布",
                     fontSize = 14.sp,

@@ -6,9 +6,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.Write
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,9 +35,10 @@ fun MessageScreen(
             title = "消息",
             rightIcon = {
                 Icon(
-                    imageVector = Icons.Default.Write,
+                    imageVector = Icons.Default.Edit,
                     contentDescription = "发起聊天",
-                    tint = WeiboOrange
+                    tint = WeiboOrange,
+                    modifier = Modifier.size(24.dp)
                 )
             }
         )
@@ -54,7 +56,9 @@ fun MessageScreen(
                     imageVector = Icons.Default.Chat,
                     contentDescription = null,
                     tint = GrayMiddle,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .size(48.dp)
                 )
                 Text(
                     text = "暂无消息",

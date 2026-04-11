@@ -19,13 +19,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.material.icons.filled.AtSign
+import androidx.compose.material.icons.filled.AlternateEmail
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,7 +45,6 @@ import com.myweibo.MyWeiboApp
 import com.myweibo.data.local.entity.IdentityEntity
 import com.myweibo.data.local.entity.PostEntity
 import com.myweibo.ui.components.Avatar
-import com.myweibo.ui.theme.AvatarColors
 import com.myweibo.ui.theme.Background
 import com.myweibo.ui.theme.GrayDark
 import com.myweibo.ui.theme.GrayLight
@@ -204,14 +204,14 @@ fun ComposeScreen(
                         }
                     }
 
-                    androidx.compose.material3.TextField(
+                    TextField(
                         value = content,
                         onValueChange = { content = it },
                         placeholder = { Text("分享新鲜事...", color = GrayMiddle) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp),
-                        colors = androidx.compose.material3.TextFieldDefaults.colors(
+                        colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = Color.Transparent,
                             focusedContainerColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
@@ -239,7 +239,7 @@ fun ComposeScreen(
                     onClick = { }
                 )
                 ActionButton(
-                    icon = Icons.Default.AtSign,
+                    icon = Icons.Default.AlternateEmail,
                     label = "艾特",
                     onClick = { }
                 )
