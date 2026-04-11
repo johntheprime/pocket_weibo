@@ -5,21 +5,28 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -27,16 +34,22 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.myweibo.MyWeiboApp
+import com.myweibo.data.local.entity.IdentityEntity
+import com.myweibo.ui.components.Avatar
 import com.myweibo.ui.components.CommentBottomSheet
 import com.myweibo.ui.components.PostCard
 import com.myweibo.ui.components.WeiboTitleBar
-import com.myweibo.ui.screens.home.HomeViewModel
 import com.myweibo.ui.theme.Background
+import com.myweibo.ui.theme.GrayDark
+import com.myweibo.ui.theme.GrayLight
 import com.myweibo.ui.theme.GrayMiddle
 import com.myweibo.ui.theme.WeiboOrange
 
@@ -48,11 +61,13 @@ fun MyPostsScreen(
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as MyWeiboApp
-    val viewModel: HomeViewModel = viewModel(
-        factory = HomeViewModel.Factory(app.repository)
+    val viewModel: MyPostsViewModel = viewModel(
+        factory = MyPostsViewModel.Factory(app.repository)
     )
     
-    val posts by app.repository.allPosts.collectAsState(initial = emptyList())
+    val identities by viewModel.identities.collectAsState()
+    val selectedIdentityId by viewModel.selectedIdentityId.collectAsState()
+    val filteredPosts by viewModel.filteredPosts.collectAsState()
     val comments by viewModel.comments.collectAsState()
     val showCommentSheet by viewModel.showCommentSheet.collectAsState()
     val selectedPostId by viewModel.selectedPostId.collectAsState()
@@ -79,8 +94,16 @@ fun MyPostsScreen(
         )
 
         Divider(thickness = 0.5.dp)
+        
+        IdentityFilterRow(
+            identities = identities,
+            selectedIdentityId = selectedIdentityId,
+            onIdentitySelected = { viewModel.selectIdentity(it) }
+        )
+        
+        Divider(thickness = 0.5.dp)
 
-        if (posts.isEmpty()) {
+        if (filteredPosts.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -89,12 +112,12 @@ fun MyPostsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "还没有发布内容",
+                        text = "该身份暂无发布内容",
                         fontSize = 16.sp,
                         color = GrayMiddle
                     )
                     Text(
-                        text = "点击中间+号发布第一条",
+                        text = "切换身份或发布新内容",
                         fontSize = 14.sp,
                         color = GrayMiddle,
                         modifier = Modifier.padding(top = 8.dp)
@@ -107,7 +130,7 @@ fun MyPostsScreen(
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                items(posts, key = { it.id }) { post ->
+                items(filteredPosts, key = { it.id }) { post ->
                     PostCard(
                         post = post,
                         onLikeClick = { viewModel.toggleLike(post.id) },
@@ -128,6 +151,75 @@ fun MyPostsScreen(
             onSendComment = { content ->
                 viewModel.addComment(selectedPostId!!, content)
             }
+        )
+    }
+}
+
+@Composable
+private fun IdentityFilterRow(
+    identities: List<IdentityEntity>,
+    selectedIdentityId: Long?,
+    onIdentitySelected: (Long?) -> Unit
+) {
+    val scrollState = rememberScrollState()
+    
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            IdentityFilterChip(
+                label = "全部",
+                isSelected = selectedIdentityId == null,
+                color = WeiboOrange,
+                onClick = { onIdentitySelected(null) }
+            )
+            
+            identities.forEach { identity ->
+                IdentityFilterChip(
+                    label = identity.name,
+                    isSelected = selectedIdentityId == identity.id,
+                    color = Color(identity.avatarColor),
+                    onClick = { onIdentitySelected(identity.id) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun IdentityFilterChip(
+    label: String,
+    isSelected: Boolean,
+    color: Color,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .clip(CircleShape)
+            .clickable(onClick = onClick)
+            .then(
+                if (isSelected) {
+                    Modifier.border(2.dp, color, CircleShape)
+                } else {
+                    Modifier
+                }
+            ),
+        shape = CircleShape,
+        color = if (isSelected) color else GrayLight
+    ) {
+        Text(
+            text = label,
+            fontSize = 13.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            color = if (isSelected) Color.White else GrayDark,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
         )
     }
 }
