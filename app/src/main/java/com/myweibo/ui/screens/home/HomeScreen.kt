@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.myweibo.MyWeiboApp
@@ -36,7 +37,8 @@ import com.myweibo.ui.theme.WeiboOrange
 fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
-    val app = MyWeiboApp()
+    val context = LocalContext.current
+    val app = context.applicationContext as MyWeiboApp
     val posts by app.repository.allPosts.collectAsState(initial = emptyList())
     var showCategoryDropdown by remember { mutableStateOf(false) }
 
