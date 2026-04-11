@@ -146,8 +146,9 @@ fun ComposeScreen(
                         if (selectedIdentity != null) {
                             Avatar(
                                 name = selectedIdentity!!.name,
-                                color = Color(selectedIdentity!!.avatarColor),
-                                size = 32.dp
+                                color = Color(0xFF4A90D9),
+                                size = 32.dp,
+                                avatarResName = selectedIdentity!!.avatarResName
                             )
                             Text(
                                 text = selectedIdentity!!.name,
@@ -184,7 +185,7 @@ fun ComposeScreen(
                                         .size(40.dp)
                                         .background(
                                             if (selectedIdentity?.id == identity.id)
-                                                Color(identity.avatarColor)
+                                                Color(0xFF4A90D9)
                                             else
                                                 GrayLight,
                                             CircleShape

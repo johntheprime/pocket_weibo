@@ -182,8 +182,9 @@ private fun ReceivedMessageItem(
         ) {
             Avatar(
                 name = message.commentIdentityName,
-                color = Color(message.commentIdentityColor),
-                size = 48.dp
+                color = Color(0xFF4A90D9),
+                size = 48.dp,
+                avatarResName = message.commentIdentityResName
             )
             
             Column(
@@ -254,8 +255,9 @@ private fun SentMessageItem(
         ) {
             Avatar(
                 name = message.commentIdentityName,
-                color = Color(message.commentIdentityColor),
-                size = 48.dp
+                color = Color(0xFF4A90D9),
+                size = 48.dp,
+                avatarResName = message.commentIdentityResName
             )
             
             Column(

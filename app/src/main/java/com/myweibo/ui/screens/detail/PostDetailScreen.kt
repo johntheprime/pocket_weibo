@@ -217,8 +217,9 @@ private fun PostDetailCard(
             ) {
                 Avatar(
                     name = post.identityName,
-                    color = Color(post.identityAvatarColor),
-                    size = 56.dp
+                    color = Color(0xFF4A90D9),
+                    size = 56.dp,
+                    avatarResName = post.identityAvatarResName
                 )
                 Column(
                     modifier = Modifier
@@ -369,8 +370,9 @@ private fun CommentCard(comment: CommentWithIdentity) {
             ) {
                 Avatar(
                     name = comment.identityName,
-                    color = Color(comment.identityAvatarColor),
-                    size = 40.dp
+                    color = Color(0xFF4A90D9),
+                    size = 40.dp,
+                    avatarResName = comment.identityAvatarResName
                 )
                 Column(
                     modifier = Modifier

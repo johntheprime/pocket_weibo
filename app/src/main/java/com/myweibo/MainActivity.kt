@@ -20,6 +20,8 @@ import com.myweibo.ui.screens.compose.ComposeScreen
 import com.myweibo.ui.screens.detail.PostDetailScreen
 import com.myweibo.ui.screens.discover.DiscoverScreen
 import com.myweibo.ui.screens.home.HomeScreen
+import com.myweibo.ui.screens.identity.IdentityDetailScreen
+import com.myweibo.ui.screens.identity.IdentityListScreen
 import com.myweibo.ui.screens.me.MeScreen
 import com.myweibo.ui.screens.me.MyPostsScreen
 import com.myweibo.ui.screens.message.MessageScreen
@@ -42,22 +44,26 @@ fun MainScreen() {
     var selectedTab by remember { mutableStateOf(MainTab.HOME) }
     var showCompose by remember { mutableStateOf(false) }
     var showMyPosts by remember { mutableStateOf(false) }
+    var showIdentityList by remember { mutableStateOf(false) }
+    var identityDetailId by remember { mutableStateOf<Long?>(null) }
     var postDetailId by remember { mutableStateOf<Long?>(null) }
 
     fun navigateBack() {
         when {
+            identityDetailId != null -> identityDetailId = null
+            showIdentityList -> showIdentityList = false
             postDetailId != null -> postDetailId = null
             showMyPosts -> showMyPosts = false
             showCompose -> showCompose = false
         }
     }
 
-    val canSwipeBack = postDetailId != null || showMyPosts || showCompose
+    val canSwipeBack = identityDetailId != null || showIdentityList || postDetailId != null || showMyPosts || showCompose
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (!showCompose && !showMyPosts && postDetailId == null) {
+            if (!showCompose && !showMyPosts && !showIdentityList && identityDetailId == null && postDetailId == null) {
                 WeiboBottomTabBar(
                     selectedTab = selectedTab,
                     onTabSelected = { tab ->
@@ -75,6 +81,21 @@ fun MainScreen() {
             enabled = canSwipeBack
         ) {
             when {
+                identityDetailId != null -> {
+                    IdentityDetailScreen(
+                        identityId = identityDetailId!!,
+                        onBack = { identityDetailId = null },
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                }
+                showIdentityList -> {
+                    IdentityListScreen(
+                        onBack = { showIdentityList = false },
+                        onIdentityClick = { id -> identityDetailId = id },
+                        onAddIdentity = { identityDetailId = 0L },
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                }
                 postDetailId != null -> {
                     PostDetailScreen(
                         postId = postDetailId!!,
@@ -105,6 +126,7 @@ fun MainScreen() {
                         MainTab.DISCOVER -> DiscoverScreen(modifier = Modifier.padding(paddingValues))
                         MainTab.ME -> MeScreen(
                             onNavigateToMyPosts = { showMyPosts = true },
+                            onNavigateToIdentities = { showIdentityList = true },
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.PLUS -> {}

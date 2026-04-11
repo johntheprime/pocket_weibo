@@ -8,7 +8,7 @@ data class PostWithIdentity(
     val id: Long,
     val identityId: Long,
     val identityName: String,
-    val identityAvatarColor: Int,
+    val identityAvatarResName: String,
     val content: String,
     val imageUris: String,
     val createdAt: Long,
@@ -20,7 +20,7 @@ data class PostWithIdentity(
 @Dao
 interface PostDao {
     @Query("""
-        SELECT p.id, p.identityId, i.name as identityName, i.avatarColor as identityAvatarColor,
+        SELECT p.id, p.identityId, i.name as identityName, i.avatarResName as identityAvatarResName,
                p.content, p.imageUris, p.createdAt, p.likeCount, p.commentCount, p.isLiked
         FROM posts p
         INNER JOIN identities i ON p.identityId = i.id
@@ -29,7 +29,7 @@ interface PostDao {
     fun getAllPosts(): Flow<List<PostWithIdentity>>
 
     @Query("""
-        SELECT p.id, p.identityId, i.name as identityName, i.avatarColor as identityAvatarColor,
+        SELECT p.id, p.identityId, i.name as identityName, i.avatarResName as identityAvatarResName,
                p.content, p.imageUris, p.createdAt, p.likeCount, p.commentCount, p.isLiked
         FROM posts p
         INNER JOIN identities i ON p.identityId = i.id

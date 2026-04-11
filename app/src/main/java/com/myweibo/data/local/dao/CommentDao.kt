@@ -9,7 +9,7 @@ data class CommentWithIdentity(
     val postId: Long,
     val identityId: Long,
     val identityName: String,
-    val identityAvatarColor: Int,
+    val identityAvatarResName: String,
     val content: String,
     val createdAt: Long
 )
@@ -18,7 +18,7 @@ data class CommentWithIdentity(
 interface CommentDao {
     @Query("""
         SELECT c.id, c.postId, c.identityId, i.name as identityName, 
-               i.avatarColor as identityAvatarColor, c.content, c.createdAt
+               i.avatarResName as identityAvatarResName, c.content, c.createdAt
         FROM comments c
         INNER JOIN identities i ON c.identityId = i.id
         WHERE c.postId = :postId

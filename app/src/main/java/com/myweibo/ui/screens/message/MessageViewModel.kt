@@ -19,7 +19,7 @@ data class ReceivedMessage(
     val postContent: String,
     val commentContent: String,
     val commentIdentityName: String,
-    val commentIdentityColor: Int,
+    val commentIdentityResName: String,
     val createdAt: Long
 )
 
@@ -67,7 +67,7 @@ class MessageViewModel(private val repository: WeiboRepository) : ViewModel() {
                                     postContent = post.content,
                                     commentContent = comment.content,
                                     commentIdentityName = comment.identityName,
-                                    commentIdentityColor = comment.identityAvatarColor,
+                                    commentIdentityResName = comment.identityAvatarResName,
                                     createdAt = comment.createdAt
                                 )
                             )
@@ -84,7 +84,7 @@ class MessageViewModel(private val repository: WeiboRepository) : ViewModel() {
                                         postContent = post.content,
                                         commentContent = comment.content,
                                         commentIdentityName = allPosts.find { it.identityId == activeIdentity.id }?.identityName ?: "",
-                                        commentIdentityColor = activeIdentity.avatarColor,
+                                        commentIdentityResName = activeIdentity.avatarResName,
                                         createdAt = comment.createdAt
                                     )
                                 )

@@ -1,5 +1,6 @@
 package com.myweibo.data
 
+import com.myweibo.data.local.entity.Gender
 import com.myweibo.data.local.entity.IdentityEntity
 import com.myweibo.data.local.entity.PostEntity
 import com.myweibo.data.repository.WeiboRepository
@@ -12,16 +13,126 @@ import kotlin.random.Random
 object DataSeeder {
 
     private val historicalFigures = listOf(
-        IdentityData("孔子", 0xFF4054B2.toInt(), "儒家思想创始人，万世师表"),
-        IdentityData("苏格拉底", 0xFFCE76AC.toInt(), "古希腊哲学家"),
-        IdentityData("达芬奇", 0xFF4CAF50.toInt(), "文艺复兴时期艺术家、发明家"),
-        IdentityData("李时珍", 0xFF2196F3.toInt(), "明代医药学家"),
-        IdentityData("牛顿", 0xFFFF5722.toInt(), "英国物理学家、数学家"),
-        IdentityData("苏轼", 0xFF9C27B0.toInt(), "北宋文学家、书画家"),
-        IdentityData("居里夫人", 0xFF00BCD4.toInt(), "物理学家、化学家"),
-        IdentityData("王阳明", 0xFF795548.toInt(), "明代心学大师"),
-        IdentityData("莎士比亚", 0xFF607D8B.toInt(), "英国剧作家、诗人"),
-        IdentityData("曹雪芹", 0xFFE91E63.toInt(), "清代小说家")
+        IdentityFullData(
+            name = "孔子",
+            avatarResName = "avatar_chinese_scholar",
+            nationality = "中国·鲁国",
+            gender = Gender.MALE,
+            birthYear = -551,
+            deathYear = -479,
+            occupation = "思想家、教育家",
+            motto = "己所不欲，勿施于人。",
+            famousWork = "《论语》",
+            bio = "儒家学派创始人，万世师表，开创私学之先河。"
+        ),
+        IdentityFullData(
+            name = "苏格拉底",
+            avatarResName = "avatar_western",
+            nationality = "古希腊·雅典",
+            gender = Gender.MALE,
+            birthYear = -470,
+            deathYear = -399,
+            occupation = "哲学家",
+            motto = "我唯一知道的，就是我一无所知。",
+            famousWork = "苏格拉底式问答法",
+            bio = "古希腊哲学家，西方哲学的奠基人之一。"
+        ),
+        IdentityFullData(
+            name = "达芬奇",
+            avatarResName = "avatar_artist",
+            nationality = "意大利·芬奇镇",
+            gender = Gender.MALE,
+            birthYear = 1452,
+            deathYear = 1519,
+            occupation = "艺术家、发明家、科学家",
+            motto = "简单是终极的复杂。",
+            famousWork = "《蒙娜丽莎》《最后的晚餐》",
+            bio = "文艺复兴时期最完美的代表，人类历史上绝无仅有的全才。"
+        ),
+        IdentityFullData(
+            name = "李时珍",
+            avatarResName = "avatar_chinese_scholar",
+            nationality = "中国·明朝",
+            gender = Gender.MALE,
+            birthYear = 1518,
+            deathYear = 1593,
+            occupation = "医药学家",
+            motto = "医者贵在格物，穷其理而后用药。",
+            famousWork = "《本草纲目》",
+            bio = "明代医药学家，著有《本草纲目》等传世之作。"
+        ),
+        IdentityFullData(
+            name = "牛顿",
+            avatarResName = "avatar_scientist",
+            nationality = "英国·伍尔斯索普",
+            gender = Gender.MALE,
+            birthYear = 1643,
+            deathYear = 1727,
+            occupation = "物理学家、数学家",
+            motto = "如果我看得更远，那是因为我站在巨人的肩膀上。",
+            famousWork = "《自然哲学的数学原理》",
+            bio = "经典力学体系的创立者，万有引力定律的发现者。"
+        ),
+        IdentityFullData(
+            name = "苏轼",
+            avatarResName = "avatar_chinese_scholar",
+            nationality = "中国·北宋",
+            gender = Gender.MALE,
+            birthYear = 1037,
+            deathYear = 1101,
+            occupation = "文学家、书画家",
+            motto = "竹杖芒鞋轻胜马，谁怕？一蓑烟雨任平生。",
+            famousWork = "《赤壁赋》《水调歌头》",
+            bio = "北宋文学家，唐宋八大家之一，诗词书画俱佳。"
+        ),
+        IdentityFullData(
+            name = "居里夫人",
+            avatarResName = "avatar_female_scholar",
+            nationality = "波兰·法国",
+            gender = Gender.FEMALE,
+            birthYear = 1867,
+            deathYear = 1934,
+            occupation = "物理学家、化学家",
+            motto = "生活中没有可怕的东西，只有需要理解的东西。",
+            famousWork = "发现镭和钋元素",
+            bio = "两次获得诺贝尔奖的女性科学家。"
+        ),
+        IdentityFullData(
+            name = "王阳明",
+            avatarResName = "avatar_chinese_scholar",
+            nationality = "中国·明朝",
+            gender = Gender.MALE,
+            birthYear = 1472,
+            deathYear = 1529,
+            occupation = "思想家、军事家",
+            motto = "知行合一，致良知。",
+            famousWork = "《传习录》",
+            bio = "明代心学大师，提出知行合一、致良知等思想。"
+        ),
+        IdentityFullData(
+            name = "莎士比亚",
+            avatarResName = "avatar_writer",
+            nationality = "英国·斯特拉福",
+            gender = Gender.MALE,
+            birthYear = 1564,
+            deathYear = 1616,
+            occupation = "剧作家、诗人",
+            motto = "生存还是毁灭，这是个问题。",
+            famousWork = "《哈姆雷特》《罗密欧与朱丽叶》",
+            bio = "英国文学史上最杰出的戏剧家，西方文学的典范。"
+        ),
+        IdentityFullData(
+            name = "曹雪芹",
+            avatarResName = "avatar_chinese_scholar",
+            nationality = "中国·清朝",
+            gender = Gender.MALE,
+            birthYear = 1715,
+            deathYear = 1763,
+            occupation = "小说家",
+            motto = "满纸荒唐言，一把辛酸泪。",
+            famousWork = "《红楼梦》",
+            bio = "清代小说家，《红楼梦》被公认为中国古典小说巅峰之作。"
+        )
     )
 
     private val samplePosts = mapOf(
@@ -98,7 +209,15 @@ object DataSeeder {
                     for ((index, figure) in historicalFigures.withIndex()) {
                         val identity = IdentityEntity(
                             name = figure.name,
-                            avatarColor = figure.color,
+                            avatarResName = figure.avatarResName,
+                            nationality = figure.nationality,
+                            gender = figure.gender,
+                            birthYear = figure.birthYear,
+                            deathYear = figure.deathYear,
+                            occupation = figure.occupation,
+                            motto = figure.motto,
+                            famousWork = figure.famousWork,
+                            bio = figure.bio,
                             isActive = index == 5
                         )
                         val id = repository.insertIdentity(identity)
@@ -127,9 +246,16 @@ object DataSeeder {
         }
     }
 
-    private data class IdentityData(
+    private data class IdentityFullData(
         val name: String,
-        val color: Int,
-        val description: String
+        val avatarResName: String,
+        val nationality: String,
+        val gender: Gender,
+        val birthYear: Int?,
+        val deathYear: Int?,
+        val occupation: String,
+        val motto: String,
+        val famousWork: String,
+        val bio: String
     )
 }

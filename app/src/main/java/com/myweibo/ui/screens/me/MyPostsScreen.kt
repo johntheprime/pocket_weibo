@@ -187,7 +187,7 @@ private fun IdentityFilterRow(
                 IdentityFilterChip(
                     label = identity.name,
                     isSelected = selectedIdentityId == identity.id,
-                    color = Color(identity.avatarColor),
+                    color = Color(0xFF4A90D9),
                     onClick = { onIdentitySelected(identity.id) }
                 )
             }

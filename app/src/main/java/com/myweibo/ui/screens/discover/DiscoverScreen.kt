@@ -192,7 +192,7 @@ private fun TrendingIdentityChip(
     Surface(
         modifier = Modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        color = Color(identity.avatarColor)
+        color = Color(0xFF4A90D9)
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -340,8 +340,9 @@ private fun IdentitySearchItem(
         ) {
             Avatar(
                 name = identity.name,
-                color = Color(identity.avatarColor),
-                size = 44.dp
+                color = Color(0xFF4A90D9),
+                size = 44.dp,
+                avatarResName = identity.avatarResName
             )
             Column {
                 Text(
@@ -372,8 +373,9 @@ private fun PostSearchItem(post: com.myweibo.data.local.dao.PostWithIdentity) {
         ) {
             Avatar(
                 name = post.identityName,
-                color = Color(post.identityAvatarColor),
-                size = 36.dp
+                color = Color(0xFF4A90D9),
+                size = 36.dp,
+                avatarResName = post.identityAvatarResName
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(

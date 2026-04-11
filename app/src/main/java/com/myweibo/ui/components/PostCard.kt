@@ -53,8 +53,9 @@ fun PostCard(
             ) {
                 Avatar(
                     name = post.identityName,
-                    color = Color(post.identityAvatarColor),
-                    size = 50.dp
+                    color = Color(0xFF4A90D9),
+                    size = 50.dp,
+                    avatarResName = post.identityAvatarResName
                 )
                 Column(
                     modifier = Modifier

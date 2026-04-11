@@ -149,8 +149,9 @@ private fun CommentItem(comment: CommentWithIdentity) {
     ) {
         Avatar(
             name = comment.identityName,
-            color = Color(comment.identityAvatarColor),
-            size = 36.dp
+            color = Color(0xFF4A90D9),
+            size = 36.dp,
+            avatarResName = comment.identityAvatarResName
         )
         Column(
             modifier = Modifier
