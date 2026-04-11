@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">我的微博</string>
+    <string name="home">首页</string>
+    <string name="message">消息</string>
+    <string name="discover">发现</string>
+    <string name="me">我</string>
+    <string name="compose">发微博</string>
+    <string name="settings">设置</string>
+    <string name="exit_hint">再按一次返回键退出</string>
+    
+    <string name="identities">身份管理</string>
+    <string name="add_identity">添加身份</string>
+    <string name="identity_name_hint">输入身份名称</string>
+    <string name="select_avatar">选择头像</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="delete">删除</string>
+    
+    <string name="content_hint">分享新鲜事..."</string>
+    <string name="send">发送</string>
+    
+    <string name="empty_feed">还没有微博，点击中间+号发布第一条</string>
+    <string name="empty_messages">暂无消息</string>
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="weibo_orange">#FD8225</color>
+    <color name="weibo_orange_pressed">#CCFD8225</color>
+    <color name="primary">#4054B2</color>
+    <color name="primary_dark">#CC31429D</color>
+    
+    <color name="background">#F5F5F5</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="gray_light">#D4D4D4</color>
+    <color name="gray_middle">#8F8F8F8</color>
+    <color name="gray_dark">#4D4D4D</color>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="divider">#dedede</color>
+    
+    <color name="tab_background">#f8f8f8</color>
+    <color name="tab_selected">#FD8225</color>
+    <color name="tab_unselected">#8F8F8F</color>
+</resources>
