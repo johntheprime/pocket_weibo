@@ -29,10 +29,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,8 +53,6 @@ import com.myweibo.ui.theme.GrayLight
 import com.myweibo.ui.theme.GrayMiddle
 import com.myweibo.ui.theme.Surface
 import com.myweibo.ui.theme.WeiboOrange
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
@@ -64,10 +64,17 @@ fun ComposeScreen(
     val app = context.applicationContext as MyWeiboApp
     val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
     val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
+    val scope = rememberCoroutineScope()
 
     var selectedIdentity by remember { mutableStateOf<IdentityEntity?>(null) }
     var content by remember { mutableStateOf("") }
     var showIdentityPicker by remember { mutableStateOf(false) }
+
+    LaunchedEffect(activeIdentity) {
+        if (selectedIdentity == null && activeIdentity != null) {
+            selectedIdentity = activeIdentity
+        }
+    }
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -101,15 +108,15 @@ fun ComposeScreen(
                 Button(
                     onClick = {
                         if (content.isNotBlank() && selectedIdentity != null) {
-                            CoroutineScope(Dispatchers.IO).launch {
+                            scope.launch {
                                 app.repository.insertPost(
                                     PostEntity(
                                         identityId = selectedIdentity!!.id,
                                         content = content
                                     )
                                 )
+                                onDismiss()
                             }
-                            onDismiss()
                         }
                     },
                     enabled = content.isNotBlank() && selectedIdentity != null,

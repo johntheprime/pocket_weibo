@@ -1,6 +1,7 @@
 package com.myweibo
 
 import android.app.Application
+import com.myweibo.data.DataSeeder
 import com.myweibo.data.local.AppDatabase
 import com.myweibo.data.repository.WeiboRepository
 
@@ -25,5 +26,10 @@ class MyWeiboApp : Application() {
             lastBackPressTime = currentTime
             false
         }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        DataSeeder.seedIfEmpty(repository)
     }
 }
