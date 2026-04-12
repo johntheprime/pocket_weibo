@@ -34,27 +34,7 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 
 ## Screenshots
 
-### Home Screen
-[![Home Screen](docs/screenshots/thumbnails/home_screen.png)](docs/screenshots/home_screen.png)
-
-### Discover Screen
-[![Discover Screen](docs/screenshots/thumbnails/discover_screen.png)](docs/screenshots/discover_screen.png)
-
-### Message Screen
-[![Message Screen](docs/screenshots/thumbnails/message_screen.png)](docs/screenshots/message_screen.png)
-
-### Me Screen
-[![Me Screen](docs/screenshots/thumbnails/me_screen.png)](docs/screenshots/me_screen.png)
-
-### Compose Screen
-[![Compose Screen](docs/screenshots/thumbnails/compose_screen.png)](docs/screenshots/compose_screen.png)
-
-**All Screens**
-[![Home](docs/screenshots/home_screen.png)](docs/screenshots/home_screen.png)
-[![Discover](docs/screenshots/discover_screen.png)](docs/screenshots/discover_screen.png)
-[![Message](docs/screenshots/message_screen.png)](docs/screenshots/message_screen.png)
-[![Me](docs/screenshots/me_screen.png)](docs/screenshots/me_screen.png)
-[![Compose](docs/screenshots/compose_screen.png)](docs/screenshots/compose_screen.png)
+[![All Screens](docs/screenshots/thumbnails/all_thumbnails.png)](docs/screenshots/home_screen.png)
 
 ## TODO
 
