@@ -55,7 +55,7 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 - [x] Comment input with keyboard handling
 - [ ] Comment functionality improvement
 - [ ] Reply to specific comments
-- [ ] Delete own comments
+- [x] Delete own comments (UI placeholder)
 
 ### Compose Screen
 - [ ] Image attachment support
@@ -85,9 +85,32 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 
 ### General
 - [ ] Dark mode support
-- [ ] Data export/backup
+- [ ] Data export/backup (JSON format)
 - [ ] Data import/restore
 - [ ] App icon customization
+
+### Avatar Management
+- [ ] Upload custom avatar from gallery
+- [ ] Take photo with camera for avatar
+- [ ] Crop/resize avatar image
+- [ ] Avatar compression and optimization
+- [ ] Avatar preview before saving
+- [ ] Remove/reset avatar to default
+
+### Comments
+- [ ] Delete own comments
+- [ ] Edit own comments
+- [ ] Long press to copy comment
+- [ ] Comment reactions/likes
+- [ ] Sort comments (newest/oldest)
+
+### Data Management
+- [ ] Export all data (posts, comments, identities) to JSON
+- [ ] Export data to CSV format
+- [ ] Import data from JSON backup
+- [ ] Selective data export (posts only, identities only, etc.)
+- [ ] Data migration between app versions
+- [ ] Clear all data option
 
 ## Tech Stack
 
