@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.myweibo"
+    namespace = "com.pocketweibo"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.myweibo"
+        applicationId = "com.pocketweibo"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
