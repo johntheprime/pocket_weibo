@@ -158,7 +158,3 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 2. Open in Android Studio
 3. Sync Gradle
 4. Run on device/emulator
-
-## License
-
-Private project for personal use.
