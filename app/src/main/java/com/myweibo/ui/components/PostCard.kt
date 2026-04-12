@@ -52,16 +52,16 @@ fun PostCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 8.dp, vertical = 2.dp)
             .clickable(onClick = onPostClick),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .padding(6.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -77,7 +77,7 @@ fun PostCard(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(start = 12.dp)
+                        .padding(start = 6.dp)
                 ) {
                     Text(
                         text = post.identityName,
