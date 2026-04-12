@@ -191,15 +191,15 @@ private fun ActionButton(
 private fun formatTime(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
-    val minutes = diff / (1000 * 60)
-    val hours = diff / (1000 * 60 * 60)
-    val days = diff / (1000 * 60 * 60 * 24)
+    val seconds = diff / 1000
+    val minutes = seconds / 60
+    val hours = seconds / 3600
+    val days = seconds / 86400
 
     return when {
-        minutes < 1 -> "刚刚"
+        seconds < 60 -> "刚刚"
         minutes < 60 -> "${minutes}分钟前"
-        hours < 24 -> "${hours}小时前"
-        days < 7 -> "${days}天前"
-        else -> SimpleDateFormat("MM-dd", Locale.getDefault()).format(Date(timestamp))
+        hours < 12 -> "${hours}小时前"
+        else -> SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date(timestamp))
     }
 }
