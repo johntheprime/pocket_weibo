@@ -34,7 +34,25 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 
 ## Screenshots
 
-<!-- Add screenshots here -->
+### Home Screen
+![Home Screen](docs/screenshots/home_screen.png)
+Main feed showing posts with action buttons (share, comment, like).
+
+### Discover Screen
+![Discover Screen](docs/screenshots/discover_screen.png)
+Search and discover trending posts and identities.
+
+### Message Screen
+![Message Screen](docs/screenshots/message_screen.png)
+View received and sent comments.
+
+### Me Screen
+![Me Screen](docs/screenshots/me_screen.png)
+Manage identity and view personal posts.
+
+### Compose Screen
+![Compose Screen](docs/screenshots/compose_screen.png)
+Create new posts with identity selection.
 
 ## TODO
 
