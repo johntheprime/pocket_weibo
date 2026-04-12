@@ -116,7 +116,7 @@ fun PostCard(
                     onClick = onShareClick
                 )
                 
-                Spacer(modifier = Modifier.width(20.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 
                 ActionButton(
                     icon = Icons.Default.ChatBubbleOutline,
@@ -125,7 +125,7 @@ fun PostCard(
                     onClick = onCommentClick
                 )
                 
-                Spacer(modifier = Modifier.width(20.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 
                 ActionButton(
                     icon = if (post.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -140,7 +140,7 @@ fun PostCard(
 }
 
 /** Keeps action icons on one vertical line across cards; counts sit in this slot right-aligned. */
-private val ActionButtonCountSlotWidth = 40.dp
+private val ActionButtonCountSlotWidth = 20.dp
 
 @Composable
 private fun ActionButton(
@@ -168,7 +168,7 @@ private fun ActionButton(
         Box(
             modifier = Modifier
                 .width(ActionButtonCountSlotWidth)
-                .padding(start = 4.dp),
+                .padding(start = 2.dp),
             contentAlignment = Alignment.CenterEnd
         ) {
             if (count != null && count > 0) {
