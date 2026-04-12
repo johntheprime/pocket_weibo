@@ -79,42 +79,41 @@ fun PostCard(
                         .weight(1f)
                         .padding(start = 12.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = post.identityName,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = " · ${formatTime(post.createdAt)}",
-                            fontSize = 13.sp,
-                            color = GrayMiddle,
-                            maxLines = 1
-                        )
-                    }
-
                     Text(
-                        text = post.content,
+                        text = post.identityName,
                         fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
                         color = Color.Black,
-                        lineHeight = 22.sp,
-                        maxLines = 5,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 4.dp)
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    
+                    Text(
+                        text = formatTime(post.createdAt),
+                        fontSize = 12.sp,
+                        color = GrayMiddle,
+                        maxLines = 1,
+                        modifier = Modifier.padding(top = 2.dp)
                     )
                 }
             }
 
+            Text(
+                text = post.content,
+                fontSize = 15.sp,
+                color = Color.Black,
+                lineHeight = 22.sp,
+                maxLines = 5,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .padding(top = 10.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 ActionItem(
                     icon = Icons.Default.ChatBubbleOutline,
@@ -123,12 +122,16 @@ fun PostCard(
                     onClick = onCommentClick
                 )
                 
+                Spacer(modifier = Modifier.width(20.dp))
+                
                 ActionItem(
                     icon = Icons.Default.Share,
                     contentDescription = "转发",
                     count = null,
                     onClick = onShareClick
                 )
+                
+                Spacer(modifier = Modifier.width(20.dp))
                 
                 ActionItem(
                     icon = if (post.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
