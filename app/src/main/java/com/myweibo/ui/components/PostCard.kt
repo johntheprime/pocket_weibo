@@ -12,28 +12,23 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.myweibo.data.local.dao.PostWithIdentity
-import com.myweibo.ui.theme.GrayLight
 import com.myweibo.ui.theme.GrayMiddle
 import com.myweibo.ui.theme.GrayDark
 import java.text.SimpleDateFormat
@@ -49,19 +44,17 @@ fun PostCard(
     onPostClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 2.dp)
-            .clickable(onClick = onPostClick),
-        shape = RoundedCornerShape(4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .background(Color(0xFFFAFAFA), RoundedCornerShape(8.dp))
+            .clickable(onClick = onPostClick)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(6.dp)
+                .padding(12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -70,18 +63,18 @@ fun PostCard(
                 Avatar(
                     name = post.identityName,
                     color = Color(0xFF4A90D9),
-                    size = 48.dp,
+                    size = 40.dp,
                     avatarResName = post.identityAvatarResName
                 )
                 
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(start = 6.dp)
+                        .padding(start = 10.dp)
                 ) {
                     Text(
                         text = post.identityName,
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black,
                         maxLines = 1,
@@ -90,7 +83,7 @@ fun PostCard(
                     
                     Text(
                         text = formatTime(post.createdAt),
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         color = GrayMiddle,
                         maxLines = 1,
                         modifier = Modifier.padding(top = 2.dp)
@@ -100,9 +93,9 @@ fun PostCard(
 
             Text(
                 text = post.content,
-                fontSize = 15.sp,
+                fontSize = 14.sp,
                 color = Color.Black,
-                lineHeight = 22.sp,
+                lineHeight = 20.sp,
                 maxLines = 5,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 8.dp)
@@ -112,30 +105,26 @@ fun PostCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 10.dp),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                ActionItem(
+                ActionButton(
                     icon = Icons.Default.ChatBubbleOutline,
-                    contentDescription = "评论",
+                    text = "",
                     count = post.commentCount,
                     onClick = onCommentClick
                 )
                 
-                Spacer(modifier = Modifier.width(20.dp))
-                
-                ActionItem(
+                ActionButton(
                     icon = Icons.Default.Share,
-                    contentDescription = "转发",
+                    text = "转发",
                     count = null,
                     onClick = onShareClick
                 )
                 
-                Spacer(modifier = Modifier.width(20.dp))
-                
-                ActionItem(
+                ActionButton(
                     icon = if (post.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = "点赞",
+                    text = "点赞",
                     count = post.likeCount,
                     isLiked = post.isLiked,
                     onClick = onLikeClick
@@ -146,9 +135,9 @@ fun PostCard(
 }
 
 @Composable
-private fun ActionItem(
+private fun ActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    contentDescription: String,
+    text: String,
     count: Int? = null,
     isLiked: Boolean = false,
     onClick: () -> Unit
@@ -161,7 +150,7 @@ private fun ActionItem(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = contentDescription,
+            contentDescription = text,
             tint = when {
                 isLiked -> Color(0xFFFF5136)
                 else -> GrayMiddle
@@ -171,12 +160,12 @@ private fun ActionItem(
         if (count != null && count > 0) {
             Text(
                 text = count.toString(),
-                fontSize = 13.sp,
+                fontSize = 11.sp,
                 color = when {
                     isLiked -> Color(0xFFFF5136)
                     else -> GrayMiddle
                 },
-                modifier = Modifier.padding(start = 6.dp)
+                modifier = Modifier.padding(start = 4.dp)
             )
         }
     }
