@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -138,6 +139,9 @@ fun PostCard(
     }
 }
 
+/** Keeps action icons on one vertical line across cards; counts sit in this slot right-aligned. */
+private val ActionButtonCountSlotWidth = 40.dp
+
 @Composable
 private fun ActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -161,16 +165,25 @@ private fun ActionButton(
             },
             modifier = Modifier.size(20.dp)
         )
-        if (count != null && count > 0) {
-            Text(
-                text = count.toString(),
-                fontSize = 11.sp,
-                color = when {
-                    isLiked -> Color(0xFFFF5136)
-                    else -> GrayMiddle
-                },
-                modifier = Modifier.padding(start = 4.dp)
-            )
+        Box(
+            modifier = Modifier
+                .width(ActionButtonCountSlotWidth)
+                .padding(start = 4.dp),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            if (count != null && count > 0) {
+                Text(
+                    text = count.toString(),
+                    fontSize = 11.sp,
+                    color = when {
+                        isLiked -> Color(0xFFFF5136)
+                        else -> GrayMiddle
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.End
+                )
+            }
         }
     }
 }
