@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -76,46 +77,86 @@ fun PostDetailScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // ... (Keep your ViewModel and State logic the same)
     val context = LocalContext.current
     val app = context.applicationContext as MyWeiboApp
-    val viewModel: PostDetailViewModel = viewModel(
-        factory = PostDetailViewModel.Factory(app.repository)
-    )
-    
-    LaunchedEffect(postId) {
-        viewModel.loadPost(postId)
-    }
-    
+    val viewModel: PostDetailViewModel = viewModel(factory = PostDetailViewModel.Factory(app.repository))
+
+    LaunchedEffect(postId) { viewModel.loadPost(postId) }
+
     val post by viewModel.post.collectAsState()
     val comments by viewModel.comments.collectAsState()
     var commentText by remember { mutableStateOf("") }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Background)
-            .imePadding()
-    ) {
-        WeiboTitleBar(
-            title = "微博详情",
-            leftIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "返回",
-                        tint = WeiboOrange,
-                        modifier = Modifier.size(24.dp)
-                    )
+    // Use Scaffold: It is specifically designed to handle top bars and bottom bars
+    // while managing inner content padding correctly.
+    androidx.compose.material3.Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            Column {
+                WeiboTitleBar(
+                    title = "微博详情",
+                    leftIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Default.ArrowBack, "返回", tint = WeiboOrange)
+                        }
+                    }
+                )
+                Divider(thickness = 0.5.dp)
+            }
+        },
+        bottomBar = {
+            // Pinning this to the bottomBar slot of the Scaffold handles the keyboard transition best
+            Surface(
+                color = Color.White,
+                tonalElevation = 3.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .imePadding() // This pushes the input bar up
+                    .navigationBarsPadding() // This respects the system nav bar
+            ) {
+                Column {
+                    Divider(thickness = 0.5.dp)
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = commentText,
+                            onValueChange = { commentText = it },
+                            placeholder = { Text("写评论...", fontSize = 14.sp, color = GrayMiddle) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = WeiboOrange,
+                                unfocusedBorderColor = GrayLight,
+                                focusedContainerColor = Color(0xFFF8F8F8),
+                                unfocusedContainerColor = Color(0xFFF8F8F8)
+                            ),
+                            maxLines = 4
+                        )
+                        IconButton(
+                            onClick = {
+                                if (commentText.isNotBlank()) {
+                                    viewModel.addComment(commentText)
+                                    commentText = ""
+                                }
+                            },
+                            enabled = commentText.isNotBlank()
+                        ) {
+                            Icon(Icons.Default.Send, "发送", tint = if (commentText.isNotBlank()) WeiboOrange else GrayMiddle)
+                        }
+                    }
                 }
             }
-        )
-
-        Divider(thickness = 0.5.dp)
-
+        }
+    ) { innerPadding ->
+        // The innerPadding automatically accounts for the topBar and the bottomBar (including keyboard)
         LazyColumn(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
+                .fillMaxSize()
+                .background(Background)
+                .padding(innerPadding)
         ) {
             post?.let { currentPost ->
                 item {
@@ -125,24 +166,13 @@ fun PostDetailScreen(
                         onShareClick = { sharePost(context, currentPost.identityName, currentPost.content) }
                     )
                 }
-                
-                item {
-                    CommentsHeader(commentCount = comments.size)
-                }
-                
+
+                item { CommentsHeader(commentCount = comments.size) }
+
                 if (comments.isEmpty()) {
                     item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "暂无评论，快来抢沙发吧",
-                                fontSize = 14.sp,
-                                color = GrayMiddle
-                            )
+                        Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                            Text("暂无评论，快来抢沙发吧", fontSize = 14.sp, color = GrayMiddle)
                         }
                     }
                 } else {
@@ -151,49 +181,6 @@ fun PostDetailScreen(
                         Divider(thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     }
                 }
-                
-                item {
-                    Spacer(modifier = Modifier.height(60.dp))
-                }
-            }
-        }
-
-        Divider()
-        
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.White)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedTextField(
-                value = commentText,
-                onValueChange = { commentText = it },
-                placeholder = { Text("写评论...", fontSize = 14.sp, color = GrayMiddle) },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(24.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = WeiboOrange,
-                    unfocusedBorderColor = GrayLight
-                ),
-                singleLine = true
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            IconButton(
-                onClick = {
-                    if (commentText.isNotBlank()) {
-                        viewModel.addComment(commentText)
-                        commentText = ""
-                    }
-                },
-                enabled = commentText.isNotBlank()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Send,
-                    contentDescription = "发送",
-                    tint = if (commentText.isNotBlank()) WeiboOrange else GrayMiddle
-                )
             }
         }
     }
