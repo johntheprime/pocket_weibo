@@ -105,22 +105,26 @@ fun PostCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 10.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                ActionButton(
-                    icon = Icons.Default.ChatBubbleOutline,
-                    text = "",
-                    count = post.commentCount,
-                    onClick = onCommentClick
-                )
-                
                 ActionButton(
                     icon = Icons.Default.Share,
                     text = "转发",
                     count = null,
                     onClick = onShareClick
                 )
+                
+                Spacer(modifier = Modifier.width(20.dp))
+                
+                ActionButton(
+                    icon = Icons.Default.ChatBubbleOutline,
+                    text = "评论",
+                    count = post.commentCount,
+                    onClick = onCommentClick
+                )
+                
+                Spacer(modifier = Modifier.width(20.dp))
                 
                 ActionButton(
                     icon = if (post.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
