@@ -149,6 +149,9 @@ fun HomeScreen(
                 },
                 onDeleteComment = { commentId ->
                     viewModel.deleteComment(commentId, selectedPostId!!)
+                },
+                onEditComment = { commentId, content ->
+                    viewModel.editComment(commentId, content)
                 }
             )
         }

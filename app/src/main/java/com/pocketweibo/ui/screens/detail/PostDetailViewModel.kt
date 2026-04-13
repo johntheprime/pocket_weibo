@@ -10,6 +10,7 @@ import com.pocketweibo.data.repository.WeiboRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel() {
@@ -55,6 +56,23 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
                         )
                     )
                 }
+            }
+        }
+    }
+
+    fun editComment(commentId: Long, newContent: String) {
+        viewModelScope.launch {
+            repository.getCommentsByPost(_post.value?.id ?: return@launch).first().find { it.id == commentId }?.let { comment ->
+                repository.updateComment(
+                    CommentEntity(
+                        id = commentId,
+                        postId = comment.postId,
+                        identityId = comment.identityId,
+                        content = newContent,
+                        createdAt = comment.createdAt,
+                        parentCommentId = comment.parentCommentId
+                    )
+                )
             }
         }
     }

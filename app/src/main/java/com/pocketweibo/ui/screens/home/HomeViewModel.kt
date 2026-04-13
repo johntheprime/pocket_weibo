@@ -76,6 +76,18 @@ class HomeViewModel(private val repository: WeiboRepository) : ViewModel() {
             }
         }
     }
+
+    fun editComment(commentId: Long, newContent: String) {
+        viewModelScope.launch {
+            val comment = CommentEntity(
+                id = commentId,
+                postId = 0,
+                identityId = 0,
+                content = newContent
+            )
+            repository.updateComment(comment)
+        }
+    }
     
     class Factory(private val repository: WeiboRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
