@@ -1,5 +1,8 @@
 package com.pocketweibo.ui.screens.compose
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -38,11 +42,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.PostEntity
@@ -69,6 +77,15 @@ fun ComposeScreen(
     var selectedIdentity by remember { mutableStateOf<IdentityEntity?>(null) }
     var content by remember { mutableStateOf("") }
     var showIdentityPicker by remember { mutableStateOf(false) }
+    var imageUris by remember { mutableStateOf(listOf<Uri>()) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            imageUris = (imageUris + uris).take(9)
+        }
+    }
 
     LaunchedEffect(activeIdentity) {
         if (selectedIdentity == null && activeIdentity != null) {
@@ -242,6 +259,33 @@ fun ComposeScreen(
                             color = if (content.length > 1900) Color(0xFFFF5136) else GrayMiddle
                         )
                     }
+
+                    if (imageUris.isNotEmpty()) {
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(imageUris) { uri ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(80.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                ) {
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(context)
+                                            .data(uri)
+                                            .crossfade(true)
+                                            .build(),
+                                        contentDescription = "图片",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -254,7 +298,7 @@ fun ComposeScreen(
                 ActionButton(
                     icon = Icons.Default.Image,
                     label = "图片",
-                    onClick = { }
+                    onClick = { imagePickerLauncher.launch("image/*") }
                 )
                 ActionButton(
                     icon = Icons.Default.LocationOn,
