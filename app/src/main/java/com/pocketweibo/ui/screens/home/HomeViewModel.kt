@@ -44,16 +44,16 @@ class HomeViewModel(private val repository: WeiboRepository) : ViewModel() {
         _comments.value = emptyList()
     }
     
-    fun addComment(postId: Long, content: String) {
+    fun addComment(postId: Long, content: String, parentCommentId: Long? = null) {
         viewModelScope.launch {
-            val activeIdentity = repository.activeIdentity
-            activeIdentity.collect { identity ->
+            repository.activeIdentity.collect { identity ->
                 if (identity != null && content.isNotBlank()) {
                     repository.insertComment(
                         CommentEntity(
                             postId = postId,
                             identityId = identity.id,
-                            content = content
+                            content = content,
+                            parentCommentId = parentCommentId
                         )
                     )
                 }

@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -26,11 +25,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Sort
@@ -90,8 +90,11 @@ fun PostDetailScreen(
 
     val post by viewModel.post.collectAsState()
     val comments by viewModel.comments.collectAsState()
+    val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
     var commentText by remember { mutableStateOf("") }
     var sortNewestFirst by remember { mutableStateOf(true) }
+    var replyingToCommentId by remember { mutableStateOf<Long?>(null) }
+    var replyingToName by remember { mutableStateOf<String?>(null) }
     
     val sortedComments = remember(comments, sortNewestFirst) {
         if (sortNewestFirst) {
@@ -118,17 +121,46 @@ fun PostDetailScreen(
                 Divider(thickness = 0.5.dp)
             }
         },
-        bottomBar = {
-            // Pinning this to the bottomBar slot of the Scaffold handles the keyboard transition best
+bottomBar = {
             Surface(
                 color = Color.White,
                 tonalElevation = 3.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .imePadding() // This pushes the input bar up
-                    .navigationBarsPadding() // This respects the system nav bar
+                    .imePadding()
+                    .navigationBarsPadding()
             ) {
                 Column {
+                    if (replyingToName != null) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFF8F8F8))
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Reply,
+                                contentDescription = "回复",
+                                tint = WeiboOrange,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = " 回复 @${replyingToName}",
+                                fontSize = 12.sp,
+                                color = WeiboOrange,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "取消",
+                                tint = GrayMiddle,
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .clickable { replyingToCommentId = null; replyingToName = null }
+                            )
+                        }
+                    }
                     Divider(thickness = 0.5.dp)
                     Row(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -151,9 +183,20 @@ fun PostDetailScreen(
                         IconButton(
                             onClick = {
                                 if (commentText.isNotBlank()) {
-                                    viewModel.addComment(commentText)
+                                    viewModel.addComment(commentText, replyingToCommentId)
                                     commentText = ""
+                                    replyingToCommentId = null
+                                    replyingToName = null
                                 }
+                            },
+                            enabled = commentText.isNotBlank()
+                        ) {
+                            Icon(Icons.Default.Send, "发送", tint = if (commentText.isNotBlank()) WeiboOrange else GrayMiddle)
+                        }
+                    }
+                }
+            }
+        }
                             },
                             enabled = commentText.isNotBlank()
                         ) {
@@ -190,7 +233,11 @@ fun PostDetailScreen(
                     }
                 } else {
                     items(sortedComments, key = { it.id }) { comment ->
-                        CommentCard(comment = comment)
+                        CommentCard(
+                            comment = comment,
+                            activeIdentityId = activeIdentity?.id,
+                            onReply = { id, name -> replyingToCommentId = id; replyingToName = name }
+                        )
                         Divider(thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     }
                 }
@@ -376,7 +423,11 @@ private fun CommentsHeader(
 }
 
 @Composable
-private fun CommentCard(comment: CommentWithIdentity) {
+private fun CommentCard(
+    comment: CommentWithIdentity,
+    activeIdentityId: Long?,
+    onReply: (Long, String) -> Unit
+) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White
@@ -398,6 +449,22 @@ private fun CommentCard(comment: CommentWithIdentity) {
                         .weight(1f)
                         .padding(start = 10.dp)
                 ) {
+                    if (comment.replyToIdentityName != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Reply,
+                                contentDescription = "回复",
+                                tint = WeiboOrange,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = " @${comment.replyToIdentityName}",
+                                fontSize = 12.sp,
+                                color = WeiboOrange,
+                                modifier = Modifier.padding(start = 2.dp)
+                            )
+                        }
+                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -420,6 +487,25 @@ private fun CommentCard(comment: CommentWithIdentity) {
                         lineHeight = 20.sp,
                         modifier = Modifier.padding(top = 6.dp)
                     )
+                    
+                    if (activeIdentityId != null && activeIdentityId != comment.identityId) {
+                        TextButton(
+                            onClick = { onReply(comment.id, comment.identityName) },
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Reply,
+                                contentDescription = "回复",
+                                tint = GrayMiddle,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "回复",
+                                fontSize = 12.sp,
+                                color = GrayMiddle
+                            )
+                        }
+                    }
                 }
             }
         }

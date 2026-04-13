@@ -41,7 +41,7 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
         }
     }
     
-    fun addComment(content: String) {
+    fun addComment(content: String, parentCommentId: Long? = null) {
         val currentPost = _post.value ?: return
         viewModelScope.launch {
             repository.activeIdentity.collect { identity ->
@@ -50,7 +50,8 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
                         CommentEntity(
                             postId = currentPost.id,
                             identityId = identity.id,
-                            content = content
+                            content = content,
+                            parentCommentId = parentCommentId
                         )
                     )
                 }

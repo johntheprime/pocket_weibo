@@ -58,14 +58,18 @@ class WeiboRepository(
         commentDao.getCommentsByPost(postId)
 
     suspend fun insertComment(comment: CommentEntity): Long {
-        commentDao.insert(comment)
+        val id = commentDao.insert(comment)
         postDao.incrementCommentCount(comment.postId)
-        return comment.id
+        return id
     }
 
     suspend fun deleteComment(comment: CommentEntity) {
         commentDao.delete(comment)
         postDao.decrementCommentCount(comment.postId)
+    }
+
+    suspend fun updateComment(comment: CommentEntity) {
+        commentDao.update(comment)
     }
 
     fun getPostsByIdentity(identityId: Long): Flow<List<PostWithIdentity>> =

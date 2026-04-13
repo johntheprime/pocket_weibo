@@ -53,8 +53,8 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 ### Post Detail Screen
 - [x] Post content fully visible when typing comment
 - [x] Comment input with keyboard handling
-- [ ] Comment functionality improvement
-- [ ] Reply to specific comments
+- [x] Comment functionality improvement
+- [x] Reply to specific comments
 - [x] Delete own comments (UI placeholder)
 
 ### Compose Screen

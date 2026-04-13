@@ -14,9 +14,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Sort
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -54,12 +54,14 @@ fun CommentBottomSheet(
     comments: List<CommentWithIdentity>,
     activeIdentityId: Long?,
     onDismiss: () -> Unit,
-    onSendComment: (String) -> Unit,
+    onSendComment: (String, Long?) -> Unit,
     onDeleteComment: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var commentText by remember { mutableStateOf("") }
     var sortNewestFirst by remember { mutableStateOf(true) }
+    var replyingToCommentId by remember { mutableStateOf<Long?>(null) }
+    var replyingToName by remember { mutableStateOf<String?>(null) }
     
     val sortedComments = remember(comments, sortNewestFirst) {
         if (sortNewestFirst) {
@@ -136,7 +138,8 @@ fun CommentBottomSheet(
                         CommentItem(
                             comment = comment,
                             isOwnComment = comment.identityId == activeIdentityId,
-                            onDelete = { onDeleteComment(comment.id) }
+                            onDelete = { onDeleteComment(comment.id) },
+                            onReply = { replyingToCommentId = comment.id; replyingToName = comment.identityName }
                         )
                     }
                 }
@@ -144,33 +147,46 @@ fun CommentBottomSheet(
             
             Divider()
             
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                OutlinedTextField(
-                    value = commentText,
-                    onValueChange = { commentText = it },
-                    placeholder = { Text("写评论...", fontSize = 14.sp) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(20.dp),
-                    singleLine = true
-                )
-                IconButton(
-                    onClick = {
-                        if (commentText.isNotBlank()) {
-                            onSendComment(commentText)
-                            commentText = ""
-                        }
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Send,
-                        contentDescription = "发送",
-                        tint = if (commentText.isNotBlank()) Color(0xFFFD8225) else GrayMiddle
+                if (replyingToName != null) {
+                    Text(
+                        text = "回复 @${replyingToName}",
+                        fontSize = 12.sp,
+                        color = WeiboOrange,
+                        modifier = Modifier.padding(bottom = 4.dp)
                     )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = commentText,
+                        onValueChange = { commentText = it },
+                        placeholder = { Text("写评论...", fontSize = 14.sp) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(20.dp),
+                        singleLine = true
+                    )
+                    IconButton(
+                        onClick = {
+                            if (commentText.isNotBlank()) {
+                                onSendComment(commentText, replyingToCommentId)
+                                commentText = ""
+                                replyingToCommentId = null
+                                replyingToName = null
+                            }
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Send,
+                            contentDescription = "发送",
+                            tint = if (commentText.isNotBlank()) Color(0xFFFD8225) else GrayMiddle
+                        )
+                    }
                 }
             }
         }
@@ -182,7 +198,8 @@ fun CommentBottomSheet(
 private fun CommentItem(
     comment: CommentWithIdentity,
     isOwnComment: Boolean,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onReply: () -> Unit
 ) {
     val context = LocalContext.current
     
@@ -211,6 +228,22 @@ private fun CommentItem(
                 .weight(1f)
                 .padding(start = 10.dp)
         ) {
+            if (comment.replyToIdentityName != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Reply,
+                        contentDescription = "回复",
+                        tint = WeiboOrange,
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Text(
+                        text = " @${comment.replyToIdentityName}",
+                        fontSize = 12.sp,
+                        color = WeiboOrange,
+                        modifier = Modifier.padding(start = 2.dp)
+                    )
+                }
+            }
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -236,8 +269,22 @@ private fun CommentItem(
             if (isOwnComment) {
                 Row(
                     modifier = Modifier.padding(top = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
                 ) {
+                    TextButton(onClick = onReply) {
+                        Icon(
+                            imageVector = Icons.Default.Reply,
+                            contentDescription = "回复",
+                            tint = WeiboOrange,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "回复",
+                            fontSize = 12.sp,
+                            color = WeiboOrange
+                        )
+                    }
                     TextButton(onClick = onDelete) {
                         Icon(
                             imageVector = Icons.Default.Delete,
@@ -251,6 +298,20 @@ private fun CommentItem(
                             color = WeiboOrange
                         )
                     }
+                }
+            } else {
+                TextButton(onClick = onReply, modifier = Modifier.padding(top = 4.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Reply,
+                        contentDescription = "回复",
+                        tint = GrayMiddle,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "回复",
+                        fontSize = 12.sp,
+                        color = GrayMiddle
+                    )
                 }
             }
         }
