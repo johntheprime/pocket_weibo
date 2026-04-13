@@ -66,15 +66,15 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 ### Identity Management
 - [x] Identity list with CRUD operations
 - [x] Identity detail screen
-- [ ] Edit identity photo/avatar
+- [x] Edit identity photo/avatar
 - [ ] Identity switch animation
-- [ ] Quick identity switch from home screen
+- [x] Quick identity switch from home screen
 
 ### Discover Screen
 - [x] Trending posts section
 - [x] Search by identity name or post content
 - [ ] Filter by date range
-- [ ] Filter by identity
+- [x] Filter by identity
 - [ ] Trending topics/tags
 
 ### Message Screen
@@ -102,7 +102,7 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 - [ ] Edit own comments
 - [x] Long press to copy comment
 - [ ] Comment reactions/likes
-- [ ] Sort comments (newest/oldest)
+- [x] Sort comments (newest/oldest)
 
 ### Data Management
 - [x] Export all data (posts, comments, identities) to JSON
@@ -110,7 +110,7 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 - [x] Import data from JSON backup
 - [ ] Selective data export (posts only, identities only, etc.)
 - [ ] Data migration between app versions
-- [ ] Clear all data option
+- [x] Clear all data option
 
 ## Tech Stack
 
