@@ -39,16 +39,16 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 ## TODO
 
 ### Home Screen
-- [ ] Improve action button alignment and spacing
+- [x] Improve action button alignment and spacing
 - [ ] Add visual feedback on button press
 
 ### Post Card
 - [x] Card design with elevation and rounded corners
 - [x] Avatar display with cartoon images
 - [x] Action buttons (share, comment, like) on right side
-- [ ] Share button functionality
-- [ ] Better liked/unliked visual indicator
-- [ ] Reduce avatar image background (currently has yellowish tint)
+- [x] Share button functionality
+- [x] Better liked/unliked visual indicator
+- [x] Reduce avatar image background (currently has yellowish tint)
 
 ### Post Detail Screen
 - [x] Post content fully visible when typing comment

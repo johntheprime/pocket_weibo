@@ -3,6 +3,7 @@ package com.pocketweibo.ui.screens.home
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -127,10 +128,21 @@ fun HomeScreen(
 }
 
 private fun sharePost(context: Context, authorName: String, content: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText("微博内容", "$authorName: $content")
-    clipboard.setPrimaryClip(clip)
-    Toast.makeText(context, "内容已复制到剪贴板", Toast.LENGTH_SHORT).show()
+    val shareText = "$authorName: $content"
+    val sendIntent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_TEXT, shareText)
+        type = "text/plain"
+    }
+    val shareIntent = Intent.createChooser(sendIntent, "分享微博")
+    try {
+        context.startActivity(shareIntent)
+    } catch (e: Exception) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("微博内容", shareText)
+        clipboard.setPrimaryClip(clip)
+        Toast.makeText(context, "内容已复制到剪贴板", Toast.LENGTH_SHORT).show()
+    }
 }
 
 @Composable

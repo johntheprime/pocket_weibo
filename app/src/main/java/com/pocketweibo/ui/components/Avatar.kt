@@ -34,8 +34,10 @@ fun Avatar(
             Image(
                 painter = androidx.compose.ui.res.painterResource(id = resourceId),
                 contentDescription = name,
-                modifier = modifier.size(size),
-                contentScale = ContentScale.Fit
+                modifier = modifier
+                    .size(size)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
             )
             return
         }
