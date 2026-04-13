@@ -1,6 +1,8 @@
 package com.pocketweibo.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,7 +13,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
@@ -20,6 +24,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -29,12 +34,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
+import com.pocketweibo.ui.theme.WeiboOrange
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -44,8 +51,10 @@ import java.util.Locale
 fun CommentBottomSheet(
     sheetState: SheetState,
     comments: List<CommentWithIdentity>,
+    activeIdentityId: Long?,
     onDismiss: () -> Unit,
     onSendComment: (String) -> Unit,
+    onDeleteComment: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var commentText by remember { mutableStateOf("") }
@@ -100,7 +109,11 @@ fun CommentBottomSheet(
                         .weight(1f, fill = false)
                 ) {
                     items(comments, key = { it.id }) { comment ->
-                        CommentItem(comment = comment)
+                        CommentItem(
+                            comment = comment,
+                            isOwnComment = comment.identityId == activeIdentityId,
+                            onDelete = { onDeleteComment(comment.id) }
+                        )
                     }
                 }
             }
@@ -140,12 +153,29 @@ fun CommentBottomSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-private fun CommentItem(comment: CommentWithIdentity) {
+private fun CommentItem(
+    comment: CommentWithIdentity,
+    isOwnComment: Boolean,
+    onDelete: () -> Unit
+) {
+    val context = LocalContext.current
+    var showMenu by remember { mutableStateOf(false) }
+    
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
+            .combinedClickable(
+                onClick = { },
+                onLongClick = {
+                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    val clip = android.content.ClipData.newPlainText("评论", comment.content)
+                    clipboard.setPrimaryClip(clip)
+                    android.widget.Toast.makeText(context, "评论已复制", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            )
     ) {
         Avatar(
             name = comment.identityName,
@@ -179,6 +209,27 @@ private fun CommentItem(comment: CommentWithIdentity) {
                 color = GrayDark,
                 modifier = Modifier.padding(top = 4.dp)
             )
+            
+            if (isOwnComment) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "删除",
+                            tint = WeiboOrange,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "删除",
+                            fontSize = 12.sp,
+                            color = WeiboOrange
+                        )
+                    }
+                }
+            }
         }
     }
 }

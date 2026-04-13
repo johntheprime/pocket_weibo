@@ -52,4 +52,7 @@ interface PostDao {
 
     @Query("UPDATE posts SET commentCount = commentCount + 1 WHERE id = :postId")
     suspend fun incrementCommentCount(postId: Long)
+
+    @Query("UPDATE posts SET commentCount = commentCount - 1 WHERE id = :postId AND commentCount > 0")
+    suspend fun decrementCommentCount(postId: Long)
 }

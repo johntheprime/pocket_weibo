@@ -40,7 +40,7 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 
 ### Home Screen
 - [x] Improve action button alignment and spacing
-- [ ] Add visual feedback on button press
+- [x] Add visual feedback on button press
 
 ### Post Card
 - [x] Card design with elevation and rounded corners
@@ -58,10 +58,10 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 - [x] Delete own comments (UI placeholder)
 
 ### Compose Screen
-- [ ] Image attachment support
-- [ ] Post preview before publishing
-- [ ] Draft saving
-- [ ] Character count limit
+- [x] Image attachment support
+- [x] Post preview before publishing
+- [x] Draft saving
+- [x] Character count limit
 
 ### Identity Management
 - [x] Identity list with CRUD operations

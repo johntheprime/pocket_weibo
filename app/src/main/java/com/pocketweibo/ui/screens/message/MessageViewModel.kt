@@ -129,6 +129,22 @@ class MessageViewModel(private val repository: WeiboRepository) : ViewModel() {
             }
         }
     }
+
+    fun deleteComment(commentId: Long, postId: Long) {
+        viewModelScope.launch {
+            repository.deleteComment(
+                CommentEntity(
+                    id = commentId,
+                    postId = postId,
+                    identityId = 0,
+                    content = ""
+                )
+            )
+            repository.getCommentsByPost(postId).collect { commentList ->
+                _comments.value = commentList
+            }
+        }
+    }
     
     class Factory(private val repository: WeiboRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")

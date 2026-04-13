@@ -57,7 +57,10 @@ class WeiboRepository(
         return comment.id
     }
 
-    suspend fun deleteComment(comment: CommentEntity) = commentDao.delete(comment)
+    suspend fun deleteComment(comment: CommentEntity) {
+        commentDao.delete(comment)
+        postDao.decrementCommentCount(comment.postId)
+    }
 
     fun getPostsByIdentity(identityId: Long): Flow<List<PostWithIdentity>> =
         postDao.getPostsByIdentity(identityId)

@@ -72,6 +72,7 @@ fun MyPostsScreen(
     val comments by viewModel.comments.collectAsState()
     val showCommentSheet by viewModel.showCommentSheet.collectAsState()
     val selectedPostId by viewModel.selectedPostId.collectAsState()
+    val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
     
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -149,9 +150,13 @@ fun MyPostsScreen(
         CommentBottomSheet(
             sheetState = sheetState,
             comments = comments,
+            activeIdentityId = activeIdentity?.id,
             onDismiss = { viewModel.closeComments() },
             onSendComment = { content ->
                 viewModel.addComment(selectedPostId!!, content)
+            },
+            onDeleteComment = { commentId ->
+                viewModel.deleteComment(commentId, selectedPostId!!)
             }
         )
     }
