@@ -15,18 +15,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +59,15 @@ fun CommentBottomSheet(
     modifier: Modifier = Modifier
 ) {
     var commentText by remember { mutableStateOf("") }
+    var sortNewestFirst by remember { mutableStateOf(true) }
+    
+    val sortedComments = remember(comments, sortNewestFirst) {
+        if (sortNewestFirst) {
+            comments.sortedByDescending { it.createdAt }
+        } else {
+            comments.sortedBy { it.createdAt }
+        }
+    }
     
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -82,6 +92,20 @@ fun CommentBottomSheet(
                     color = GrayDark,
                     modifier = Modifier.weight(1f)
                 )
+                TextButton(onClick = { sortNewestFirst = !sortNewestFirst }) {
+                    Icon(
+                        imageVector = Icons.Default.Sort,
+                        contentDescription = "排序",
+                        tint = WeiboOrange,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = if (sortNewestFirst) "最新" else "最早",
+                        fontSize = 12.sp,
+                        color = WeiboOrange,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -93,7 +117,7 @@ fun CommentBottomSheet(
             
             Divider()
             
-            if (comments.isEmpty()) {
+            if (sortedComments.isEmpty()) {
                 Text(
                     text = "暂无评论，快来抢沙发吧",
                     fontSize = 14.sp,
@@ -108,7 +132,7 @@ fun CommentBottomSheet(
                         .fillMaxWidth()
                         .weight(1f, fill = false)
                 ) {
-                    items(comments, key = { it.id }) { comment ->
+                    items(sortedComments, key = { it.id }) { comment ->
                         CommentItem(
                             comment = comment,
                             isOwnComment = comment.identityId == activeIdentityId,
@@ -161,7 +185,6 @@ private fun CommentItem(
     onDelete: () -> Unit
 ) {
     val context = LocalContext.current
-    var showMenu by remember { mutableStateOf(false) }
     
     Row(
         modifier = Modifier

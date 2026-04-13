@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,12 +26,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
@@ -38,6 +41,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -87,6 +91,15 @@ fun PostDetailScreen(
     val post by viewModel.post.collectAsState()
     val comments by viewModel.comments.collectAsState()
     var commentText by remember { mutableStateOf("") }
+    var sortNewestFirst by remember { mutableStateOf(true) }
+    
+    val sortedComments = remember(comments, sortNewestFirst) {
+        if (sortNewestFirst) {
+            comments.sortedByDescending { it.createdAt }
+        } else {
+            comments.sortedBy { it.createdAt }
+        }
+    }
 
     // Use Scaffold: It is specifically designed to handle top bars and bottom bars
     // while managing inner content padding correctly.
@@ -167,7 +180,7 @@ fun PostDetailScreen(
                     )
                 }
 
-                item { CommentsHeader(commentCount = comments.size) }
+                item { CommentsHeader(commentCount = comments.size, sortNewestFirst = sortNewestFirst, onSortChange = { sortNewestFirst = !sortNewestFirst }) }
 
                 if (comments.isEmpty()) {
                     item {
@@ -176,7 +189,7 @@ fun PostDetailScreen(
                         }
                     }
                 } else {
-                    items(comments, key = { it.id }) { comment ->
+                    items(sortedComments, key = { it.id }) { comment ->
                         CommentCard(comment = comment)
                         Divider(thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     }
@@ -315,7 +328,11 @@ private fun ActionButton(
 }
 
 @Composable
-private fun CommentsHeader(commentCount: Int) {
+private fun CommentsHeader(
+    commentCount: Int,
+    sortNewestFirst: Boolean,
+    onSortChange: () -> Unit
+) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White
@@ -337,6 +354,21 @@ private fun CommentsHeader(commentCount: Int) {
                     text = " ($commentCount)",
                     fontSize = 15.sp,
                     color = GrayMiddle
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            TextButton(onClick = onSortChange) {
+                Icon(
+                    imageVector = Icons.Default.Sort,
+                    contentDescription = "排序",
+                    tint = WeiboOrange,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = if (sortNewestFirst) "最新" else "最早",
+                    fontSize = 12.sp,
+                    color = WeiboOrange,
+                    modifier = Modifier.padding(start = 4.dp)
                 )
             }
         }

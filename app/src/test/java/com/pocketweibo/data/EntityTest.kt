@@ -131,3 +131,61 @@ class CommentEntityTest {
         assertEquals(2L, comment.identityId)
     }
 }
+
+class CommentSortingTest {
+    @Test
+    fun testSortComments_newestFirst() {
+        val now = System.currentTimeMillis()
+        val comments = listOf(
+            CommentData(1L, "first", now - 3600000),
+            CommentData(2L, "second", now - 1800000),
+            CommentData(3L, "third", now - 60000)
+        )
+        val sorted = comments.sortedByDescending { it.createdAt }
+        assertEquals(3L, sorted[0].id)
+        assertEquals(1L, sorted[2].id)
+    }
+
+    @Test
+    fun testSortComments_oldestFirst() {
+        val now = System.currentTimeMillis()
+        val comments = listOf(
+            CommentData(1L, "first", now - 3600000),
+            CommentData(2L, "second", now - 1800000),
+            CommentData(3L, "third", now - 60000)
+        )
+        val sorted = comments.sortedBy { it.createdAt }
+        assertEquals(1L, sorted[0].id)
+        assertEquals(3L, sorted[2].id)
+    }
+
+    data class CommentData(val id: Long, val content: String, val createdAt: Long)
+}
+
+class IdentityFilterTest {
+    @Test
+    fun testFilterByIdentityId() {
+        val identities = listOf(
+            IdentityData(1L, "苏轼"),
+            IdentityData(2L, "莎士比亚"),
+            IdentityData(3L, "爱因斯坦")
+        )
+        val filtered = identities.filter { it.id == 2L }
+        assertEquals(1, filtered.size)
+        assertEquals("莎士比亚", filtered[0].name)
+    }
+
+    @Test
+    fun testSearchByIdentityName() {
+        val query = "苏轼"
+        val identities = listOf(
+            IdentityData(1L, "苏轼"),
+            IdentityData(2L, "莎士比亚"),
+            IdentityData(3L, "爱因斯坦")
+        )
+        val filtered = identities.filter { it.name.contains(query) }
+        assertEquals(1, filtered.size)
+    }
+
+    data class IdentityData(val id: Long, val name: String)
+}

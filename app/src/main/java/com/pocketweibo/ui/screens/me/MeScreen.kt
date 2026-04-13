@@ -64,6 +64,7 @@ fun MeScreen(
     
     var showExportDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
+    var showClearDataDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -179,6 +180,16 @@ fun MeScreen(
                     onClick = { showImportDialog = true }
                 )
             }
+
+            item {
+                Divider()
+                MenuItem(
+                    title = "清空所有数据",
+                    subtitle = "删除所有身份、微博和评论",
+                    onClick = { showClearDataDialog = true },
+                    isDestructive = true
+                )
+            }
             
             activeIdentity?.let { identity ->
                 if (identity.nationality.isNotEmpty() || identity.occupation.isNotEmpty()) {
@@ -254,13 +265,26 @@ fun MeScreen(
             }
         )
     }
+
+    if (showClearDataDialog) {
+        ClearDataDialog(
+            onDismiss = { showClearDataDialog = false },
+            onConfirm = {
+                scope.launch {
+                    app.repository.clearAllData()
+                    Toast.makeText(context, "所有数据已清空", Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
+    }
 }
 
 @Composable
 private fun MenuItem(
     title: String,
     subtitle: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isDestructive: Boolean = false
 ) {
     Surface(
         modifier = Modifier
@@ -279,12 +303,12 @@ private fun MenuItem(
                     text = title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = GrayDark
+                    color = if (isDestructive) Color(0xFFFF5136) else GrayDark
                 )
                 Text(
                     text = subtitle,
                     fontSize = 13.sp,
-                    color = GrayMiddle,
+                    color = if (isDestructive) Color(0xFFFF5136) else GrayMiddle,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
@@ -407,6 +431,50 @@ private fun ExportDialog(
         confirmButton = {
             Button(onClick = { onExport(selectedFormat) }) {
                 Text("导出")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ClearDataDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("清空所有数据") },
+        text = {
+            Column {
+                Text(
+                    text = "此操作将删除所有数据，包括:",
+                    fontSize = 14.sp,
+                    color = GrayDark
+                )
+                Text(
+                    text = "- 所有身份\n- 所有微博\n- 所有评论\n\n此操作不可撤销，请先备份数据!",
+                    fontSize = 13.sp,
+                    color = Color(0xFFFF5136),
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onConfirm()
+                    onDismiss()
+                },
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFF5136)
+                )
+            ) {
+                Text("确认清空")
             }
         },
         dismissButton = {

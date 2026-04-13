@@ -2,6 +2,7 @@ package com.pocketweibo.ui.screens.discover
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,14 +14,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Divider
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -28,9 +33,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -66,6 +71,8 @@ fun DiscoverScreen(
     val searchResults by viewModel.searchResults.collectAsState()
     val trendingIdentities by viewModel.trendingIdentities.collectAsState()
     val trendingPosts by viewModel.trendingPosts.collectAsState()
+    val selectedIdentityId by viewModel.selectedIdentityId.collectAsState()
+    val allIdentities by app.repository.allIdentities.collectAsState(initial = emptyList())
     val focusManager = LocalFocusManager.current
 
     Column(
@@ -87,13 +94,15 @@ fun DiscoverScreen(
                 )
             },
             trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                        Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = "清除",
-                            tint = GrayMiddle
-                        )
+                Row {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "清除",
+                                tint = GrayMiddle
+                            )
+                        }
                     }
                 }
             },
@@ -106,7 +115,21 @@ fun DiscoverScreen(
             keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
         )
 
-        if (searchQuery.isEmpty()) {
+        if (allIdentities.isNotEmpty()) {
+            IdentityFilterChips(
+                identities = allIdentities,
+                selectedIdentityId = selectedIdentityId,
+                onSelectIdentity = { identityId ->
+                    if (identityId == selectedIdentityId) {
+                        viewModel.clearFilter()
+                    } else {
+                        viewModel.setSelectedIdentity(identityId)
+                    }
+                }
+            )
+        }
+
+        if (searchQuery.isEmpty() && selectedIdentityId == null) {
             TrendingContent(
                 trendingIdentities = trendingIdentities,
                 trendingPosts = trendingPosts,
@@ -121,6 +144,45 @@ fun DiscoverScreen(
                 onIdentityClick = { identity ->
                     viewModel.updateSearchQuery(identity.name)
                 }
+            )
+        }
+    }
+}
+
+@Composable
+private fun IdentityFilterChips(
+    identities: List<IdentityEntity>,
+    selectedIdentityId: Long?,
+    onSelectIdentity: (Long) -> Unit
+) {
+    LazyRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(identities) { identity ->
+            FilterChip(
+                selected = identity.id == selectedIdentityId,
+                onClick = { onSelectIdentity(identity.id) },
+                label = {
+                    Text(
+                        text = identity.name,
+                        fontSize = 13.sp
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.FilterList,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = WeiboOrange,
+                    selectedLabelColor = Color.White,
+                    selectedLeadingIconColor = Color.White
+                )
             )
         }
     }

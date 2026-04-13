@@ -31,6 +31,9 @@ class DiscoverViewModel(private val repository: WeiboRepository) : ViewModel() {
     private val _trendingPosts = MutableStateFlow<List<PostWithIdentity>>(emptyList())
     val trendingPosts: StateFlow<List<PostWithIdentity>> = _trendingPosts.asStateFlow()
     
+    private val _selectedIdentityId = MutableStateFlow<Long?>(null)
+    val selectedIdentityId: StateFlow<Long?> = _selectedIdentityId.asStateFlow()
+    
     init {
         loadTrending()
         observeSearch()
@@ -53,26 +56,36 @@ class DiscoverViewModel(private val repository: WeiboRepository) : ViewModel() {
         viewModelScope.launch {
             combine(
                 _searchQuery,
+                _selectedIdentityId,
                 repository.allIdentities,
                 repository.allPosts
-            ) { query, identities, posts ->
-                if (query.isBlank()) {
+            ) { query, selectedId, identities, posts ->
+                if (query.isBlank() && selectedId == null) {
                     emptyList()
                 } else {
                     val lowerQuery = query.lowercase()
                     val results = mutableListOf<SearchResult>()
                     
-                    identities.filter { 
-                        it.name.lowercase().contains(lowerQuery)
-                    }.forEach { 
-                        results.add(SearchResult.IdentityResult(it))
-                    }
-                    
-                    posts.filter { 
-                        it.identityName.lowercase().contains(lowerQuery) ||
-                        it.content.lowercase().contains(lowerQuery)
-                    }.forEach { 
-                        results.add(SearchResult.PostResult(it))
+                    if (selectedId != null) {
+                        identities.filter { it.id == selectedId }.forEach { 
+                            results.add(SearchResult.IdentityResult(it))
+                        }
+                        posts.filter { it.identityId == selectedId }.forEach { 
+                            results.add(SearchResult.PostResult(it))
+                        }
+                    } else {
+                        identities.filter { 
+                            it.name.lowercase().contains(lowerQuery)
+                        }.forEach { 
+                            results.add(SearchResult.IdentityResult(it))
+                        }
+                        
+                        posts.filter { 
+                            it.identityName.lowercase().contains(lowerQuery) ||
+                            it.content.lowercase().contains(lowerQuery)
+                        }.forEach { 
+                            results.add(SearchResult.PostResult(it))
+                        }
                     }
                     
                     results
@@ -85,6 +98,17 @@ class DiscoverViewModel(private val repository: WeiboRepository) : ViewModel() {
     
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
+    }
+    
+    fun setSelectedIdentity(identityId: Long?) {
+        _selectedIdentityId.value = identityId
+        if (identityId != null) {
+            _searchQuery.value = ""
+        }
+    }
+    
+    fun clearFilter() {
+        _selectedIdentityId.value = null
     }
     
     class Factory(private val repository: WeiboRepository) : ViewModelProvider.Factory {
