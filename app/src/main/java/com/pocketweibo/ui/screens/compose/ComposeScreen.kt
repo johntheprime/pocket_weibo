@@ -214,7 +214,9 @@ fun ComposeScreen(
 
                     TextField(
                         value = content,
-                        onValueChange = { content = it },
+                        onValueChange = { 
+                            if (it.length <= 2000) content = it 
+                        },
                         placeholder = { Text("分享新鲜事...", color = GrayMiddle) },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -227,6 +229,19 @@ fun ComposeScreen(
                         ),
                         minLines = 5
                     )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Text(
+                            text = "${content.length}/2000",
+                            fontSize = 12.sp,
+                            color = if (content.length > 1900) Color(0xFFFF5136) else GrayMiddle
+                        )
+                    }
                 }
             }
 
