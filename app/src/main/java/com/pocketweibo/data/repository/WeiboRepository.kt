@@ -11,11 +11,14 @@ import com.pocketweibo.data.local.dao.IdentityDao
 import com.pocketweibo.data.local.dao.PostDao
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.CommentEntity
+import com.pocketweibo.data.local.entity.Gender
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.json.JSONArray
+import org.json.JSONObject
 
 private val Context.draftDataStore by preferencesDataStore(name = "draft")
 
@@ -86,5 +89,141 @@ class WeiboRepository(
 
     suspend fun clearDraft() {
         context.draftDataStore.edit { it.clear() }
+    }
+
+    suspend fun exportAllData(): String {
+        val identities = identityDao.getAllIdentities().first()
+        val posts = postDao.getAllPosts().first()
+        val comments = mutableListOf<CommentWithIdentity>()
+        
+        posts.forEach { post ->
+            comments.addAll(commentDao.getCommentsByPost(post.id).first())
+        }
+
+        val json = JSONObject()
+        
+        val identitiesArray = JSONArray()
+        identities.forEach { identity ->
+            val identityJson = JSONObject().apply {
+                put("id", identity.id)
+                put("name", identity.name)
+                put("avatarResName", identity.avatarResName)
+                put("nationality", identity.nationality)
+                put("gender", identity.gender)
+                put("birthYear", identity.birthYear)
+                put("deathYear", identity.deathYear)
+                put("occupation", identity.occupation)
+                put("motto", identity.motto)
+                put("famousWork", identity.famousWork)
+                put("bio", identity.bio)
+                put("isActive", identity.isActive)
+            }
+            identitiesArray.put(identityJson)
+        }
+        json.put("identities", identitiesArray)
+
+        val postsArray = JSONArray()
+        posts.forEach { post ->
+            val postJson = JSONObject().apply {
+                put("id", post.id)
+                put("identityId", post.identityId)
+                put("content", post.content)
+                put("imageUris", post.imageUris)
+                put("createdAt", post.createdAt)
+                put("likeCount", post.likeCount)
+                put("commentCount", post.commentCount)
+                put("isLiked", post.isLiked)
+            }
+            postsArray.put(postJson)
+        }
+        json.put("posts", postsArray)
+
+        val commentsArray = JSONArray()
+        comments.forEach { comment ->
+            val commentJson = JSONObject().apply {
+                put("id", comment.id)
+                put("postId", comment.postId)
+                put("identityId", comment.identityId)
+                put("content", comment.content)
+                put("createdAt", comment.createdAt)
+            }
+            commentsArray.put(commentJson)
+        }
+        json.put("comments", commentsArray)
+
+        json.put("exportedAt", System.currentTimeMillis())
+        json.put("version", 1)
+
+        return json.toString(2)
+    }
+
+    suspend fun importData(jsonString: String): Boolean {
+        return try {
+            val json = JSONObject(jsonString)
+            
+            if (json.has("identities")) {
+                val identitiesArray = json.getJSONArray("identities")
+                for (i in 0 until identitiesArray.length()) {
+                    val identityJson = identitiesArray.getJSONObject(i)
+                    val identity = IdentityEntity(
+                        id = identityJson.getLong("id"),
+                        name = identityJson.getString("name"),
+                        avatarResName = identityJson.optString("avatarResName", "avatar_default"),
+                        nationality = identityJson.optString("nationality", ""),
+                        gender = when (identityJson.optString("gender", "")) {
+                            "MALE" -> Gender.MALE
+                            "FEMALE" -> Gender.FEMALE
+                            else -> Gender.OTHER
+                        },
+                        birthYear = identityJson.optInt("birthYear", 0),
+                        deathYear = identityJson.optInt("deathYear", 0),
+                        occupation = identityJson.optString("occupation", ""),
+                        motto = identityJson.optString("motto", ""),
+                        famousWork = identityJson.optString("famousWork", ""),
+                        bio = identityJson.optString("bio", ""),
+                        isActive = identityJson.optBoolean("isActive", false)
+                    )
+                    identityDao.insert(identity)
+                }
+            }
+
+            if (json.has("posts")) {
+                val postsArray = json.getJSONArray("posts")
+                for (i in 0 until postsArray.length()) {
+                    val postJson = postsArray.getJSONObject(i)
+                    val post = PostEntity(
+                        id = postJson.getLong("id"),
+                        identityId = postJson.getLong("identityId"),
+                        content = postJson.getString("content"),
+                        imageUris = postJson.optString("imageUris", ""),
+                        createdAt = postJson.getLong("createdAt"),
+                        likeCount = postJson.optInt("likeCount", 0),
+                        commentCount = postJson.optInt("commentCount", 0),
+                        isLiked = postJson.optBoolean("isLiked", false)
+                    )
+                    postDao.insert(post)
+                }
+            }
+
+            if (json.has("comments")) {
+                val commentsArray = json.getJSONArray("comments")
+                for (i in 0 until commentsArray.length()) {
+                    val commentJson = commentsArray.getJSONObject(i)
+                    val comment = CommentEntity(
+                        id = commentJson.getLong("id"),
+                        postId = commentJson.getLong("postId"),
+                        identityId = commentJson.getLong("identityId"),
+                        content = commentJson.getString("content"),
+                        createdAt = commentJson.getLong("createdAt")
+                    )
+                    commentDao.insert(comment)
+                }
+            }
+
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
     }
 }

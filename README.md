@@ -98,9 +98,9 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 - [ ] Remove/reset avatar to default
 
 ### Comments
-- [ ] Delete own comments
+- [x] Delete own comments
 - [ ] Edit own comments
-- [ ] Long press to copy comment
+- [x] Long press to copy comment
 - [ ] Comment reactions/likes
 - [ ] Sort comments (newest/oldest)
 

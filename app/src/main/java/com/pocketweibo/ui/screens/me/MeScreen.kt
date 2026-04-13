@@ -11,16 +11,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,6 +45,10 @@ import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.Surface
 import com.pocketweibo.ui.theme.WeiboOrange
+import kotlinx.coroutines.launch
+import android.content.Intent
+import android.widget.Toast
+import androidx.core.content.FileProvider
 
 @Composable
 fun MeScreen(
@@ -48,6 +60,10 @@ fun MeScreen(
     val app = context.applicationContext as PocketWeiboApp
     val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
     val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
+    val scope = rememberCoroutineScope()
+    
+    var showExportDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -145,6 +161,42 @@ fun MeScreen(
                     onClick = onNavigateToMyPosts
                 )
             }
+
+            item {
+                Divider()
+                MenuItem(
+                    title = "导出数据",
+                    subtitle = "备份所有数据到JSON文件",
+                    onClick = { 
+                        scope.launch {
+                            val json = app.repository.exportAllData()
+                            val file = java.io.File(context.cacheDir, "pocket_weibo_backup.json")
+                            file.writeText(json)
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.provider",
+                                file
+                            )
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/json"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(Intent.createChooser(shareIntent, "分享备份"))
+                            Toast.makeText(context, "数据已导出", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+            }
+
+            item {
+                Divider()
+                MenuItem(
+                    title = "导入数据",
+                    subtitle = "从JSON文件恢复数据",
+                    onClick = { showImportDialog = true }
+                )
+            }
             
             activeIdentity?.let { identity ->
                 if (identity.nationality.isNotEmpty() || identity.occupation.isNotEmpty()) {
@@ -172,6 +224,22 @@ fun MeScreen(
                 }
             }
         }
+    }
+
+    if (showImportDialog) {
+        ImportDialog(
+            onDismiss = { showImportDialog = false },
+            onImport = { json ->
+                scope.launch {
+                    val success = app.repository.importData(json)
+                    Toast.makeText(
+                        context,
+                        if (success) "数据导入成功" else "数据导入失败",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        )
     }
 }
 
@@ -232,4 +300,46 @@ private fun InfoRow(label: String, value: String) {
             color = GrayDark
         )
     }
+}
+
+@Composable
+private fun ImportDialog(
+    onDismiss: () -> Unit,
+    onImport: (String) -> Unit
+) {
+    var jsonInput by remember { mutableStateOf("") }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("导入数据") },
+        text = {
+            Column {
+                Text("请粘贴JSON备份数据:", fontSize = 14.sp, color = GrayMiddle)
+                Text(
+                    "警告: 此操作会追加数据，不会覆盖现有数据",
+                    fontSize = 12.sp,
+                    color = WeiboOrange,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { 
+                    if (jsonInput.isNotBlank()) {
+                        onImport(jsonInput)
+                        onDismiss()
+                    }
+                },
+                enabled = jsonInput.isNotBlank()
+            ) {
+                Text("导入")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }
