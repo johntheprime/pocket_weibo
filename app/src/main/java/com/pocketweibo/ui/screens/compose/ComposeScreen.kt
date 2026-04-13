@@ -87,6 +87,29 @@ fun ComposeScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        val draft = app.repository.loadDraft()
+        if (draft != null) {
+            content = draft.first
+            val identityId = draft.second
+            val identity = identities.find { it.id == identityId }
+            if (identity != null) {
+                selectedIdentity = identity
+            } else if (activeIdentity != null) {
+                selectedIdentity = activeIdentity
+            }
+        }
+    }
+
+    fun saveAndDismiss() {
+        scope.launch {
+            if (content.isNotBlank() && selectedIdentity != null) {
+                app.repository.saveDraft(content, selectedIdentity!!.id)
+            }
+            onDismiss()
+        }
+    }
+
     LaunchedEffect(activeIdentity) {
         if (selectedIdentity == null && activeIdentity != null) {
             selectedIdentity = activeIdentity
@@ -107,7 +130,12 @@ fun ComposeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onDismiss) {
+                IconButton(onClick = { 
+                    if (content.isNotBlank()) {
+                        scope.launch { app.repository.saveDraft(content, selectedIdentity?.id ?: 0L) }
+                    }
+                    onDismiss() 
+                }) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "关闭",
@@ -132,6 +160,7 @@ fun ComposeScreen(
                                         content = content
                                     )
                                 )
+                                app.repository.clearDraft()
                                 onDismiss()
                             }
                         }

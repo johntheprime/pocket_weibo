@@ -11,7 +11,8 @@ class PocketWeiboApp : Application() {
         WeiboRepository(
             database.identityDao(),
             database.postDao(),
-            database.commentDao()
+            database.commentDao(),
+            this
         )
     }
 
