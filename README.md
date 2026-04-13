@@ -105,9 +105,9 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 - [ ] Sort comments (newest/oldest)
 
 ### Data Management
-- [ ] Export all data (posts, comments, identities) to JSON
+- [x] Export all data (posts, comments, identities) to JSON
 - [ ] Export data to CSV format
-- [ ] Import data from JSON backup
+- [x] Import data from JSON backup
 - [ ] Selective data export (posts only, identities only, etc.)
 - [ ] Data migration between app versions
 - [ ] Clear all data option
