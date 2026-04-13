@@ -29,4 +29,7 @@ interface IdentityDao {
 
     @Query("UPDATE identities SET isActive = 1 WHERE id = :id")
     suspend fun activate(id: Long)
+
+    @Query("DELETE FROM identities")
+    suspend fun deleteAll()
 }

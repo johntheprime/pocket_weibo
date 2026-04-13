@@ -166,26 +166,8 @@ fun MeScreen(
                 Divider()
                 MenuItem(
                     title = "导出数据",
-                    subtitle = "备份所有数据到JSON文件",
-                    onClick = { 
-                        scope.launch {
-                            val json = app.repository.exportAllData()
-                            val file = java.io.File(context.cacheDir, "pocket_weibo_backup.json")
-                            file.writeText(json)
-                            val uri = FileProvider.getUriForFile(
-                                context,
-                                "${context.packageName}.provider",
-                                file
-                            )
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "application/json"
-                                putExtra(Intent.EXTRA_STREAM, uri)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                            context.startActivity(Intent.createChooser(shareIntent, "分享备份"))
-                            Toast.makeText(context, "数据已导出", Toast.LENGTH_SHORT).show()
-                        }
-                    }
+                    subtitle = "备份所有数据到JSON/Markdown文件",
+                    onClick = { showExportDialog = true }
                 )
             }
 
@@ -229,14 +211,45 @@ fun MeScreen(
     if (showImportDialog) {
         ImportDialog(
             onDismiss = { showImportDialog = false },
-            onImport = { json ->
+            onImport = { json, override ->
                 scope.launch {
-                    val success = app.repository.importData(json)
+                    val success = app.repository.importData(json, override)
                     Toast.makeText(
                         context,
                         if (success) "数据导入成功" else "数据导入失败",
                         Toast.LENGTH_SHORT
                     ).show()
+                }
+            }
+        )
+    }
+
+    if (showExportDialog) {
+        ExportDialog(
+            onDismiss = { showExportDialog = false },
+            onExport = { format ->
+                scope.launch {
+                    val fileName = if (format == "JSON") "pocket_weibo_backup.json" else "pocket_weibo_backup.md"
+                    val content = if (format == "JSON") {
+                        app.repository.exportAllData()
+                    } else {
+                        app.repository.exportAllDataToMarkdown()
+                    }
+                    val file = java.io.File(context.cacheDir, fileName)
+                    file.writeText(content)
+                    val uri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.provider",
+                        file
+                    )
+                    val mimeType = if (format == "JSON") "application/json" else "text/markdown"
+                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = mimeType
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(Intent.createChooser(shareIntent, "分享备份"))
+                    Toast.makeText(context, "数据已导出", Toast.LENGTH_SHORT).show()
                 }
             }
         )
@@ -305,9 +318,10 @@ private fun InfoRow(label: String, value: String) {
 @Composable
 private fun ImportDialog(
     onDismiss: () -> Unit,
-    onImport: (String) -> Unit
+    onImport: (String, Boolean) -> Unit
 ) {
     var jsonInput by remember { mutableStateOf("") }
+    var override by remember { mutableStateOf(false) }
     
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -316,24 +330,83 @@ private fun ImportDialog(
             Column {
                 Text("请粘贴JSON备份数据:", fontSize = 14.sp, color = GrayMiddle)
                 Text(
-                    "警告: 此操作会追加数据，不会覆盖现有数据",
+                    if (override) "警告: 此操作会清空现有数据并导入"
+                    else "此操作会追加数据，不会覆盖现有数据",
                     fontSize = 12.sp,
                     color = WeiboOrange,
                     modifier = Modifier.padding(top = 8.dp)
                 )
+                Row(
+                    modifier = Modifier.padding(top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.Checkbox(
+                        checked = override,
+                        onCheckedChange = { override = it }
+                    )
+                    Text("覆盖现有数据", fontSize = 14.sp)
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = { 
                     if (jsonInput.isNotBlank()) {
-                        onImport(jsonInput)
+                        onImport(jsonInput, override)
                         onDismiss()
                     }
                 },
                 enabled = jsonInput.isNotBlank()
             ) {
                 Text("导入")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ExportDialog(
+    onDismiss: () -> Unit,
+    onExport: (String) -> Unit
+) {
+    var selectedFormat by remember { mutableStateOf("JSON") }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("导出数据") },
+        text = {
+            Column {
+                Text("选择导出格式:", fontSize = 14.sp, color = GrayMiddle)
+                Row(
+                    modifier = Modifier.padding(top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.RadioButton(
+                        selected = selectedFormat == "JSON",
+                        onClick = { selectedFormat = "JSON" }
+                    )
+                    Text("JSON (可导入)", fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
+                }
+                Row(
+                    modifier = Modifier.padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.RadioButton(
+                        selected = selectedFormat == "Markdown",
+                        onClick = { selectedFormat = "Markdown" }
+                    )
+                    Text("Markdown (仅备份)", fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onExport(selectedFormat) }) {
+                Text("导出")
             }
         },
         dismissButton = {

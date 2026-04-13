@@ -29,6 +29,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -291,9 +292,7 @@ fun ComposeScreen(
                         ) {
                             items(imageUris) { uri ->
                                 Box(
-                                    modifier = Modifier
-                                        .size(80.dp)
-                                        .clip(RoundedCornerShape(8.dp))
+                                    modifier = Modifier.size(80.dp)
                                 ) {
                                     AsyncImage(
                                         model = ImageRequest.Builder(context)
@@ -302,8 +301,24 @@ fun ComposeScreen(
                                             .build(),
                                         contentDescription = "图片",
                                         contentScale = ContentScale.Crop,
-                                        modifier = Modifier.fillMaxSize()
+                                        modifier = Modifier
+                                            .size(80.dp)
+                                            .clip(RoundedCornerShape(8.dp))
                                     )
+                                    IconButton(
+                                        onClick = { imageUris = imageUris.filter { it != uri } },
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .size(20.dp)
+                                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "删除",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                    }
                                 }
                             }
                         }

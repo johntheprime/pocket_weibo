@@ -19,6 +19,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private val Context.draftDataStore by preferencesDataStore(name = "draft")
 
@@ -157,6 +160,47 @@ class WeiboRepository(
         return json.toString(2)
     }
 
+    suspend fun exportAllDataToMarkdown(): String {
+        val identities = identityDao.getAllIdentities().first()
+        val posts = postDao.getAllPosts().first()
+        
+        val sb = StringBuilder()
+        sb.appendLine("# PocketWeibo 备份")
+        sb.appendLine()
+        sb.appendLine("## 身份列表")
+        sb.appendLine()
+        
+        identities.forEach { identity ->
+            sb.appendLine("### ${identity.name}")
+            sb.appendLine("- 国籍: ${identity.nationality}")
+            sb.appendLine("- 性别: ${identity.gender}")
+            sb.appendLine("- 职业: ${identity.occupation}")
+            sb.appendLine("- 座右铭: ${identity.motto}")
+            sb.appendLine("- 代表作: ${identity.famousWork}")
+            sb.appendLine("- 简介: ${identity.bio}")
+            sb.appendLine()
+        }
+        
+        sb.appendLine("## 微博列表")
+        sb.appendLine()
+        
+        posts.forEach { post ->
+            val identity = identities.find { it.id == post.identityId }
+            sb.appendLine("### ${identity?.name ?: "未知"} 的微博")
+            sb.appendLine()
+            sb.appendLine(post.content)
+            sb.appendLine()
+            sb.appendLine("- 点赞: ${post.likeCount}")
+            sb.appendLine("- 评论: ${post.commentCount}")
+            sb.appendLine("- 发布时间: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(post.createdAt))}")
+            sb.appendLine()
+            sb.appendLine("---")
+            sb.appendLine()
+        }
+        
+        return sb.toString()
+    }
+
     suspend fun importData(jsonString: String): Boolean {
         return try {
             val json = JSONObject(jsonString)
@@ -225,5 +269,85 @@ class WeiboRepository(
             e.printStackTrace()
             false
         }
+    }
+
+    suspend fun importData(jsonString: String, override: Boolean): Boolean {
+        return try {
+            if (override) {
+                clearAllData()
+            }
+            
+            val json = JSONObject(jsonString)
+            
+            if (json.has("identities")) {
+                val identitiesArray = json.getJSONArray("identities")
+                for (i in 0 until identitiesArray.length()) {
+                    val identityJson = identitiesArray.getJSONObject(i)
+                    val identity = IdentityEntity(
+                        id = if (override) identityJson.getLong("id") else 0L,
+                        name = identityJson.getString("name"),
+                        avatarResName = identityJson.optString("avatarResName", "avatar_default"),
+                        nationality = identityJson.optString("nationality", ""),
+                        gender = when (identityJson.optString("gender", "")) {
+                            "MALE" -> Gender.MALE
+                            "FEMALE" -> Gender.FEMALE
+                            else -> Gender.OTHER
+                        },
+                        birthYear = identityJson.optInt("birthYear", 0),
+                        deathYear = identityJson.optInt("deathYear", 0),
+                        occupation = identityJson.optString("occupation", ""),
+                        motto = identityJson.optString("motto", ""),
+                        famousWork = identityJson.optString("famousWork", ""),
+                        bio = identityJson.optString("bio", ""),
+                        isActive = identityJson.optBoolean("isActive", false)
+                    )
+                    identityDao.insert(identity)
+                }
+            }
+
+            if (json.has("posts")) {
+                val postsArray = json.getJSONArray("posts")
+                for (i in 0 until postsArray.length()) {
+                    val postJson = postsArray.getJSONObject(i)
+                    val post = PostEntity(
+                        id = if (override) postJson.getLong("id") else 0L,
+                        identityId = postJson.getLong("identityId"),
+                        content = postJson.getString("content"),
+                        imageUris = postJson.optString("imageUris", ""),
+                        createdAt = postJson.getLong("createdAt"),
+                        likeCount = postJson.optInt("likeCount", 0),
+                        commentCount = postJson.optInt("commentCount", 0),
+                        isLiked = postJson.optBoolean("isLiked", false)
+                    )
+                    postDao.insert(post)
+                }
+            }
+
+            if (json.has("comments")) {
+                val commentsArray = json.getJSONArray("comments")
+                for (i in 0 until commentsArray.length()) {
+                    val commentJson = commentsArray.getJSONObject(i)
+                    val comment = CommentEntity(
+                        id = if (override) commentJson.getLong("id") else 0L,
+                        postId = commentJson.getLong("postId"),
+                        identityId = commentJson.getLong("identityId"),
+                        content = commentJson.getString("content"),
+                        createdAt = commentJson.getLong("createdAt")
+                    )
+                    commentDao.insert(comment)
+                }
+            }
+
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    suspend fun clearAllData() {
+        commentDao.deleteAll()
+        postDao.deleteAll()
+        identityDao.deleteAll()
     }
 }

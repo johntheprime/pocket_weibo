@@ -55,4 +55,7 @@ interface PostDao {
 
     @Query("UPDATE posts SET commentCount = commentCount - 1 WHERE id = :postId AND commentCount > 0")
     suspend fun decrementCommentCount(postId: Long)
+
+    @Query("DELETE FROM posts")
+    suspend fun deleteAll()
 }
