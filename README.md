@@ -85,8 +85,8 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 
 ### General
 - [ ] Dark mode support
-- [ ] Data export/backup (JSON format)
-- [ ] Data import/restore
+- [x] Data export/backup (JSON format)
+- [x] Data import/restore
 - [ ] App icon customization
 
 ### Avatar Management
