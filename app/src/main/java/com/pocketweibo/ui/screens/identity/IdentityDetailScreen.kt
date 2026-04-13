@@ -65,6 +65,29 @@ val avatarOptions = listOf(
     "avatar_writer", "avatar_female_scholar", "avatar_western", "avatar_chinese_scholar"
 )
 
+@Composable
+fun IdentityAvatar(resName: String, size: Int) {
+    val context = LocalContext.current
+    val resourceId = context.resources.getIdentifier(resName, "drawable", context.packageName)
+    
+    if (resourceId != 0) {
+        Image(
+            painter = androidx.compose.ui.res.painterResource(id = resourceId),
+            contentDescription = null,
+            modifier = Modifier.size(size.dp)
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .size(size.dp)
+                .background(Color(0xFF4A90D9), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(text = "?", color = Color.White, fontSize = (size / 2).sp)
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IdentityDetailScreen(
