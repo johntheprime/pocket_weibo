@@ -134,6 +134,78 @@ class WeiboRepository(
         context.messageDataStore.edit { it.clear() }
     }
 
+    suspend fun exportSelectiveData(types: Set<String>): String {
+        val json = JSONObject()
+
+        if ("identities" in types) {
+            val identities = identityDao.getAllIdentities().first()
+            val identitiesArray = JSONArray()
+            identities.forEach { identity ->
+                val identityJson = JSONObject().apply {
+                    put("id", identity.id)
+                    put("name", identity.name)
+                    put("avatarResName", identity.avatarResName)
+                    put("nationality", identity.nationality)
+                    put("gender", identity.gender)
+                    put("birthYear", identity.birthYear)
+                    put("deathYear", identity.deathYear)
+                    put("occupation", identity.occupation)
+                    put("motto", identity.motto)
+                    put("famousWork", identity.famousWork)
+                    put("bio", identity.bio)
+                    put("isActive", identity.isActive)
+                }
+                identitiesArray.put(identityJson)
+            }
+            json.put("identities", identitiesArray)
+        }
+
+        if ("posts" in types) {
+            val posts = postDao.getAllPosts().first()
+            val postsArray = JSONArray()
+            posts.forEach { post ->
+                val postJson = JSONObject().apply {
+                    put("id", post.id)
+                    put("identityId", post.identityId)
+                    put("content", post.content)
+                    put("imageUris", post.imageUris)
+                    put("createdAt", post.createdAt)
+                    put("likeCount", post.likeCount)
+                    put("commentCount", post.commentCount)
+                    put("isLiked", post.isLiked)
+                }
+                postsArray.put(postJson)
+            }
+            json.put("posts", postsArray)
+        }
+
+        if ("comments" in types) {
+            val posts = postDao.getAllPosts().first()
+            val comments = mutableListOf<CommentWithIdentity>()
+            posts.forEach { post ->
+                comments.addAll(commentDao.getCommentsByPost(post.id).first())
+            }
+
+            val commentsArray = JSONArray()
+            comments.forEach { comment ->
+                val commentJson = JSONObject().apply {
+                    put("id", comment.id)
+                    put("postId", comment.postId)
+                    put("identityId", comment.identityId)
+                    put("content", comment.content)
+                    put("createdAt", comment.createdAt)
+                }
+                commentsArray.put(commentJson)
+            }
+            json.put("comments", commentsArray)
+        }
+
+        json.put("exportedAt", System.currentTimeMillis())
+        json.put("version", 1)
+
+        return json.toString(2)
+    }
+
     suspend fun exportAllData(): String {
         val identities = identityDao.getAllIdentities().first()
         val posts = postDao.getAllPosts().first()
@@ -236,6 +308,28 @@ class WeiboRepository(
             sb.appendLine()
             sb.appendLine("---")
             sb.appendLine()
+        }
+        
+        return sb.toString()
+    }
+
+    suspend fun exportDataToCsv(): String {
+        val identities = identityDao.getAllIdentities().first()
+        val posts = postDao.getAllPosts().first()
+        
+        val sb = StringBuilder()
+        
+        sb.appendLine("=== 身份 (Identities) ===")
+        sb.appendLine("ID,姓名,头像,国籍,性别,出生年份,去世年份,职业,座右铭,代表作,简介,是否激活")
+        identities.forEach { identity ->
+            sb.appendLine("${identity.id},\"${identity.name}\",${identity.avatarResName},\"${identity.nationality}\",${identity.gender},${identity.birthYear},${identity.deathYear},\"${identity.occupation}\",\"${identity.motto}\",\"${identity.famousWork}\",\"${identity.bio}\",${identity.isActive}")
+        }
+        
+        sb.appendLine()
+        sb.appendLine("=== 微博 (Posts) ===")
+        sb.appendLine("ID,身份ID,内容,图片,创建时间,点赞数,评论数,是否点赞")
+        posts.forEach { post ->
+            sb.appendLine("${post.id},${post.identityId},\"${post.content.replace("\"", "\"\"")}\",\"${post.imageUris}\",${post.createdAt},${post.likeCount},${post.commentCount},${post.isLiked}")
         }
         
         return sb.toString()
