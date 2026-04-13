@@ -84,7 +84,7 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 - [ ] Unread message indicator
 
 ### General
-- [ ] Dark mode support
+- [x] Dark mode support
 - [x] Data export/backup (JSON format)
 - [x] Data import/restore
 - [ ] App icon customization
