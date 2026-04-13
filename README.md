@@ -81,7 +81,7 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 - [x] Received comments view
 - [x] Sent comments view
 - [ ] Push notification support
-- [ ] Unread message indicator
+- [x] Unread message indicator
 
 ### General
 - [x] Dark mode support

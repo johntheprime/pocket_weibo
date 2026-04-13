@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
@@ -158,12 +160,13 @@ fun MessageScreen(
             comments = comments,
             activeIdentityId = activeIdentity?.id,
             onDismiss = { viewModel.closeComments() },
-            onSendComment = { content ->
+            onSendComment = { content, _ ->
                 viewModel.addComment(selectedPostId!!, content)
             },
             onDeleteComment = { commentId ->
                 viewModel.deleteComment(commentId, selectedPostId!!)
-            }
+            },
+            onEditComment = { _, _ -> }
         )
     }
 }

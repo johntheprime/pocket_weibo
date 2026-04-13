@@ -24,6 +24,7 @@ import java.util.Date
 import java.util.Locale
 
 private val Context.draftDataStore by preferencesDataStore(name = "draft")
+private val Context.messageDataStore by preferencesDataStore(name = "messages")
 
 class WeiboRepository(
     private val identityDao: IdentityDao,
@@ -60,6 +61,13 @@ class WeiboRepository(
     suspend fun insertComment(comment: CommentEntity): Long {
         val id = commentDao.insert(comment)
         postDao.incrementCommentCount(comment.postId)
+
+        val post = postDao.getAllPosts().first().find { it.id == comment.postId }
+        if (post != null && post.identityId != comment.identityId) {
+            val currentUnread = getUnreadReceivedCount()
+            setUnreadReceivedCount(currentUnread + 1)
+        }
+
         return id
     }
 
@@ -78,6 +86,8 @@ class WeiboRepository(
     companion object {
         private val DRAFT_CONTENT = stringPreferencesKey("draft_content")
         private val DRAFT_IDENTITY_ID = longPreferencesKey("draft_identity_id")
+        private val UNREAD_RECEIVED_COUNT = longPreferencesKey("unread_received_count")
+        private val UNREAD_SENT_COUNT = longPreferencesKey("unread_sent_count")
     }
 
     suspend fun saveDraft(content: String, identityId: Long) {
@@ -96,6 +106,32 @@ class WeiboRepository(
 
     suspend fun clearDraft() {
         context.draftDataStore.edit { it.clear() }
+    }
+
+    suspend fun getUnreadReceivedCount(): Long {
+        val prefs = context.messageDataStore.data.first()
+        return prefs[UNREAD_RECEIVED_COUNT] ?: 0L
+    }
+
+    suspend fun setUnreadReceivedCount(count: Long) {
+        context.messageDataStore.edit { prefs ->
+            prefs[UNREAD_RECEIVED_COUNT] = count
+        }
+    }
+
+    suspend fun getUnreadSentCount(): Long {
+        val prefs = context.messageDataStore.data.first()
+        return prefs[UNREAD_SENT_COUNT] ?: 0L
+    }
+
+    suspend fun setUnreadSentCount(count: Long) {
+        context.messageDataStore.edit { prefs ->
+            prefs[UNREAD_SENT_COUNT] = count
+        }
+    }
+
+    suspend fun clearUnreadCounts() {
+        context.messageDataStore.edit { it.clear() }
     }
 
     suspend fun exportAllData(): String {
