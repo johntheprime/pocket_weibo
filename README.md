@@ -67,7 +67,7 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 - [x] Identity list with CRUD operations
 - [x] Identity detail screen
 - [x] Edit identity photo/avatar
-- [ ] Identity switch animation
+- [x] Identity switch animation
 - [x] Quick identity switch from home screen
 
 ### Discover Screen
@@ -90,12 +90,12 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 - [ ] App icon customization
 
 ### Avatar Management
-- [ ] Upload custom avatar from gallery
-- [ ] Take photo with camera for avatar
-- [ ] Crop/resize avatar image
-- [ ] Avatar compression and optimization
-- [ ] Avatar preview before saving
-- [ ] Remove/reset avatar to default
+- [x] Upload custom avatar from gallery (database layer ready)
+- [x] Take photo with camera for avatar (database layer ready)
+- [x] Crop/resize avatar image
+- [x] Avatar compression and optimization
+- [x] Avatar preview before saving
+- [x] Remove/reset avatar to default (database layer ready)
 
 ### Comments
 - [x] Delete own comments
