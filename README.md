@@ -73,9 +73,9 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 ### Discover Screen
 - [x] Trending posts section
 - [x] Search by identity name or post content
-- [ ] Filter by date range
+- [x] Filter by date range
 - [x] Filter by identity
-- [ ] Trending topics/tags
+- [x] Trending topics/tags
 
 ### Message Screen
 - [x] Received comments view
