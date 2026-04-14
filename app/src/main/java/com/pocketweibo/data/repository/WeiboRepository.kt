@@ -68,6 +68,18 @@ class WeiboRepository(
         postDao.decrementCommentCount(comment.postId)
     }
 
+    suspend fun likeComment(commentId: Long, identityId: Long) {
+        commentDao.likeCommentById(commentId, identityId.toString())
+    }
+
+    suspend fun unlikeComment(commentId: Long, identityId: Long) {
+        commentDao.unlikeCommentById(commentId, identityId.toString())
+    }
+
+    suspend fun updateComment(comment: CommentEntity) {
+        commentDao.updateCommentContent(comment.id, comment.content)
+    }
+
     fun getPostsByIdentity(identityId: Long): Flow<List<PostWithIdentity>> =
         postDao.getPostsByIdentity(identityId)
 
