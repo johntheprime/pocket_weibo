@@ -13,6 +13,7 @@ data class IdentityEntity(
     val id: Long = 0,
     val name: String,
     val avatarResName: String = "avatar_default",
+    val customAvatarUri: String? = null,
     val nationality: String = "",
     val gender: Gender = Gender.OTHER,
     val birthYear: Int? = null,

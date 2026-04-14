@@ -30,6 +30,9 @@ interface IdentityDao {
     @Query("UPDATE identities SET isActive = 1 WHERE id = :id")
     suspend fun activate(id: Long)
 
+    @Query("UPDATE identities SET customAvatarUri = NULL WHERE id = :id")
+    suspend fun clearCustomAvatar(id: Long)
+
     @Query("DELETE FROM identities")
     suspend fun deleteAll()
 }

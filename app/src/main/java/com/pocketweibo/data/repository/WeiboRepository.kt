@@ -41,6 +41,8 @@ class WeiboRepository(
 
     suspend fun updateIdentity(identity: IdentityEntity) = identityDao.update(identity)
 
+    suspend fun clearCustomAvatar(identityId: Long) = identityDao.clearCustomAvatar(identityId)
+
     suspend fun deleteIdentity(identity: IdentityEntity) = identityDao.delete(identity)
 
     suspend fun setActiveIdentity(id: Long) {
