@@ -109,7 +109,7 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 - [x] Export data to CSV format
 - [x] Import data from JSON backup
 - [x] Selective data export (posts only, identities only, etc.)
-- [ ] Data migration between app versions
+- [x] Data migration between app versions
 - [x] Clear all data option
 
 ## Tech Stack
