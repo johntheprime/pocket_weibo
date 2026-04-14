@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
@@ -34,7 +33,6 @@ import androidx.compose.ui.unit.sp
 import com.pocketweibo.ui.theme.TabBackground
 import com.pocketweibo.ui.theme.TabSelected
 import com.pocketweibo.ui.theme.TabUnselected
-import com.pocketweibo.ui.theme.WeiboOrange
 
 enum class MainTab(val title: String) {
     HOME("首页"),
@@ -49,7 +47,6 @@ fun WeiboBottomTabBar(
     selectedTab: MainTab,
     onTabSelected: (MainTab) -> Unit,
     onPlusClick: () -> Unit,
-    unreadCount: Long = 0,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -70,8 +67,7 @@ fun WeiboBottomTabBar(
             selectedIcon = Icons.Filled.Email,
             unselectedIcon = Icons.Outlined.Email,
             isSelected = selectedTab == MainTab.MESSAGE,
-            onClick = { onTabSelected(MainTab.MESSAGE) },
-            badgeCount = unreadCount
+            onClick = { onTabSelected(MainTab.MESSAGE) }
         )
 
         Box(
@@ -124,8 +120,7 @@ private fun RowScope.TabItem(
     selectedIcon: ImageVector,
     unselectedIcon: ImageVector,
     isSelected: Boolean,
-    onClick: () -> Unit,
-    badgeCount: Long = 0
+    onClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -135,23 +130,12 @@ private fun RowScope.TabItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Box {
-            Icon(
-                imageVector = if (isSelected) selectedIcon else unselectedIcon,
-                contentDescription = title,
-                tint = if (isSelected) TabSelected else TabUnselected,
-                modifier = Modifier.size(26.dp)
-            )
-            if (badgeCount > 0) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(start = 14.dp, top = 0.dp)
-                        .size(8.dp)
-                        .background(WeiboOrange, CircleShape)
-                )
-            }
-        }
+        Icon(
+            imageVector = if (isSelected) selectedIcon else unselectedIcon,
+            contentDescription = title,
+            tint = if (isSelected) TabSelected else TabUnselected,
+            modifier = Modifier.size(26.dp)
+        )
         Text(
             text = title,
             fontSize = 10.sp,

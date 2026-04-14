@@ -64,7 +64,6 @@ fun MeScreen(
     
     var showExportDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
-    var showClearDataDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -180,16 +179,6 @@ fun MeScreen(
                     onClick = { showImportDialog = true }
                 )
             }
-
-            item {
-                Divider()
-                MenuItem(
-                    title = "清空所有数据",
-                    subtitle = "删除所有身份、微博和评论",
-                    onClick = { showClearDataDialog = true },
-                    isDestructive = true
-                )
-            }
             
             activeIdentity?.let { identity ->
                 if (identity.nationality.isNotEmpty() || identity.occupation.isNotEmpty()) {
@@ -262,58 +251,6 @@ fun MeScreen(
                     context.startActivity(Intent.createChooser(shareIntent, "分享备份"))
                     Toast.makeText(context, "数据已导出", Toast.LENGTH_SHORT).show()
                 }
-            },
-            onExportSelective = { types ->
-                scope.launch {
-                    val fileName = "pocket_weibo_backup.json"
-                    val content = app.repository.exportSelectiveData(types)
-                    val file = java.io.File(context.cacheDir, fileName)
-                    file.writeText(content)
-                    val uri = FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.provider",
-                        file
-                    )
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "application/json"
-                        putExtra(Intent.EXTRA_STREAM, uri)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    context.startActivity(Intent.createChooser(shareIntent, "分享备份"))
-                    Toast.makeText(context, "数据已导出", Toast.LENGTH_SHORT).show()
-                }
-            },
-            onExportCsv = {
-                scope.launch {
-                    val fileName = "pocket_weibo_backup.csv"
-                    val content = app.repository.exportDataToCsv()
-                    val file = java.io.File(context.cacheDir, fileName)
-                    file.writeText(content)
-                    val uri = FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.provider",
-                        file
-                    )
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/csv"
-                        putExtra(Intent.EXTRA_STREAM, uri)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    context.startActivity(Intent.createChooser(shareIntent, "分享备份"))
-                    Toast.makeText(context, "CSV数据已导出", Toast.LENGTH_SHORT).show()
-                }
-            }
-        )
-    }
-
-    if (showClearDataDialog) {
-        ClearDataDialog(
-            onDismiss = { showClearDataDialog = false },
-            onConfirm = {
-                scope.launch {
-                    app.repository.clearAllData()
-                    Toast.makeText(context, "所有数据已清空", Toast.LENGTH_SHORT).show()
-                }
             }
         )
     }
@@ -323,8 +260,7 @@ fun MeScreen(
 private fun MenuItem(
     title: String,
     subtitle: String,
-    onClick: () -> Unit,
-    isDestructive: Boolean = false
+    onClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier
@@ -343,12 +279,12 @@ private fun MenuItem(
                     text = title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isDestructive) Color(0xFFFF5136) else GrayDark
+                    color = GrayDark
                 )
                 Text(
                     text = subtitle,
                     fontSize = 13.sp,
-                    color = if (isDestructive) Color(0xFFFF5136) else GrayMiddle,
+                    color = GrayMiddle,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
@@ -436,12 +372,9 @@ private fun ImportDialog(
 @Composable
 private fun ExportDialog(
     onDismiss: () -> Unit,
-    onExport: (String) -> Unit,
-    onExportSelective: (Set<String>) -> Unit,
-    onExportCsv: () -> Unit
+    onExport: (String) -> Unit
 ) {
     var selectedFormat by remember { mutableStateOf("JSON") }
-    var selectedTypes by remember { mutableStateOf(setOf("identities", "posts", "comments")) }
     
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -469,122 +402,11 @@ private fun ExportDialog(
                     )
                     Text("Markdown (仅备份)", fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
                 }
-                Row(
-                    modifier = Modifier.padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    androidx.compose.material3.RadioButton(
-                        selected = selectedFormat == "CSV",
-                        onClick = { selectedFormat = "CSV" }
-                    )
-                    Text("CSV (Excel)", fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
-                }
-                
-                if (selectedFormat == "JSON") {
-                    Text(
-                        text = "选择数据类型:",
-                        fontSize = 14.sp,
-                        color = GrayMiddle,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                    Row(
-                        modifier = Modifier.padding(top = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        androidx.compose.material3.Checkbox(
-                            selected = "identities" in selectedTypes,
-                            onCheckedChange = {
-                                selectedTypes = if (it) selectedTypes + "identities" else selectedTypes - "identities"
-                            }
-                        )
-                        Text("身份", fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        androidx.compose.material3.Checkbox(
-                            selected = "posts" in selectedTypes,
-                            onCheckedChange = {
-                                selectedTypes = if (it) selectedTypes + "posts" else selectedTypes - "posts"
-                            }
-                        )
-                        Text("微博", fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        androidx.compose.material3.Checkbox(
-                            selected = "comments" in selectedTypes,
-                            onCheckedChange = {
-                                selectedTypes = if (it) selectedTypes + "comments" else selectedTypes - "comments"
-                            }
-                        )
-                        Text("评论", fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
-                    }
-                }
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    when (selectedFormat) {
-                        "JSON" -> {
-                            if (selectedTypes.isNotEmpty()) {
-                                onExportSelective(selectedTypes)
-                            }
-                        }
-                        "Markdown" -> onExport(selectedFormat)
-                        "CSV" -> onExportCsv()
-                    }
-                    onDismiss()
-                },
-                enabled = (selectedFormat == "JSON" && selectedTypes.isNotEmpty()) || selectedFormat == "Markdown" || selectedFormat == "CSV"
-            ) {
+            Button(onClick = { onExport(selectedFormat) }) {
                 Text("导出")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-@Composable
-private fun ClearDataDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("清空所有数据") },
-        text = {
-            Column {
-                Text(
-                    text = "此操作将删除所有数据，包括:",
-                    fontSize = 14.sp,
-                    color = GrayDark
-                )
-                Text(
-                    text = "- 所有身份\n- 所有微博\n- 所有评论\n\n此操作不可撤销，请先备份数据!",
-                    fontSize = 13.sp,
-                    color = Color(0xFFFF5136),
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    onConfirm()
-                    onDismiss()
-                },
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFF5136)
-                )
-            ) {
-                Text("确认清空")
             }
         },
         dismissButton = {

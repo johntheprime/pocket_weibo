@@ -29,9 +29,6 @@ class PocketWeiboApp : Application() {
         }
     }
 
-    suspend fun getUnreadReceivedCount(): Long = repository.getUnreadReceivedCount()
-    suspend fun getUnreadSentCount(): Long = repository.getUnreadSentCount()
-
     override fun onCreate() {
         super.onCreate()
         DataSeeder.seedIfEmpty(repository)

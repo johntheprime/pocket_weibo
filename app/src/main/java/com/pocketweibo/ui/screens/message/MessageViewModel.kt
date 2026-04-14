@@ -39,23 +39,9 @@ class MessageViewModel(private val repository: WeiboRepository) : ViewModel() {
     
     private val _showCommentSheet = MutableStateFlow(false)
     val showCommentSheet: StateFlow<Boolean> = _showCommentSheet.asStateFlow()
-
-    private val _unreadReceivedCount = MutableStateFlow(0L)
-    val unreadReceivedCount: StateFlow<Long> = _unreadReceivedCount.asStateFlow()
-
-    private val _unreadSentCount = MutableStateFlow(0L)
-    val unreadSentCount: StateFlow<Long> = _unreadSentCount.asStateFlow()
     
     init {
         loadMessages()
-        loadUnreadCounts()
-    }
-
-    private fun loadUnreadCounts() {
-        viewModelScope.launch {
-            _unreadReceivedCount.value = repository.getUnreadReceivedCount()
-            _unreadSentCount.value = repository.getUnreadSentCount()
-        }
     }
     
     private fun loadMessages() {
@@ -121,15 +107,6 @@ class MessageViewModel(private val repository: WeiboRepository) : ViewModel() {
             }
         }
         _showCommentSheet.value = true
-        clearUnreadCounts()
-    }
-
-    private fun clearUnreadCounts() {
-        viewModelScope.launch {
-            repository.clearUnreadCounts()
-            _unreadReceivedCount.value = 0L
-            _unreadSentCount.value = 0L
-        }
     }
     
     fun closeComments() {

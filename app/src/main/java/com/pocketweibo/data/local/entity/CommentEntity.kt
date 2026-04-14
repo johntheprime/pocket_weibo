@@ -29,8 +29,5 @@ data class CommentEntity(
     val postId: Long,
     val identityId: Long,
     val content: String,
-    val createdAt: Long = System.currentTimeMillis(),
-    val parentCommentId: Long? = null,
-    val likeCount: Int = 0,
-    val likedByIdentityIds: String = ""
+    val createdAt: Long = System.currentTimeMillis()
 )

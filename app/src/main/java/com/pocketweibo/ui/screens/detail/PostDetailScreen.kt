@@ -26,25 +26,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -93,21 +86,7 @@ fun PostDetailScreen(
 
     val post by viewModel.post.collectAsState()
     val comments by viewModel.comments.collectAsState()
-    val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
     var commentText by remember { mutableStateOf("") }
-    var sortNewestFirst by remember { mutableStateOf(true) }
-    var replyingToCommentId by remember { mutableStateOf<Long?>(null) }
-    var replyingToName by remember { mutableStateOf<String?>(null) }
-    var editingCommentId by remember { mutableStateOf<Long?>(null) }
-    var editingCommentContent by remember { mutableStateOf("") }
-    
-    val sortedComments = remember(comments, sortNewestFirst) {
-        if (sortNewestFirst) {
-            comments.sortedByDescending { it.createdAt }
-        } else {
-            comments.sortedBy { it.createdAt }
-        }
-    }
 
     // Use Scaffold: It is specifically designed to handle top bars and bottom bars
     // while managing inner content padding correctly.
@@ -126,46 +105,17 @@ fun PostDetailScreen(
                 Divider(thickness = 0.5.dp)
             }
         },
-bottomBar = {
+        bottomBar = {
+            // Pinning this to the bottomBar slot of the Scaffold handles the keyboard transition best
             Surface(
                 color = Color.White,
                 tonalElevation = 3.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .imePadding()
-                    .navigationBarsPadding()
+                    .imePadding() // This pushes the input bar up
+                    .navigationBarsPadding() // This respects the system nav bar
             ) {
                 Column {
-                    if (replyingToName != null) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFF8F8F8))
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Reply,
-                                contentDescription = "回复",
-                                tint = WeiboOrange,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = " 回复 @${replyingToName}",
-                                fontSize = 12.sp,
-                                color = WeiboOrange,
-                                modifier = Modifier.weight(1f)
-                            )
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "取消",
-                                tint = GrayMiddle,
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .clickable { replyingToCommentId = null; replyingToName = null }
-                            )
-                        }
-                    }
                     Divider(thickness = 0.5.dp)
                     Row(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -188,20 +138,9 @@ bottomBar = {
                         IconButton(
                             onClick = {
                                 if (commentText.isNotBlank()) {
-                                    viewModel.addComment(commentText, replyingToCommentId)
+                                    viewModel.addComment(commentText)
                                     commentText = ""
-                                    replyingToCommentId = null
-                                    replyingToName = null
                                 }
-                            },
-                            enabled = commentText.isNotBlank()
-                        ) {
-                            Icon(Icons.Default.Send, "发送", tint = if (commentText.isNotBlank()) WeiboOrange else GrayMiddle)
-                        }
-                    }
-                }
-            }
-        })
                             },
                             enabled = commentText.isNotBlank()
                         ) {
@@ -228,7 +167,7 @@ bottomBar = {
                     )
                 }
 
-                item { CommentsHeader(commentCount = comments.size, sortNewestFirst = sortNewestFirst, onSortChange = { sortNewestFirst = !sortNewestFirst }) }
+                item { CommentsHeader(commentCount = comments.size) }
 
                 if (comments.isEmpty()) {
                     item {
@@ -237,52 +176,10 @@ bottomBar = {
                         }
                     }
                 } else {
-                    items(sortedComments, key = { it.id }) { comment ->
-                        CommentCard(
-                            comment = comment,
-                            activeIdentityId = activeIdentity?.id,
-                            onReply = { id, name -> replyingToCommentId = id; replyingToName = name },
-                            onEdit = { id ->
-                                editingCommentId = id
-                                editingCommentContent = comment.content
-                            },
-                            onLike = { id, isLiked -> viewModel.toggleCommentLike(id, isLiked) }
-                        )
+                    items(comments, key = { it.id }) { comment ->
+                        CommentCard(comment = comment)
                         Divider(thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     }
-                }
-
-                if (editingCommentId != null) {
-                    AlertDialog(
-                        onDismissRequest = { editingCommentId = null },
-                        title = { Text("编辑评论") },
-                        text = {
-                            OutlinedTextField(
-                                value = editingCommentContent,
-                                onValueChange = { editingCommentContent = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                        },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    if (editingCommentContent.isNotBlank()) {
-                                        viewModel.editComment(editingCommentId!!, editingCommentContent)
-                                        editingCommentId = null
-                                        editingCommentContent = ""
-                                    }
-                                }
-                            ) {
-                                Text("保存")
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { editingCommentId = null }) {
-                                Text("取消")
-                            }
-                        }
-                    )
                 }
             }
         }
@@ -418,11 +315,7 @@ private fun ActionButton(
 }
 
 @Composable
-private fun CommentsHeader(
-    commentCount: Int,
-    sortNewestFirst: Boolean,
-    onSortChange: () -> Unit
-) {
+private fun CommentsHeader(commentCount: Int) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White
@@ -446,33 +339,12 @@ private fun CommentsHeader(
                     color = GrayMiddle
                 )
             }
-            Spacer(modifier = Modifier.weight(1f))
-            TextButton(onClick = onSortChange) {
-                Icon(
-                    imageVector = Icons.Default.Sort,
-                    contentDescription = "排序",
-                    tint = WeiboOrange,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = if (sortNewestFirst) "最新" else "最早",
-                    fontSize = 12.sp,
-                    color = WeiboOrange,
-                    modifier = Modifier.padding(start = 4.dp)
-                )
-            }
         }
     }
 }
 
 @Composable
-private fun CommentCard(
-    comment: CommentWithIdentity,
-    activeIdentityId: Long?,
-    onReply: (Long, String) -> Unit,
-    onEdit: (Long) -> Unit,
-    onLike: (Long, Boolean) -> Unit
-) {
+private fun CommentCard(comment: CommentWithIdentity) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White
@@ -494,22 +366,6 @@ private fun CommentCard(
                         .weight(1f)
                         .padding(start = 10.dp)
                 ) {
-                    if (comment.replyToIdentityName != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Reply,
-                                contentDescription = "回复",
-                                tint = WeiboOrange,
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Text(
-                                text = " @${comment.replyToIdentityName}",
-                                fontSize = 12.sp,
-                                color = WeiboOrange,
-                                modifier = Modifier.padding(start = 2.dp)
-                            )
-                        }
-                    }
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -532,76 +388,6 @@ private fun CommentCard(
                         lineHeight = 20.sp,
                         modifier = Modifier.padding(top = 6.dp)
                     )
-                    
-                    Row(
-                        modifier = Modifier.padding(top = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextButton(onClick = { onLike(comment.id, comment.isLikedByMe) }) {
-                            Icon(
-                                imageVector = if (comment.isLikedByMe) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "点赞",
-                                tint = if (comment.isLikedByMe) Color(0xFFFF5136) else GrayMiddle,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = if (comment.likeCount > 0) "${comment.likeCount}" else "赞",
-                                fontSize = 12.sp,
-                                color = if (comment.isLikedByMe) Color(0xFFFF5136) else GrayMiddle,
-                                modifier = Modifier.padding(start = 4.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        
-                        if (activeIdentityId != null) {
-                            if (activeIdentityId == comment.identityId) {
-                                TextButton(onClick = { onEdit(comment.id) }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Edit,
-                                        contentDescription = "编辑",
-                                        tint = GrayMiddle,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Text(
-                                        text = "编辑",
-                                        fontSize = 12.sp,
-                                        color = GrayMiddle
-                                    )
-                                }
-                            }
-                            TextButton(onClick = { onReply(comment.id, comment.identityName) }) {
-                                Icon(
-                                    imageVector = Icons.Default.Reply,
-                                    contentDescription = "回复",
-                                    tint = GrayMiddle,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Text(
-                                    text = "回复",
-                                    fontSize = 12.sp,
-                                    color = GrayMiddle
-                                )
-                                }
-                            }
-                        } else {
-                            TextButton(
-                                onClick = { onReply(comment.id, comment.identityName) },
-                                modifier = Modifier.padding(top = 4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Reply,
-                                    contentDescription = "回复",
-                                    tint = GrayMiddle,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Text(
-                                    text = "回复",
-                                    fontSize = 12.sp,
-                                    color = GrayMiddle
-                                )
-                            }
-                        }
-                    }
                 }
             }
         }

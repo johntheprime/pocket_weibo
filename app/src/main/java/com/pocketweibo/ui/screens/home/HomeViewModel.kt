@@ -31,15 +31,8 @@ class HomeViewModel(private val repository: WeiboRepository) : ViewModel() {
     fun openComments(postId: Long) {
         _selectedPostId.value = postId
         viewModelScope.launch {
-            val identity = repository.activeIdentity.first()
-            if (identity != null) {
-                repository.getCommentsByPost(postId, identity.id).collect { commentList ->
-                    _comments.value = commentList
-                }
-            } else {
-                repository.getCommentsByPost(postId).collect { commentList ->
-                    _comments.value = commentList
-                }
+            repository.getCommentsByPost(postId).collect { commentList ->
+                _comments.value = commentList
             }
         }
         _showCommentSheet.value = true
@@ -51,16 +44,16 @@ class HomeViewModel(private val repository: WeiboRepository) : ViewModel() {
         _comments.value = emptyList()
     }
     
-    fun addComment(postId: Long, content: String, parentCommentId: Long? = null) {
+    fun addComment(postId: Long, content: String) {
         viewModelScope.launch {
-            repository.activeIdentity.collect { identity ->
+            val activeIdentity = repository.activeIdentity
+            activeIdentity.collect { identity ->
                 if (identity != null && content.isNotBlank()) {
                     repository.insertComment(
                         CommentEntity(
                             postId = postId,
                             identityId = identity.id,
-                            content = content,
-                            parentCommentId = parentCommentId
+                            content = content
                         )
                     )
                 }
@@ -80,29 +73,6 @@ class HomeViewModel(private val repository: WeiboRepository) : ViewModel() {
             )
             repository.getCommentsByPost(postId).collect { commentList ->
                 _comments.value = commentList
-            }
-        }
-    }
-
-    fun editComment(commentId: Long, newContent: String) {
-        viewModelScope.launch {
-            val comment = CommentEntity(
-                id = commentId,
-                postId = 0,
-                identityId = 0,
-                content = newContent
-            )
-            repository.updateComment(comment)
-        }
-    }
-
-    fun toggleCommentLike(commentId: Long, isLiked: Boolean) {
-        viewModelScope.launch {
-            val identity = repository.activeIdentity.first() ?: return@launch
-            if (isLiked) {
-                repository.unlikeComment(commentId, identity.id)
-            } else {
-                repository.likeComment(commentId, identity.id)
             }
         }
     }

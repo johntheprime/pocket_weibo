@@ -53,8 +53,8 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 ### Post Detail Screen
 - [x] Post content fully visible when typing comment
 - [x] Comment input with keyboard handling
-- [x] Comment functionality improvement
-- [x] Reply to specific comments
+- [ ] Comment functionality improvement
+- [ ] Reply to specific comments
 - [x] Delete own comments (UI placeholder)
 
 ### Compose Screen
@@ -66,22 +66,22 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 ### Identity Management
 - [x] Identity list with CRUD operations
 - [x] Identity detail screen
-- [x] Edit identity photo/avatar
+- [ ] Edit identity photo/avatar
 - [ ] Identity switch animation
-- [x] Quick identity switch from home screen
+- [ ] Quick identity switch from home screen
 
 ### Discover Screen
 - [x] Trending posts section
 - [x] Search by identity name or post content
-- [x] Filter by date range
-- [x] Filter by identity
-- [x] Trending topics/tags
+- [ ] Filter by date range
+- [ ] Filter by identity
+- [ ] Trending topics/tags
 
 ### Message Screen
 - [x] Received comments view
 - [x] Sent comments view
 - [ ] Push notification support
-- [x] Unread message indicator
+- [ ] Unread message indicator
 
 ### General
 - [x] Dark mode support
@@ -99,18 +99,18 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 
 ### Comments
 - [x] Delete own comments
-- [x] Edit own comments
+- [ ] Edit own comments
 - [x] Long press to copy comment
-- [x] Comment reactions/likes
-- [x] Sort comments (newest/oldest)
+- [ ] Comment reactions/likes
+- [ ] Sort comments (newest/oldest)
 
 ### Data Management
 - [x] Export all data (posts, comments, identities) to JSON
-- [x] Export data to CSV format
+- [ ] Export data to CSV format
 - [x] Import data from JSON backup
-- [x] Selective data export (posts only, identities only, etc.)
-- [x] Data migration between app versions
-- [x] Clear all data option
+- [ ] Selective data export (posts only, identities only, etc.)
+- [ ] Data migration between app versions
+- [ ] Clear all data option
 
 ## Tech Stack
 

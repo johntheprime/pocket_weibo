@@ -6,10 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,11 +17,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -31,27 +27,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pocketweibo.PocketWeiboApp
-import com.pocketweibo.data.local.entity.IdentityEntity
-import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.components.CommentBottomSheet
 import com.pocketweibo.ui.components.PostCard
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.Background
-import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,11 +59,9 @@ fun HomeScreen(
     val showCommentSheet by viewModel.showCommentSheet.collectAsState()
     val selectedPostId by viewModel.selectedPostId.collectAsState()
     val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
-    val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
-    val scope = rememberCoroutineScope()
     
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var showIdentitySwitcher by remember { mutableStateOf(false) }
+    var showCategoryDropdown by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -83,26 +70,16 @@ fun HomeScreen(
                 .background(Background)
         ) {
             WeiboTitleBar(
-                title = activeIdentity?.name ?: "首页",
+                title = "首页",
                 showDropdown = true,
-                onTitleClick = { showIdentitySwitcher = !showIdentitySwitcher },
+                onTitleClick = { showCategoryDropdown = !showCategoryDropdown },
                 leftIcon = {
-                    if (activeIdentity != null) {
-                        Avatar(
-                            name = activeIdentity!!.name,
-                            color = Color(0xFF4A90D9),
-                            size = 28.dp,
-                            avatarResName = activeIdentity!!.avatarResName,
-                            modifier = Modifier.clickable { showIdentitySwitcher = !showIdentitySwitcher }
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.PersonSearch,
-                            contentDescription = "搜索",
-                            tint = WeiboOrange,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.PersonSearch,
+                        contentDescription = "搜索",
+                        tint = WeiboOrange,
+                        modifier = Modifier.size(24.dp)
+                    )
                 },
                 rightIcon = {
                     Icon(
@@ -144,125 +121,13 @@ fun HomeScreen(
                 comments = comments,
                 activeIdentityId = activeIdentity?.id,
                 onDismiss = { viewModel.closeComments() },
-                onSendComment = { content, parentId ->
-                    viewModel.addComment(selectedPostId!!, content, parentId)
+                onSendComment = { content ->
+                    viewModel.addComment(selectedPostId!!, content)
                 },
                 onDeleteComment = { commentId ->
                     viewModel.deleteComment(commentId, selectedPostId!!)
-                },
-                onEditComment = { commentId, content ->
-                    viewModel.editComment(commentId, content)
-                },
-                onLikeComment = { commentId, isLiked ->
-                    viewModel.toggleCommentLike(commentId, isLiked)
                 }
             )
-        }
-
-        if (showIdentitySwitcher) {
-            IdentitySwitcherDialog(
-                identities = identities,
-                activeIdentityId = activeIdentity?.id,
-                onDismiss = { showIdentitySwitcher = false },
-                onSelectIdentity = { identityId ->
-                    scope.launch {
-                        app.repository.setActiveIdentity(identityId)
-                        showIdentitySwitcher = false
-                    }
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun IdentitySwitcherDialog(
-    identities: List<IdentityEntity>,
-    activeIdentityId: Long?,
-    onDismiss: () -> Unit,
-    onSelectIdentity: (Long) -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color.Black.copy(alpha = 0.3f),
-        onClick = onDismiss
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 56.dp),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(
-                    topStart = 12.dp,
-                    topEnd = 12.dp
-                ),
-                color = Color.White
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "切换身份",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = GrayDark,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                    
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(identities) { identity ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onSelectIdentity(identity.id) }
-                                    .padding(vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Avatar(
-                                    name = identity.name,
-                                    color = Color(0xFF4A90D9),
-                                    size = 44.dp,
-                                    avatarResName = identity.avatarResName
-                                )
-                                Column(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(start = 12.dp)
-                                ) {
-                                    Text(
-                                        text = identity.name,
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = GrayDark
-                                    )
-                                    if (identity.motto.isNotEmpty()) {
-                                        Text(
-                                            text = identity.motto,
-                                            fontSize = 12.sp,
-                                            color = GrayMiddle,
-                                            modifier = Modifier.padding(top = 2.dp)
-                                        )
-                                    }
-                                }
-                                if (identity.id == activeIdentityId) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "当前",
-                                        tint = WeiboOrange,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
-                            Divider()
-                        }
-                    }
-                }
-            }
         }
     }
 }

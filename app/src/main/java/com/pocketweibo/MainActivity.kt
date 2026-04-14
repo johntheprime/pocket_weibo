@@ -9,12 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.pocketweibo.ui.components.MainTab
@@ -30,7 +27,6 @@ import com.pocketweibo.ui.screens.me.MeScreen
 import com.pocketweibo.ui.screens.me.MyPostsScreen
 import com.pocketweibo.ui.screens.message.MessageScreen
 import com.pocketweibo.ui.theme.PocketWeiboTheme
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,20 +49,6 @@ fun MainScreen() {
     var showIdentityList by remember { mutableStateOf(false) }
     var identityDetailId by remember { mutableStateOf<Long?>(null) }
     var postDetailId by remember { mutableStateOf<Long?>(null) }
-
-    var unreadCount by remember { mutableLongStateOf(0L) }
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        scope.launch {
-            try {
-                val app = androidx.compose.ui.platform.LocalContext.current.applicationContext as com.pocketweibo.PocketWeiboApp
-                unreadCount = app.getUnreadReceivedCount()
-            } catch (e: Exception) {
-                // App not initialized yet
-            }
-        }
-    }
 
     fun navigateBack() {
         when {
@@ -91,8 +73,7 @@ fun MainScreen() {
                             selectedTab = tab
                         }
                     },
-                    onPlusClick = { showCompose = true },
-                    unreadCount = unreadCount
+                    onPlusClick = { showCompose = true }
                 )
             }
         }

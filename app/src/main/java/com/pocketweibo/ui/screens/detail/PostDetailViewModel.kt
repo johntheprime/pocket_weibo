@@ -10,7 +10,6 @@ import com.pocketweibo.data.repository.WeiboRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel() {
@@ -29,11 +28,7 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
         }
         
         viewModelScope.launch {
-            repository.activeIdentity.first()?.let { identity ->
-                repository.getCommentsByPost(postId, identity.id).collect { commentList ->
-                    _comments.value = commentList
-                }
-            } ?: repository.getCommentsByPost(postId).collect { commentList ->
+            repository.getCommentsByPost(postId).collect { commentList ->
                 _comments.value = commentList
             }
         }
@@ -45,19 +40,8 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
             repository.togglePostLike(currentPost.id)
         }
     }
-
-    fun toggleCommentLike(commentId: Long, isLiked: Boolean) {
-        viewModelScope.launch {
-            val identity = repository.activeIdentity.first() ?: return@launch
-            if (isLiked) {
-                repository.unlikeComment(commentId, identity.id)
-            } else {
-                repository.likeComment(commentId, identity.id)
-            }
-        }
-    }
     
-    fun addComment(content: String, parentCommentId: Long? = null) {
+    fun addComment(content: String) {
         val currentPost = _post.value ?: return
         viewModelScope.launch {
             repository.activeIdentity.collect { identity ->
@@ -66,28 +50,10 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
                         CommentEntity(
                             postId = currentPost.id,
                             identityId = identity.id,
-                            content = content,
-                            parentCommentId = parentCommentId
+                            content = content
                         )
                     )
                 }
-            }
-        }
-    }
-
-    fun editComment(commentId: Long, newContent: String) {
-        viewModelScope.launch {
-            repository.getCommentsByPost(_post.value?.id ?: return@launch).first().find { it.id == commentId }?.let { comment ->
-                repository.updateComment(
-                    CommentEntity(
-                        id = commentId,
-                        postId = comment.postId,
-                        identityId = comment.identityId,
-                        content = newContent,
-                        createdAt = comment.createdAt,
-                        parentCommentId = comment.parentCommentId
-                    )
-                )
             }
         }
     }
