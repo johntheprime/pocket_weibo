@@ -15,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Sort
@@ -61,6 +63,7 @@ fun CommentBottomSheet(
     onSendComment: (String, Long?) -> Unit,
     onDeleteComment: (Long) -> Unit,
     onEditComment: (Long, String) -> Unit,
+    onLikeComment: (Long, Boolean) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     var commentText by remember { mutableStateOf("") }
@@ -164,7 +167,8 @@ fun CommentBottomSheet(
                             isOwnComment = comment.identityId == activeIdentityId,
                             onDelete = { onDeleteComment(comment.id) },
                             onReply = { replyingToCommentId = comment.id; replyingToName = comment.identityName },
-                            onEdit = { editingCommentId = comment.id }
+                            onEdit = { editingCommentId = comment.id },
+                            onLike = { isLiked -> onLikeComment(comment.id, isLiked) }
                         )
                     }
                 }
@@ -258,7 +262,8 @@ private fun CommentItem(
     isOwnComment: Boolean,
     onDelete: () -> Unit,
     onReply: () -> Unit,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    onLike: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     
@@ -331,6 +336,19 @@ private fun CommentItem(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
                 ) {
+                    TextButton(onClick = { onLike(comment.isLikedByMe) }) {
+                        Icon(
+                            imageVector = if (comment.isLikedByMe) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "点赞",
+                            tint = if (comment.isLikedByMe) Color(0xFFFF5136) else WeiboOrange,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = if (comment.likeCount > 0) "${comment.likeCount}" else "赞",
+                            fontSize = 12.sp,
+                            color = if (comment.isLikedByMe) Color(0xFFFF5136) else WeiboOrange
+                        )
+                    }
                     TextButton(onClick = onEdit) {
                         Icon(
                             imageVector = Icons.Default.Edit,
@@ -372,7 +390,25 @@ private fun CommentItem(
                     }
                 }
             } else {
-                TextButton(onClick = onReply, modifier = Modifier.padding(top = 4.dp)) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(onClick = { onLike(comment.isLikedByMe) }) {
+                        Icon(
+                            imageVector = if (comment.isLikedByMe) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "点赞",
+                            tint = if (comment.isLikedByMe) Color(0xFFFF5136) else GrayMiddle,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = if (comment.likeCount > 0) "${comment.likeCount}" else "赞",
+                            fontSize = 12.sp,
+                            color = if (comment.isLikedByMe) Color(0xFFFF5136) else GrayMiddle
+                        )
+                    }
+                    TextButton(onClick = onReply, modifier = Modifier.padding(top = 4.dp)) {
                     Icon(
                         imageVector = Icons.Default.Reply,
                         contentDescription = "回复",

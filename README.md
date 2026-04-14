@@ -101,7 +101,7 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 - [x] Delete own comments
 - [x] Edit own comments
 - [x] Long press to copy comment
-- [ ] Comment reactions/likes
+- [x] Comment reactions/likes
 - [x] Sort comments (newest/oldest)
 
 ### Data Management

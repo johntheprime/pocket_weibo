@@ -245,7 +245,8 @@ bottomBar = {
                             onEdit = { id ->
                                 editingCommentId = id
                                 editingCommentContent = comment.content
-                            }
+                            },
+                            onLike = { id, isLiked -> viewModel.toggleCommentLike(id, isLiked) }
                         )
                         Divider(thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
                     }
@@ -469,7 +470,8 @@ private fun CommentCard(
     comment: CommentWithIdentity,
     activeIdentityId: Long?,
     onReply: (Long, String) -> Unit,
-    onEdit: (Long) -> Unit
+    onEdit: (Long) -> Unit,
+    onLike: (Long, Boolean) -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -531,12 +533,28 @@ private fun CommentCard(
                         modifier = Modifier.padding(top = 6.dp)
                     )
                     
-                    if (activeIdentityId != null) {
-                        if (activeIdentityId == comment.identityId) {
-                            Row(
-                                modifier = Modifier.padding(top = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
+                    Row(
+                        modifier = Modifier.padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        TextButton(onClick = { onLike(comment.id, comment.isLikedByMe) }) {
+                            Icon(
+                                imageVector = if (comment.isLikedByMe) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "点赞",
+                                tint = if (comment.isLikedByMe) Color(0xFFFF5136) else GrayMiddle,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = if (comment.likeCount > 0) "${comment.likeCount}" else "赞",
+                                fontSize = 12.sp,
+                                color = if (comment.isLikedByMe) Color(0xFFFF5136) else GrayMiddle,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        if (activeIdentityId != null) {
+                            if (activeIdentityId == comment.identityId) {
                                 TextButton(onClick = { onEdit(comment.id) }) {
                                     Icon(
                                         imageVector = Icons.Default.Edit,
@@ -550,18 +568,19 @@ private fun CommentCard(
                                         color = GrayMiddle
                                     )
                                 }
-                                TextButton(onClick = { onReply(comment.id, comment.identityName) }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Reply,
-                                        contentDescription = "回复",
-                                        tint = GrayMiddle,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Text(
-                                        text = "回复",
-                                        fontSize = 12.sp,
-                                        color = GrayMiddle
-                                    )
+                            }
+                            TextButton(onClick = { onReply(comment.id, comment.identityName) }) {
+                                Icon(
+                                    imageVector = Icons.Default.Reply,
+                                    contentDescription = "回复",
+                                    tint = GrayMiddle,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = "回复",
+                                    fontSize = 12.sp,
+                                    color = GrayMiddle
+                                )
                                 }
                             }
                         } else {

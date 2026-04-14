@@ -166,7 +166,8 @@ fun MessageScreen(
             onDeleteComment = { commentId ->
                 viewModel.deleteComment(commentId, selectedPostId!!)
             },
-            onEditComment = { _, _ -> }
+            onEditComment = { _, _ -> },
+            onLikeComment = { _, _ -> }
         )
     }
 }

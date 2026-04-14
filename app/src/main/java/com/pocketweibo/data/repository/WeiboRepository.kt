@@ -55,18 +55,17 @@ class WeiboRepository(
 
     suspend fun togglePostLike(postId: Long) = postDao.toggleLike(postId)
 
-    fun getCommentsByPost(postId: Long): Flow<List<CommentWithIdentity>> =
-        commentDao.getCommentsByPost(postId)
+fun getCommentsByPost(postId: Long, currentIdentityId: Long = 0): Flow<List<CommentWithIdentity>> =
+        if (currentIdentityId > 0) commentDao.getCommentsByPost(postId, currentIdentityId)
+        else commentDao.getCommentsByPost(postId)
 
-    suspend fun insertComment(comment: CommentEntity): Long {
-        val id = commentDao.insert(comment)
-        postDao.incrementCommentCount(comment.postId)
+    suspend fun likeComment(commentId: Long, identityId: Long) {
+        commentDao.likeCommentById(commentId, identityId.toString())
+    }
 
-        val post = postDao.getAllPosts().first().find { it.id == comment.postId }
-        if (post != null && post.identityId != comment.identityId) {
-            val currentUnread = getUnreadReceivedCount()
-            setUnreadReceivedCount(currentUnread + 1)
-        }
+    suspend fun unlikeComment(commentId: Long, identityId: Long) {
+        commentDao.unlikeCommentById(commentId, identityId.toString())
+    }
 
         return id
     }
@@ -78,6 +77,14 @@ class WeiboRepository(
 
     suspend fun updateComment(comment: CommentEntity) {
         commentDao.update(comment)
+    }
+
+    suspend fun likeComment(commentId: Long, identityId: Long) {
+        commentDao.likeComment(commentId, identityId.toString())
+    }
+
+    suspend fun unlikeComment(commentId: Long, identityId: Long) {
+        commentDao.unlikeComment(commentId, identityId.toString())
     }
 
     fun getPostsByIdentity(identityId: Long): Flow<List<PostWithIdentity>> =

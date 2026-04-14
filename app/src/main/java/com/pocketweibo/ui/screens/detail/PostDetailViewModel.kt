@@ -29,7 +29,11 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
         }
         
         viewModelScope.launch {
-            repository.getCommentsByPost(postId).collect { commentList ->
+            repository.activeIdentity.first()?.let { identity ->
+                repository.getCommentsByPost(postId, identity.id).collect { commentList ->
+                    _comments.value = commentList
+                }
+            } ?: repository.getCommentsByPost(postId).collect { commentList ->
                 _comments.value = commentList
             }
         }
@@ -39,6 +43,17 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
         val currentPost = _post.value ?: return
         viewModelScope.launch {
             repository.togglePostLike(currentPost.id)
+        }
+    }
+
+    fun toggleCommentLike(commentId: Long, isLiked: Boolean) {
+        viewModelScope.launch {
+            val identity = repository.activeIdentity.first() ?: return@launch
+            if (isLiked) {
+                repository.unlikeComment(commentId, identity.id)
+            } else {
+                repository.likeComment(commentId, identity.id)
+            }
         }
     }
     

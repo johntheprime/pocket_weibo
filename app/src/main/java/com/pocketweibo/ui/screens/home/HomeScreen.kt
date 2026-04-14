@@ -152,6 +152,9 @@ fun HomeScreen(
                 },
                 onEditComment = { commentId, content ->
                     viewModel.editComment(commentId, content)
+                },
+                onLikeComment = { commentId, isLiked ->
+                    viewModel.toggleCommentLike(commentId, isLiked)
                 }
             )
         }
