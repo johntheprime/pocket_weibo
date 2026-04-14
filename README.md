@@ -80,14 +80,14 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 ### Message Screen
 - [x] Received comments view
 - [x] Sent comments view
-- [ ] Push notification support
+- [ ] Push notification support (needs Firebase)
 - [x] Unread message indicator
 
 ### General
 - [x] Dark mode support
 - [x] Data export/backup (JSON format)
 - [x] Data import/restore
-- [ ] App icon customization
+- [ ] App icon customization (needs separate app icon resources)
 
 ### Avatar Management
 - [x] Upload custom avatar from gallery (database layer ready)
