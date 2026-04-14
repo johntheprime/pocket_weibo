@@ -13,7 +13,7 @@ import com.pocketweibo.data.local.entity.PostEntity
 
 @Database(
     entities = [IdentityEntity::class, PostEntity::class, CommentEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
