@@ -201,7 +201,7 @@ bottomBar = {
                     }
                 }
             }
-        }
+        })
                             },
                             enabled = commentText.isNotBlank()
                         ) {
