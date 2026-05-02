@@ -1,5 +1,9 @@
 package com.pocketweibo.ui.screens.me
 
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,6 +12,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,6 +24,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,7 +51,9 @@ import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.Surface
 import com.pocketweibo.ui.theme.WeiboOrange
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.content.Intent
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -175,7 +183,7 @@ fun MeScreen(
                 Divider()
                 MenuItem(
                     title = "导入数据",
-                    subtitle = "从JSON文件恢复数据",
+                    subtitle = "从 JSON 文件或粘贴内容恢复",
                     onClick = { showImportDialog = true }
                 )
             }
@@ -320,15 +328,74 @@ private fun ImportDialog(
     onDismiss: () -> Unit,
     onImport: (String, Boolean) -> Unit
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var jsonInput by remember { mutableStateOf("") }
+    var pickedFileName by remember { mutableStateOf<String?>(null) }
     var override by remember { mutableStateOf(false) }
-    
+
+    val openJsonLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val displayName = queryDisplayName(context, uri)
+            val text = withContext(Dispatchers.IO) {
+                runCatching {
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        input.bufferedReader(Charsets.UTF_8).readText()
+                    }.orEmpty()
+                }.getOrDefault("")
+            }
+            if (text.isBlank()) {
+                Toast.makeText(context, "无法读取该文件", Toast.LENGTH_SHORT).show()
+                pickedFileName = null
+            } else {
+                jsonInput = text
+                pickedFileName = displayName
+            }
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("导入数据") },
         text = {
             Column {
-                Text("请粘贴JSON备份数据:", fontSize = 14.sp, color = GrayMiddle)
+                Text("选择 JSON 文件或粘贴备份内容:", fontSize = 14.sp, color = GrayMiddle)
+                TextButton(
+                    onClick = {
+                        openJsonLauncher.launch(
+                            arrayOf("application/json", "text/plain", "application/*", "*/*")
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    Text("从文件选择…", color = WeiboOrange)
+                }
+                pickedFileName?.let { name ->
+                    Text(
+                        text = "已载入: $name",
+                        fontSize = 12.sp,
+                        color = GrayMiddle,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+                OutlinedTextField(
+                    value = jsonInput,
+                    onValueChange = {
+                        jsonInput = it
+                        pickedFileName = null
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 120.dp, max = 280.dp),
+                    placeholder = { Text("或在此粘贴 JSON", fontSize = 13.sp) },
+                    maxLines = 10,
+                    singleLine = false
+                )
                 Text(
                     if (override) "警告: 此操作会清空现有数据并导入"
                     else "此操作会追加数据，不会覆盖现有数据",
@@ -350,9 +417,10 @@ private fun ImportDialog(
         },
         confirmButton = {
             Button(
-                onClick = { 
-                    if (jsonInput.isNotBlank()) {
-                        onImport(jsonInput, override)
+                onClick = {
+                    val trimmed = jsonInput.trim().trimStart('\uFEFF')
+                    if (trimmed.isNotBlank()) {
+                        onImport(trimmed, override)
                         onDismiss()
                     }
                 },
@@ -415,4 +483,21 @@ private fun ExportDialog(
             }
         }
     )
+}
+
+private fun queryDisplayName(context: android.content.Context, uri: Uri): String? {
+    if (uri.scheme != android.content.ContentResolver.SCHEME_CONTENT) {
+        return uri.lastPathSegment
+    }
+    val nameColumn = OpenableColumns.DISPLAY_NAME
+    return context.contentResolver.query(
+        uri,
+        arrayOf(nameColumn),
+        null,
+        null,
+        null
+    )?.use { cursor ->
+        val idx = cursor.getColumnIndex(nameColumn)
+        if (idx >= 0 && cursor.moveToFirst()) cursor.getString(idx) else null
+    } ?: uri.lastPathSegment
 }
