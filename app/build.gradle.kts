@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -21,6 +23,22 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val propsFile = rootProject.file("keystore.properties")
+            if (!propsFile.exists()) return@create
+            val p = Properties()
+            propsFile.inputStream().use { p.load(it) }
+            val storeRel = p.getProperty("storeFile") ?: return@create
+            val store = rootProject.file(storeRel)
+            if (!store.exists()) return@create
+            storeFile = store
+            storePassword = p.getProperty("storePassword")
+            keyAlias = p.getProperty("keyAlias") ?: "pocketweibo"
+            keyPassword = p.getProperty("keyPassword")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -28,6 +46,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            val releaseSigning = signingConfigs.getByName("release")
+            if (releaseSigning.storeFile != null) {
+                signingConfig = releaseSigning
+            }
         }
     }
     compileOptions {

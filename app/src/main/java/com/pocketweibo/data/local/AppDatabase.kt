@@ -31,7 +31,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "pocketweibo_database"
-                ).fallbackToDestructiveMigration().build()
+                )
+                    .addMigrations(DatabaseMigrations.MIGRATION_2_3)
+                    .build()
                 INSTANCE = instance
                 instance
             }

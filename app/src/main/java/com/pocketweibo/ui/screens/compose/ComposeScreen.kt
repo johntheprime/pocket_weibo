@@ -24,11 +24,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.AlternateEmail
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -80,7 +78,6 @@ fun ComposeScreen(
     var content by remember { mutableStateOf("") }
     var showIdentityPicker by remember { mutableStateOf(false) }
     var imageUris by remember { mutableStateOf(listOf<Uri>()) }
-    var showPreview by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
@@ -156,7 +153,16 @@ fun ComposeScreen(
                 Button(
                     onClick = {
                         if (content.isNotBlank() && selectedIdentity != null) {
-                            showPreview = true
+                            scope.launch {
+                                app.repository.insertPost(
+                                    PostEntity(
+                                        identityId = selectedIdentity!!.id,
+                                        content = content
+                                    )
+                                )
+                                app.repository.clearDraft()
+                                onDismiss()
+                            }
                         }
                     },
                     enabled = content.isNotBlank() && selectedIdentity != null,
@@ -363,84 +369,6 @@ fun ComposeScreen(
                     )
                 }
             }
-        }
-
-        if (showPreview) {
-            AlertDialog(
-                onDismissRequest = { showPreview = false },
-                title = { Text("预览") },
-                text = {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (selectedIdentity != null) {
-                                Avatar(
-                                    name = selectedIdentity!!.name,
-                                    color = Color(0xFF4A90D9),
-                                    size = 32.dp,
-                                    avatarResName = selectedIdentity!!.avatarResName
-                                )
-                                Text(
-                                    text = selectedIdentity!!.name,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(start = 8.dp)
-                                )
-                            }
-                        }
-                        Text(
-                            text = content,
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(top = 12.dp)
-                        )
-                        if (imageUris.isNotEmpty()) {
-                            LazyRow(
-                                modifier = Modifier.padding(top = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                items(imageUris) { uri ->
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data(uri)
-                                            .crossfade(true)
-                                            .build(),
-                                        contentDescription = "图片",
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .size(60.dp)
-                                            .clip(RoundedCornerShape(4.dp))
-                                    )
-                                }
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (content.isNotBlank() && selectedIdentity != null) {
-                                scope.launch {
-                                    app.repository.insertPost(
-                                        PostEntity(
-                                            identityId = selectedIdentity!!.id,
-                                            content = content
-                                        )
-                                    )
-                                    app.repository.clearDraft()
-                                    onDismiss()
-                                }
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = WeiboOrange)
-                    ) {
-                        Text("发布")
-                    }
-                },
-                dismissButton = {
-                    Button(onClick = { showPreview = false }) {
-                        Text("取消")
-                    }
-                }
-            )
         }
     }
 }

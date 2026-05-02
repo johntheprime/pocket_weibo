@@ -62,8 +62,15 @@ else
     }
 fi
 
+# Maven "linux" AAPT2 is x86-64 only; on aarch64 use distro aapt2 (Ubuntu: `apt install aapt`).
+EXTRA_GRADLE_ARGS=""
+if [ "$(uname -m)" = "aarch64" ] && [ -x /usr/bin/aapt2 ]; then
+    EXTRA_GRADLE_ARGS="-Pandroid.aapt2FromMavenOverride=/usr/bin/aapt2"
+fi
+
 exec "$JAVACMD" -Xmx64m -Xms64m $JAVA_OPTS $GRADLE_OPTS \
   "-Dorg.gradle.appname=$APP_BASE_NAME" \
   -classpath "$CLASSPATH" \
   org.gradle.wrapper.GradleWrapperMain \
+  $EXTRA_GRADLE_ARGS \
   "$@"
