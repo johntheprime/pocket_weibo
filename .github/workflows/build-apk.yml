@@ -2,12 +2,13 @@
 #
 # Repository settings (upstream and fork if you use Actions there):
 #   Settings → Actions → General → Workflow permissions → "Read and write permissions"
-#   (Required so GITHUB_TOKEN can create/update the pre-release below.)
+#   (Required so GITHUB_TOKEN can create/update the release below.)
 #
-# Optional: Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests"
-#   is not required for this workflow.
+# GitHub also attaches "Source code (zip/tar.gz)" for the release tag automatically;
+# this workflow additionally uploads a separate git-archive tarball of the exact
+# commit used for the build.
 #
-# To trigger a build: push to branch `apk-build`, or run this workflow manually (workflow_dispatch).
+# To trigger: push to `apk-build`, or run manually (workflow_dispatch).
 
 name: Build APK
 
@@ -17,8 +18,12 @@ on:
       - apk-build
   workflow_dispatch:
     inputs:
-      publish_prerelease:
-        description: "Create/update GitHub pre-release apk-latest with the APK"
+      publish_release:
+        description: "Create/update GitHub release apk-latest with APK + source tarball"
+        type: boolean
+        default: true
+      prerelease:
+        description: "Mark release as pre-release (uncheck for a full / latest release)"
         type: boolean
         default: true
 
@@ -60,20 +65,29 @@ jobs:
           echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<unset>}"
           ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK artifact
+      - name: Pack source at this commit (tar.gz)
+        run: |
+          SRC="pocket-weibo-source-${{ github.sha }}.tar.gz"
+          git archive --format=tar.gz --prefix="pocket-weibo-${{ github.sha }}/" -o "$SRC" HEAD
+          ls -la "$SRC"
+
+      - name: Upload APK and source artifact
         uses: actions/upload-artifact@v4
         with:
           name: pocket-weibo-debug-${{ github.run_number }}-${{ github.sha }}
-          path: app/build/outputs/apk/debug/*.apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            pocket-weibo-source-*.tar.gz
           if-no-files-found: error
 
-      - name: Publish pre-release (rolling tag apk-latest)
-        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_prerelease) }}
+      - name: Publish rolling release (tag apk-latest)
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release == true) }}
         uses: marvinpinto/action-automatic-releases@v1.2.1
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           automatic_release_tag: apk-latest
-          prerelease: true
-          title: PocketWeibo debug APK
+          prerelease: ${{ github.event_name == 'push' || inputs.prerelease == true }}
+          title: PocketWeibo debug APK + source
           files: |
             app/build/outputs/apk/debug/*.apk
+            pocket-weibo-source-*.tar.gz
