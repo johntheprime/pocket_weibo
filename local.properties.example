@@ -1,0 +1,2 @@
+# Copy to local.properties (gitignored) and set your Android SDK root.
+sdk.dir=/path/to/android-sdk
