@@ -9,7 +9,7 @@ Each row matches **one git commit** and a **version bump** in `app/build.gradle.
 | 3    | F-012 | `feat(F-012): comment delete 48h window` | 3.9.0       | 110           | CommentBottomSheet：`isCommentWithinDeleteWindow`；超时显示 `comment_delete_locked_hint`。 |
 | 4    | F-013 | `fix(F-013): remove dead compose icon on messages` | 3.9.1       | 111           | MessageScreen 标题栏去掉无点击行为的 Edit 图标。 |
 | 5    | F-014 | `feat(F-014): compose location + @ mentions` | 3.10.0      | 112           | 定位权限 + last known + Geocoder → `extrasJson.location`；\@ 对话框插入其他身份；`insertPostWithPreparedGallery(locationLabel)`。 |
-| 6    | F-015 | …                   | 3.11.0      | 113           | Me: tap identity header → edit identity |
+| 6    | F-015 | `feat(F-015): tap Me header to edit active identity` | 3.11.0      | 113           | MeScreen 身份区 `clickable` → `IdentityDetailScreen`。 |
 | 7    | F-016 | …                   | 3.12.0      | 114           | Post time line shows weekday (shared formatter) |
 | 8    | F-017 | …                   | 3.13.0      | 115           | ACTION_SEND text/plain → compose with prefill; singleTop |
 | 9    | F-018 | …                   | 3.14.0      | 116           | Comments ORDER BY createdAt DESC in Room |

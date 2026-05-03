@@ -147,6 +147,7 @@ fun MainScreen() {
                             onNavigateToMyPosts = { showMyPosts = true },
                             onNavigateToIdentities = { showIdentityList = true },
                             onNavigateToSettings = { showMeSettings = true },
+                            onEditActiveIdentity = { id -> identityDetailId = id },
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.PLUS -> {}

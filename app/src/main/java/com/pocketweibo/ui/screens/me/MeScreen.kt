@@ -45,6 +45,7 @@ fun MeScreen(
     onNavigateToMyPosts: () -> Unit = {},
     onNavigateToIdentities: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
+    onEditActiveIdentity: (Long) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -75,7 +76,12 @@ fun MeScreen(
         ) {
             item {
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            enabled = activeIdentity != null,
+                            onClick = { activeIdentity?.let { onEditActiveIdentity(it.id) } }
+                        ),
                     color = SurfaceColor
                 ) {
                     Column(
