@@ -6,12 +6,16 @@ import androidx.lifecycle.viewModelScope
 import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.repository.WeiboRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class HomeViewModel(private val repository: WeiboRepository) : ViewModel() {
+
+    private var commentsCollectJob: Job? = null
     
     private val _selectedPostId = MutableStateFlow<Long?>(null)
     val selectedPostId: StateFlow<Long?> = _selectedPostId.asStateFlow()
@@ -29,8 +33,9 @@ class HomeViewModel(private val repository: WeiboRepository) : ViewModel() {
     }
     
     fun openComments(postId: Long) {
+        commentsCollectJob?.cancel()
         _selectedPostId.value = postId
-        viewModelScope.launch {
+        commentsCollectJob = viewModelScope.launch {
             repository.getCommentsByPost(postId).collect { commentList ->
                 _comments.value = commentList
             }
@@ -39,6 +44,8 @@ class HomeViewModel(private val repository: WeiboRepository) : ViewModel() {
     }
     
     fun closeComments() {
+        commentsCollectJob?.cancel()
+        commentsCollectJob = null
         _showCommentSheet.value = false
         _selectedPostId.value = null
         _comments.value = emptyList()
@@ -46,18 +53,15 @@ class HomeViewModel(private val repository: WeiboRepository) : ViewModel() {
     
     fun addComment(postId: Long, content: String) {
         viewModelScope.launch {
-            val activeIdentity = repository.activeIdentity
-            activeIdentity.collect { identity ->
-                if (identity != null && content.isNotBlank()) {
-                    repository.insertComment(
-                        CommentEntity(
-                            postId = postId,
-                            identityId = identity.id,
-                            content = content
-                        )
-                    )
-                }
-            }
+            val identity = repository.activeIdentity.first() ?: return@launch
+            if (content.isBlank()) return@launch
+            repository.insertComment(
+                CommentEntity(
+                    postId = postId,
+                    identityId = identity.id,
+                    content = content
+                )
+            )
         }
     }
     

@@ -8,14 +8,18 @@ import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.repository.WeiboRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel() {
 
     private var activePostId: Long = 0L
+    private var postRefreshJob: Job? = null
+    private var commentsJob: Job? = null
 
     private val _post = MutableStateFlow<PostWithIdentity?>(null)
     val post: StateFlow<PostWithIdentity?> = _post.asStateFlow()
@@ -25,13 +29,14 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
     
     fun loadPost(postId: Long) {
         activePostId = postId
-        viewModelScope.launch {
+        postRefreshJob?.cancel()
+        commentsJob?.cancel()
+        postRefreshJob = viewModelScope.launch {
             repository.allPosts.collect { posts ->
                 _post.value = posts.find { it.id == postId }
             }
         }
-
-        viewModelScope.launch {
+        commentsJob = viewModelScope.launch {
             repository.getCommentsByPost(postId).collect { commentList ->
                 _comments.value = commentList
             }
@@ -48,18 +53,22 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
     fun addComment(content: String) {
         val currentPost = _post.value ?: return
         viewModelScope.launch {
-            repository.activeIdentity.collect { identity ->
-                if (identity != null && content.isNotBlank()) {
-                    repository.insertComment(
-                        CommentEntity(
-                            postId = currentPost.id,
-                            identityId = identity.id,
-                            content = content
-                        )
-                    )
-                }
-            }
+            val identity = repository.activeIdentity.first() ?: return@launch
+            if (content.isBlank()) return@launch
+            repository.insertComment(
+                CommentEntity(
+                    postId = currentPost.id,
+                    identityId = identity.id,
+                    content = content
+                )
+            )
         }
+    }
+
+    override fun onCleared() {
+        postRefreshJob?.cancel()
+        commentsJob?.cancel()
+        super.onCleared()
     }
 
     fun deletePost(onDeleted: () -> Unit) {

@@ -151,9 +151,9 @@ class WeiboRepository(
         commentDao.getCommentsByPost(postId)
 
     suspend fun insertComment(comment: CommentEntity): Long {
-        commentDao.insert(comment)
+        val newId = commentDao.insert(comment)
         postDao.incrementCommentCount(comment.postId)
-        return comment.id
+        return newId
     }
 
     suspend fun deleteComment(comment: CommentEntity) {

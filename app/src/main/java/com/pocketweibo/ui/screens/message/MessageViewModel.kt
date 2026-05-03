@@ -9,6 +9,7 @@ import com.pocketweibo.data.repository.WeiboRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -24,7 +25,9 @@ data class ReceivedMessage(
 )
 
 class MessageViewModel(private val repository: WeiboRepository) : ViewModel() {
-    
+
+    private var commentsCollectJob: Job? = null
+
     private val _receivedMessages = MutableStateFlow<List<ReceivedMessage>>(emptyList())
     val receivedMessages: StateFlow<List<ReceivedMessage>> = _receivedMessages.asStateFlow()
     
@@ -103,8 +106,9 @@ class MessageViewModel(private val repository: WeiboRepository) : ViewModel() {
     }
     
     fun openComments(postId: Long) {
+        commentsCollectJob?.cancel()
         _selectedPostId.value = postId
-        viewModelScope.launch {
+        commentsCollectJob = viewModelScope.launch {
             repository.getCommentsByPost(postId).collect { commentList ->
                 _comments.value = commentList
             }
@@ -113,6 +117,8 @@ class MessageViewModel(private val repository: WeiboRepository) : ViewModel() {
     }
     
     fun closeComments() {
+        commentsCollectJob?.cancel()
+        commentsCollectJob = null
         _showCommentSheet.value = false
         _selectedPostId.value = null
         _comments.value = emptyList()
