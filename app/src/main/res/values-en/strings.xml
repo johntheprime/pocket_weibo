@@ -188,8 +188,9 @@
     <string name="time_minutes_ago">%1$d min ago</string>
     <string name="time_hours_ago">%1$d h ago</string>
     <string name="time_days_ago">%1$d d ago</string>
-    <string name="time_full_format">yyyy-MM-dd HH:mm:ss.SSS</string>
-    <string name="time_short_format">MM-dd HH:mm</string>
+    <string name="time_full_format">EEE, yyyy-MM-dd HH:mm</string>
+    <string name="time_short_format">EEE MM-dd HH:mm</string>
+    <string name="time_message_list_past">EEE, MM-dd</string>
 
     <string name="identity_filter_all">All</string>
     <string name="identity_activate">Activate</string>

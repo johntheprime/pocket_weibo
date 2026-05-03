@@ -188,8 +188,9 @@
     <string name="time_minutes_ago">%1$d分钟前</string>
     <string name="time_hours_ago">%1$d小时前</string>
     <string name="time_days_ago">%1$d天前</string>
-    <string name="time_full_format">yyyy-MM-dd HH:mm:ss.SSS</string>
-    <string name="time_short_format">MM-dd HH:mm</string>
+    <string name="time_full_format">yyyy-MM-dd EEEE HH:mm</string>
+    <string name="time_short_format">MM-dd EEEE HH:mm</string>
+    <string name="time_message_list_past">MM-dd EEE</string>
 
     <string name="identity_filter_all">全部</string>
     <string name="identity_activate">激活</string>
