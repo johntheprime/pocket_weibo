@@ -24,6 +24,7 @@ import com.pocketweibo.ui.screens.home.HomeScreen
 import com.pocketweibo.ui.screens.identity.IdentityDetailScreen
 import com.pocketweibo.ui.screens.identity.IdentityListScreen
 import com.pocketweibo.ui.screens.me.MeScreen
+import com.pocketweibo.ui.screens.me.MeSettingsScreen
 import com.pocketweibo.ui.screens.me.MyPostsScreen
 import com.pocketweibo.ui.screens.message.MessageScreen
 import com.pocketweibo.ui.theme.PocketWeiboTheme
@@ -49,6 +50,7 @@ fun MainScreen() {
     var showIdentityList by remember { mutableStateOf(false) }
     var identityDetailId by remember { mutableStateOf<Long?>(null) }
     var postDetailId by remember { mutableStateOf<Long?>(null) }
+    var showMeSettings by remember { mutableStateOf(false) }
 
     fun navigateBack() {
         when {
@@ -57,15 +59,16 @@ fun MainScreen() {
             postDetailId != null -> postDetailId = null
             showMyPosts -> showMyPosts = false
             showCompose -> showCompose = false
+            showMeSettings -> showMeSettings = false
         }
     }
 
-    val canSwipeBack = identityDetailId != null || showIdentityList || postDetailId != null || showMyPosts || showCompose
+    val canSwipeBack = identityDetailId != null || showIdentityList || postDetailId != null || showMyPosts || showCompose || showMeSettings
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (!showCompose && !showMyPosts && !showIdentityList && identityDetailId == null && postDetailId == null) {
+            if (!showCompose && !showMyPosts && !showIdentityList && identityDetailId == null && postDetailId == null && !showMeSettings) {
                 WeiboBottomTabBar(
                     selectedTab = selectedTab,
                     onTabSelected = { tab ->
@@ -118,6 +121,12 @@ fun MainScreen() {
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
+                showMeSettings -> {
+                    MeSettingsScreen(
+                        onBack = { showMeSettings = false },
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                }
                 else -> {
                     when (selectedTab) {
                         MainTab.HOME -> HomeScreen(
@@ -132,6 +141,7 @@ fun MainScreen() {
                         MainTab.ME -> MeScreen(
                             onNavigateToMyPosts = { showMyPosts = true },
                             onNavigateToIdentities = { showIdentityList = true },
+                            onNavigateToSettings = { showMeSettings = true },
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.PLUS -> {}

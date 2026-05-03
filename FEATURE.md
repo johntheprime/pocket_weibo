@@ -29,6 +29,7 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-001 | **评论长按复制**：在评论列表/详情/底部评论表中，长按一条评论将**整条评论正文**复制到剪贴板并提示。 | Done |
 | F-002 | **微博长按选择复制**：在首页/我的发布卡片、发现页热门与搜索结果、微博详情中，长按微博区域可**选择部分正文并复制**（详情页正文为内联可选中；列表/发现为对话框内 `SelectionContainer`）。 | Done |
 | F-003 | **消息页评论长按**：在「消息」收到的评论/发出的评论列表行上长按，复制该条**评论正文**。 | Done |
+| F-004 | **我 · 设置**：右上角设置图标可进入**设置**页；**导入/导出**迁入设置；**关于本软件**展示版本号、简介、作者/贡献说明与 **GitHub** 相关链接。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 
@@ -39,3 +40,4 @@ _Add new rows for upcoming work; keep IDs incrementing._
 - `com.pocketweibo.ui.util.copyPlainToClipboard` — label + text + optional toast.
 - `com.pocketweibo.ui.components.SelectablePostBody` — inline selectable post body (detail).
 - `com.pocketweibo.ui.components.SelectableCopyDialog` — dialog with scroll + selection for compact rows.
+- `com.pocketweibo.ui.screens.me.MeSettingsScreen` — settings hub (backup / about / external links); opened from **我** via `WeiboTitleBar.onRightIconClick`.
