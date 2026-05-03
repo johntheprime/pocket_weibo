@@ -13,7 +13,7 @@ import com.pocketweibo.data.local.entity.PostEntity
 
 @Database(
     entities = [IdentityEntity::class, PostEntity::class, CommentEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -32,7 +32,10 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "pocketweibo_database"
                 )
-                    .addMigrations(DatabaseMigrations.MIGRATION_2_3)
+                    .addMigrations(
+                        DatabaseMigrations.MIGRATION_2_3,
+                        DatabaseMigrations.MIGRATION_3_4
+                    )
                     .build()
                 INSTANCE = instance
                 instance

@@ -15,9 +15,9 @@ android {
         minSdk = 26
         targetSdk = 34
         // versionName: semantic versioning (MAJOR.MINOR.PATCH). Bump when you ship user-facing changes.
-        versionName = "3.2.0"
+        versionName = "3.4.0"
         // versionCode: must increase for every release APK that should upgrade in-place (same signing key).
-        versionCode = 102
+        versionCode = 105
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -101,6 +101,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
 
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    implementation("id.zelory:compressor:3.0.1")
 
     testImplementation("junit:junit:4.13.2")
 

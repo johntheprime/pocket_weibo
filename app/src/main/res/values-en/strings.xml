@@ -37,14 +37,18 @@
     <string name="label_famous_work">Notable work</string>
 
     <string name="settings_export_title">Export data</string>
-    <string name="settings_export_subtitle">Backup to JSON or Markdown</string>
+    <string name="settings_export_subtitle">Backup as JSON, ZIP (with photos), or Markdown</string>
     <string name="settings_import_title">Import data</string>
-    <string name="settings_import_subtitle">Restore from JSON file or pasted text</string>
+    <string name="settings_import_subtitle">Restore from JSON, ZIP backup, or pasted text</string>
 
     <string name="settings_language_section">Display language</string>
     <string name="settings_language_system">Follow system</string>
     <string name="settings_language_zh">简体中文</string>
     <string name="settings_language_en">English</string>
+
+    <string name="settings_post_images_section">Post images</string>
+    <string name="settings_post_images_original_title">Save original quality</string>
+    <string name="settings_post_images_original_subtitle">When on, images are stored as copied from the picker. When off, photos over about 1 MB are compressed (max ~1 MB, longest edge up to 2048 px) for smaller storage.</string>
 
     <string name="about_title">About</string>
     <string name="about_app_line">PocketWeibo</string>
@@ -56,7 +60,7 @@
     <string name="settings_done">Done</string>
 
     <string name="import_title">Import data</string>
-    <string name="import_intro">Pick a JSON file or paste backup text:</string>
+    <string name="import_intro">Pick a JSON or ZIP file, or paste JSON text:</string>
     <string name="import_pick_file">Choose file…</string>
     <string name="import_loaded">Loaded: %1$s</string>
     <string name="import_placeholder">Or paste JSON here</string>
@@ -71,7 +75,8 @@
 
     <string name="export_title">Export data</string>
     <string name="export_intro">Choose a format:</string>
-    <string name="export_json">JSON (re-importable)</string>
+    <string name="export_json">JSON (re-importable; no image files)</string>
+    <string name="export_zip">ZIP (JSON + photos; full backup)</string>
     <string name="export_markdown">Markdown (backup only)</string>
     <string name="export_confirm">Export</string>
     <string name="export_cancel">Cancel</string>
@@ -133,6 +138,7 @@
     <string name="compose_image_cd">Image</string>
     <string name="compose_remove_image_cd">Remove</string>
     <string name="compose_label_image">Image</string>
+    <string name="post_image_cd">Post image</string>
     <string name="compose_label_location">Location</string>
     <string name="compose_label_mention">Mention</string>
     <string name="compose_no_identity_hint">Add an identity on the Me tab first</string>
@@ -214,6 +220,7 @@
     <string name="md_field_motto">Motto</string>
     <string name="md_field_work">Notable work</string>
     <string name="md_field_bio">Bio</string>
+    <string name="md_field_attachments">Attached images</string>
     <string name="md_field_likes">Likes</string>
     <string name="md_field_comments">Comments</string>
     <string name="md_field_posted_at">Posted at</string>

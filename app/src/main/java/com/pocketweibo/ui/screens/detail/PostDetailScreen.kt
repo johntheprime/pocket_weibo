@@ -59,7 +59,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.dao.CommentWithIdentity
+import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.ui.components.Avatar
+import com.pocketweibo.ui.components.PostImageGallery
 import com.pocketweibo.ui.components.SelectablePostBody
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.util.RelativeTimePreset
@@ -270,7 +272,15 @@ private fun PostDetailCard(
                 ),
                 modifier = Modifier.padding(top = 12.dp)
             )
-            
+
+            if (PostAttachmentStorage.parseStoredPaths(post.imageUris).isNotEmpty()) {
+                PostImageGallery(
+                    imageUris = post.imageUris,
+                    maxHeight = 160.dp,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

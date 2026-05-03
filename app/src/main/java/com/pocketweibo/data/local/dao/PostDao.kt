@@ -11,6 +11,7 @@ data class PostWithIdentity(
     val identityAvatarResName: String,
     val content: String,
     val imageUris: String,
+    val extrasJson: String,
     val createdAt: Long,
     val likeCount: Int,
     val commentCount: Int,
@@ -21,7 +22,7 @@ data class PostWithIdentity(
 interface PostDao {
     @Query("""
         SELECT p.id, p.identityId, i.name as identityName, i.avatarResName as identityAvatarResName,
-               p.content, p.imageUris, p.createdAt, p.likeCount, p.commentCount, p.isLiked
+               p.content, p.imageUris, p.extrasJson, p.createdAt, p.likeCount, p.commentCount, p.isLiked
         FROM posts p
         INNER JOIN identities i ON p.identityId = i.id
         ORDER BY p.createdAt DESC
@@ -30,7 +31,7 @@ interface PostDao {
 
     @Query("""
         SELECT p.id, p.identityId, i.name as identityName, i.avatarResName as identityAvatarResName,
-               p.content, p.imageUris, p.createdAt, p.likeCount, p.commentCount, p.isLiked
+               p.content, p.imageUris, p.extrasJson, p.createdAt, p.likeCount, p.commentCount, p.isLiked
         FROM posts p
         INNER JOIN identities i ON p.identityId = i.id
         WHERE p.identityId = :identityId

@@ -1,6 +1,7 @@
 package com.pocketweibo.data.repository
 
 import android.content.Context
+import android.net.Uri
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -14,15 +15,24 @@ import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.local.entity.Gender
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.PostEntity
+import com.pocketweibo.data.media.PostAttachmentStorage
+import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.R
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.BufferedInputStream
+import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 private val Context.draftDataStore by preferencesDataStore(name = "draft")
 
@@ -53,7 +63,37 @@ class WeiboRepository(
 
     suspend fun insertPost(post: PostEntity): Long = postDao.insert(post)
 
-    suspend fun deletePost(post: PostEntity) = postDao.delete(post)
+    /**
+     * Creates a post and copies [galleryUris] into app-private storage under [PostAttachmentStorage.REL_ROOT].
+     * [content] may be blank when only images are attached.
+     */
+    suspend fun insertPostWithGallery(identityId: Long, content: String, galleryUris: List<Uri>): Long {
+        val base = PostEntity(
+            identityId = identityId,
+            content = content.trim(),
+            imageUris = "",
+            extrasJson = "{}"
+        )
+        val newId = postDao.insert(base)
+        if (galleryUris.isNotEmpty()) {
+            val storeOriginal = UiPreferences.getPostImagesOriginalQuality(context)
+            val json = PostAttachmentStorage.copyGalleryUrisIntoPost(
+                context,
+                newId,
+                galleryUris,
+                storeOriginalQuality = storeOriginal
+            )
+            if (json.isNotEmpty()) {
+                postDao.update(base.copy(id = newId, imageUris = json))
+            }
+        }
+        return newId
+    }
+
+    suspend fun deletePost(post: PostEntity) {
+        PostAttachmentStorage.deleteAllForPost(context, post.id)
+        postDao.delete(post)
+    }
 
     suspend fun togglePostLike(postId: Long) = postDao.toggleLike(postId)
 
@@ -147,6 +187,7 @@ class WeiboRepository(
                 put("identityId", post.identityId)
                 put("content", post.content)
                 put("imageUris", post.imageUris)
+                put("extrasJson", post.extrasJson)
                 put("createdAt", post.createdAt)
                 put("likeCount", post.likeCount)
                 put("commentCount", post.commentCount)
@@ -170,9 +211,37 @@ class WeiboRepository(
         json.put("comments", commentsArray)
 
         json.put("exportedAt", System.currentTimeMillis())
-        json.put("version", 1)
+        json.put("version", 2)
 
         return json.toString(2)
+    }
+
+    /**
+     * Writes `data.json` plus files under [PostAttachmentStorage.REL_ROOT] into a ZIP under cache.
+     * Re-import via Settings → Import (merge or replace).
+     */
+    suspend fun exportAllDataZip(): File = withContext(Dispatchers.IO) {
+        val json = exportAllData()
+        val outFile = File(context.cacheDir, "pocket_weibo_backup_${System.currentTimeMillis()}.zip")
+        ZipOutputStream(FileOutputStream(outFile).buffered()).use { zos ->
+            val jsonBytes = json.toByteArray(Charsets.UTF_8)
+            zos.putNextEntry(ZipEntry("data.json"))
+            zos.write(jsonBytes)
+            zos.closeEntry()
+            val posts = postDao.getAllPosts().first()
+            for (post in posts) {
+                val paths = PostAttachmentStorage.parseStoredPaths(post.imageUris)
+                for (rel in paths) {
+                    val f = PostAttachmentStorage.fileForRelativePath(context, rel)
+                    if (f.isFile) {
+                        zos.putNextEntry(ZipEntry(rel.replace(File.separatorChar, '/')))
+                        f.inputStream().use { input -> input.copyTo(zos) }
+                        zos.closeEntry()
+                    }
+                }
+            }
+        }
+        outFile
     }
 
     suspend fun exportAllDataToMarkdown(): String {
@@ -207,6 +276,10 @@ class WeiboRepository(
             sb.appendLine()
             sb.appendLine(post.content)
             sb.appendLine()
+            val attachmentCount = PostAttachmentStorage.parseStoredPaths(post.imageUris).size
+            if (attachmentCount > 0) {
+                sb.appendLine("- ${r.getString(R.string.md_field_attachments)}: $attachmentCount")
+            }
             sb.appendLine("- ${r.getString(R.string.md_field_likes)}: ${post.likeCount}")
             sb.appendLine("- ${r.getString(R.string.md_field_comments)}: ${post.commentCount}")
             sb.appendLine(
@@ -223,14 +296,143 @@ class WeiboRepository(
     }
 
     suspend fun importData(jsonString: String): Boolean =
-        importData(jsonString, override = false)
+        importData(jsonString, override = false, mergeAttachmentStaging = null, skipClearOnOverride = false)
 
-    suspend fun importData(jsonString: String, override: Boolean): Boolean {
+    suspend fun importData(jsonString: String, override: Boolean): Boolean =
+        importData(jsonString, override, mergeAttachmentStaging = null, skipClearOnOverride = false)
+
+    /**
+     * Detects ZIP (PK…) vs UTF-8 JSON text. ZIP must contain [data.json] and optional [PostAttachmentStorage.REL_ROOT]/.
+     */
+    suspend fun importBackupFromUri(uri: Uri, override: Boolean): Boolean {
+        val isZip = withContext(Dispatchers.IO) {
+            context.contentResolver.openInputStream(uri)?.use { raw ->
+                val buffered = BufferedInputStream(raw)
+                buffered.mark(8)
+                val sig = ByteArray(4)
+                if (buffered.read(sig) != 4) return@use false
+                sig[0] == 0x50.toByte() && sig[1] == 0x4b.toByte()
+            } ?: false
+        }
+        return try {
+            if (isZip) {
+                importZipBackup(uri, override)
+            } else {
+                val text = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        input.bufferedReader(Charsets.UTF_8).readText()
+                    }.orEmpty()
+                }
+                importData(text, override, mergeAttachmentStaging = null, skipClearOnOverride = false)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    private suspend fun importZipBackup(uri: Uri, override: Boolean): Boolean {
+        return try {
+            if (override) {
+                clearAllData()
+                readZip(uri) { name, content ->
+                    when {
+                        name == "data.json" -> Unit
+                        name.startsWith("${PostAttachmentStorage.REL_ROOT}/") -> {
+                            val out = PostAttachmentStorage.fileForRelativePath(context, name)
+                            out.parentFile?.mkdirs()
+                            out.writeBytes(content)
+                        }
+                    }
+                }
+                val jsonText = readZipEntryBytes(uri, "data.json")?.toString(Charsets.UTF_8)
+                if (jsonText == null) {
+                    false
+                } else {
+                    importData(
+                        jsonText,
+                        override = true,
+                        mergeAttachmentStaging = null,
+                        skipClearOnOverride = true
+                    )
+                }
+            } else {
+                val staging = File(context.cacheDir, "pw_import_${System.currentTimeMillis()}")
+                staging.mkdirs()
+                try {
+                    readZip(uri) { name, content ->
+                        if (name.endsWith("/")) return@readZip
+                        val out = File(staging, name.replace('\\', '/'))
+                        out.parentFile?.mkdirs()
+                        out.writeBytes(content)
+                    }
+                    val jsonFile = File(staging, "data.json")
+                    if (!jsonFile.exists()) {
+                        false
+                    } else {
+                        importData(
+                            jsonFile.readText(),
+                            override = false,
+                            mergeAttachmentStaging = staging,
+                            skipClearOnOverride = false
+                        )
+                    }
+                } finally {
+                    staging.deleteRecursively()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    private fun readZipEntryBytes(uri: Uri, entryName: String): ByteArray? {
+        var found: ByteArray? = null
+        context.contentResolver.openInputStream(uri)?.use { raw ->
+            ZipInputStream(BufferedInputStream(raw)).use { zis ->
+                var entry = zis.nextEntry
+                while (entry != null) {
+                    val name = entry.name.replace('\\', '/').trimStart('/')
+                    if (name == entryName) {
+                        found = zis.readBytes()
+                        break
+                    }
+                    zis.closeEntry()
+                    entry = zis.nextEntry
+                }
+            }
+        }
+        return found
+    }
+
+    private fun readZip(uri: Uri, onEntry: (name: String, bytes: ByteArray) -> Unit) {
+        context.contentResolver.openInputStream(uri)?.use { raw ->
+            ZipInputStream(BufferedInputStream(raw)).use { zis ->
+                var entry = zis.nextEntry
+                while (entry != null) {
+                    val name = entry.name.replace('\\', '/').trimStart('/')
+                    if (!entry.isDirectory && name.isNotEmpty()) {
+                        onEntry(name, zis.readBytes())
+                    }
+                    zis.closeEntry()
+                    entry = zis.nextEntry
+                }
+            }
+        }
+    }
+
+    suspend fun importData(
+        jsonString: String,
+        override: Boolean,
+        mergeAttachmentStaging: File?,
+        skipClearOnOverride: Boolean = false
+    ): Boolean {
         return try {
             val json = JSONObject(jsonString.trim().trimStart('\uFEFF'))
 
             if (override) {
-                clearAllData()
+                if (!skipClearOnOverride) clearAllData()
                 if (json.has("identities")) {
                     val identitiesArray = json.getJSONArray("identities")
                     for (i in 0 until identitiesArray.length()) {
@@ -271,8 +473,28 @@ class WeiboRepository(
                         val oldPostId = postJson.getLong("id")
                         val oldIdentityId = postJson.getLong("identityId")
                         val newIdentityId = identityOldToNew[oldIdentityId] ?: continue
-                        val newPostId = postDao.insert(postFromJson(postJson, 0L, newIdentityId))
+                        val stripImages = mergeAttachmentStaging != null
+                        val newPostId = postDao.insert(
+                            postFromJson(
+                                postJson,
+                                id = 0L,
+                                identityId = newIdentityId,
+                                imageUrisOverride = if (stripImages) "" else null
+                            )
+                        )
                         postOldToNew[oldPostId] = newPostId
+                        if (mergeAttachmentStaging != null) {
+                            val merged = mergeStagingAttachments(
+                                mergeAttachmentStaging,
+                                oldPostId,
+                                newPostId,
+                                postJson.optString("imageUris", "")
+                            )
+                            if (merged.isNotEmpty()) {
+                                val current = postFromJson(postJson, newPostId, newIdentityId)
+                                postDao.update(current.copy(imageUris = merged))
+                            }
+                        }
                     }
                 }
                 if (json.has("comments")) {
@@ -324,18 +546,52 @@ class WeiboRepository(
         )
     }
 
-    private fun postFromJson(postJson: JSONObject, id: Long, identityId: Long? = null): PostEntity {
+    private fun postFromJson(
+        postJson: JSONObject,
+        id: Long,
+        identityId: Long? = null,
+        imageUrisOverride: String? = null
+    ): PostEntity {
         val resolvedIdentityId = identityId ?: postJson.getLong("identityId")
         return PostEntity(
             id = id,
             identityId = resolvedIdentityId,
-            content = postJson.getString("content"),
-            imageUris = postJson.optString("imageUris", ""),
+            content = postJson.optString("content", ""),
+            imageUris = imageUrisOverride ?: postJson.optString("imageUris", ""),
+            extrasJson = postJson.optString("extrasJson", "{}"),
             createdAt = postJson.getLong("createdAt"),
             likeCount = postJson.optInt("likeCount", 0),
             commentCount = postJson.optInt("commentCount", 0),
             isLiked = postJson.optBoolean("isLiked", false)
         )
+    }
+
+    private fun mergeStagingAttachments(
+        stagingRoot: File,
+        oldPostId: Long,
+        newPostId: Long,
+        imageUrisField: String
+    ): String {
+        val oldPaths = PostAttachmentStorage.parseStoredPaths(imageUrisField)
+        if (oldPaths.isEmpty()) return ""
+        val prefix = "${PostAttachmentStorage.REL_ROOT}/$oldPostId/"
+        val newPrefix = "${PostAttachmentStorage.REL_ROOT}/$newPostId/"
+        val kept = mutableListOf<String>()
+        for (rel in oldPaths) {
+            val newRel = if (rel.startsWith(prefix)) {
+                newPrefix + rel.removePrefix(prefix)
+            } else {
+                rel
+            }
+            val src = File(stagingRoot, rel)
+            if (src.isFile) {
+                val dst = PostAttachmentStorage.fileForRelativePath(context, newRel)
+                dst.parentFile?.mkdirs()
+                src.copyTo(dst, overwrite = true)
+                kept.add(newRel)
+            }
+        }
+        return if (kept.isEmpty()) "" else PostAttachmentStorage.serializePaths(kept)
     }
 
     private fun commentFromJson(
@@ -359,5 +615,6 @@ class WeiboRepository(
         commentDao.deleteAll()
         postDao.deleteAll()
         identityDao.deleteAll()
+        PostAttachmentStorage.deleteEntireAttachmentTree(context)
     }
 }

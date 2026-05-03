@@ -23,6 +23,8 @@ data class PostEntity(
     val identityId: Long,
     val content: String,
     val imageUris: String = "",
+    /** Reserved for future fields (e.g. audience); keep JSON object shape. */
+    val extrasJson: String = "{}",
     val createdAt: Long = System.currentTimeMillis(),
     val likeCount: Int = 0,
     val commentCount: Int = 0,

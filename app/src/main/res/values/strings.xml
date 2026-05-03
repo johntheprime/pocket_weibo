@@ -37,14 +37,18 @@
     <string name="label_famous_work">代表作</string>
 
     <string name="settings_export_title">导出数据</string>
-    <string name="settings_export_subtitle">备份所有数据到 JSON / Markdown 文件</string>
+    <string name="settings_export_subtitle">备份为 JSON、ZIP（含图片）或 Markdown</string>
     <string name="settings_import_title">导入数据</string>
-    <string name="settings_import_subtitle">从 JSON 文件或粘贴内容恢复</string>
+    <string name="settings_import_subtitle">从 JSON、ZIP 备份或粘贴内容恢复</string>
 
     <string name="settings_language_section">界面语言</string>
     <string name="settings_language_system">跟随系统</string>
     <string name="settings_language_zh">简体中文</string>
     <string name="settings_language_en">English</string>
+
+    <string name="settings_post_images_section">微博配图</string>
+    <string name="settings_post_images_original_title">原画质保存</string>
+    <string name="settings_post_images_original_subtitle">开启后发布时保留相册原文件大小；关闭时超过约 1 MB 的图片会压缩（约 1 MB 上限，更清晰省空间）。</string>
 
     <string name="about_title">关于本软件</string>
     <string name="about_app_line">PocketWeibo（口袋微博）</string>
@@ -56,7 +60,7 @@
     <string name="settings_done">完成</string>
 
     <string name="import_title">导入数据</string>
-    <string name="import_intro">选择 JSON 文件或粘贴备份内容:</string>
+    <string name="import_intro">选择 JSON / ZIP 文件，或粘贴 JSON 文本:</string>
     <string name="import_pick_file">从文件选择…</string>
     <string name="import_loaded">已载入: %1$s</string>
     <string name="import_placeholder">或在此粘贴 JSON</string>
@@ -71,7 +75,8 @@
 
     <string name="export_title">导出数据</string>
     <string name="export_intro">选择导出格式:</string>
-    <string name="export_json">JSON (可导入)</string>
+    <string name="export_json">JSON (可导入，不含图片文件)</string>
+    <string name="export_zip">ZIP (JSON + 图片，推荐完整备份)</string>
     <string name="export_markdown">Markdown (仅备份)</string>
     <string name="export_confirm">导出</string>
     <string name="export_cancel">取消</string>
@@ -133,6 +138,7 @@
     <string name="compose_image_cd">图片</string>
     <string name="compose_remove_image_cd">删除</string>
     <string name="compose_label_image">图片</string>
+    <string name="post_image_cd">微博配图</string>
     <string name="compose_label_location">位置</string>
     <string name="compose_label_mention">艾特</string>
     <string name="compose_no_identity_hint">请先在「我」页面添加身份</string>
@@ -214,6 +220,7 @@
     <string name="md_field_motto">座右铭</string>
     <string name="md_field_work">代表作</string>
     <string name="md_field_bio">简介</string>
+    <string name="md_field_attachments">配图数量</string>
     <string name="md_field_likes">点赞</string>
     <string name="md_field_comments">评论</string>
     <string name="md_field_posted_at">发布时间</string>

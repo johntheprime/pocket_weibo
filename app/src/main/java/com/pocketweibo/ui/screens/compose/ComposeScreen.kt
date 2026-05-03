@@ -55,7 +55,6 @@ import coil.request.ImageRequest
 import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.IdentityEntity
-import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
@@ -124,14 +123,14 @@ fun ComposeScreen(
     }
 
     fun performSend() {
-        if (!content.isNotBlank() || selectedIdentity == null) return
+        if (selectedIdentity == null) return
+        if (!content.isNotBlank() && imageUris.isEmpty()) return
         lastPostedAt = SystemClock.elapsedRealtime()
         scope.launch {
-            app.repository.insertPost(
-                PostEntity(
-                    identityId = selectedIdentity!!.id,
-                    content = content
-                )
+            app.repository.insertPostWithGallery(
+                identityId = selectedIdentity!!.id,
+                content = content,
+                galleryUris = imageUris
             )
             app.repository.clearDraft()
             onDismiss()
@@ -139,7 +138,7 @@ fun ComposeScreen(
     }
 
     ShakeToSendEffect(
-        canSend = content.isNotBlank() && selectedIdentity != null,
+        canSend = (content.isNotBlank() || imageUris.isNotEmpty()) && selectedIdentity != null,
         lastContentEditedAtMark = lastContentEditedAt,
         composeOpenedAtMark = composeOpenedAt,
         lastPostedAtMark = lastPostedAt,
@@ -182,7 +181,7 @@ fun ComposeScreen(
 
                 Button(
                     onClick = { performSend() },
-                    enabled = content.isNotBlank() && selectedIdentity != null,
+                    enabled = (content.isNotBlank() || imageUris.isNotEmpty()) && selectedIdentity != null,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = WeiboOrange,
                         disabledContainerColor = GrayLight

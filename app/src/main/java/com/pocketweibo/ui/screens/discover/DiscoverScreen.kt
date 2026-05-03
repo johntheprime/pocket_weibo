@@ -50,7 +50,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.IdentityEntity
+import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.ui.components.Avatar
+import com.pocketweibo.ui.components.PostImageGallery
 import com.pocketweibo.ui.components.SelectableCopyDialog
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.Background
@@ -333,6 +335,13 @@ private fun TrendingPostItem(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 4.dp)
                 )
+                if (PostAttachmentStorage.parseStoredPaths(post.imageUris).isNotEmpty()) {
+                    PostImageGallery(
+                        imageUris = post.imageUris,
+                        maxHeight = 72.dp,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
                 Row(
                     modifier = Modifier.padding(top = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -518,6 +527,13 @@ private fun PostSearchItem(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 4.dp)
                 )
+                if (PostAttachmentStorage.parseStoredPaths(post.imageUris).isNotEmpty()) {
+                    PostImageGallery(
+                        imageUris = post.imageUris,
+                        maxHeight = 72.dp,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
             }
         }
         }

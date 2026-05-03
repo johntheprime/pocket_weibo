@@ -30,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -60,6 +61,7 @@ import com.pocketweibo.ui.util.findActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 private const val RepoUrl = "https://github.com/johntheprime/pocket_weibo"
 
@@ -120,6 +122,10 @@ fun MeSettingsScreen(
             }
             item {
                 Divider()
+                PostImageQualitySection()
+            }
+            item {
+                Divider()
                 AboutSection(
                     versionLabel = rememberAppVersionLabel(context),
                     onOpenRepo = {
@@ -135,9 +141,20 @@ fun MeSettingsScreen(
     if (showImportDialog) {
         ImportDialog(
             onDismiss = { showImportDialog = false },
-            onImport = { json, override ->
+            onImportFromText = { json, override ->
                 scope.launch {
                     val success = app.repository.importData(json, override)
+                    Toast.makeText(
+                        context,
+                        if (success) context.getString(R.string.toast_import_ok)
+                        else context.getString(R.string.toast_import_fail),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            },
+            onImportFromFile = { uri, override ->
+                scope.launch {
+                    val success = app.repository.importBackupFromUri(uri, override)
                     Toast.makeText(
                         context,
                         if (success) context.getString(R.string.toast_import_ok)
@@ -154,28 +171,60 @@ fun MeSettingsScreen(
             onDismiss = { showExportDialog = false },
             onExport = { format ->
                 scope.launch {
-                    val fileName = if (format == "JSON") "pocket_weibo_backup.json" else "pocket_weibo_backup.md"
-                    val content = if (format == "JSON") {
-                        app.repository.exportAllData()
-                    } else {
-                        app.repository.exportAllDataToMarkdown()
+                    when (format) {
+                        "ZIP" -> {
+                            val zipFile = withContext(Dispatchers.IO) { app.repository.exportAllDataZip() }
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.provider",
+                                zipFile
+                            )
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/zip"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(
+                                Intent.createChooser(shareIntent, context.getString(R.string.export_share_title))
+                            )
+                        }
+                        "JSON" -> {
+                            val content = app.repository.exportAllData()
+                            val file = File(context.cacheDir, "pocket_weibo_backup.json")
+                            file.writeText(content)
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.provider",
+                                file
+                            )
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/json"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(
+                                Intent.createChooser(shareIntent, context.getString(R.string.export_share_title))
+                            )
+                        }
+                        else -> {
+                            val content = app.repository.exportAllDataToMarkdown()
+                            val file = File(context.cacheDir, "pocket_weibo_backup.md")
+                            file.writeText(content)
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.provider",
+                                file
+                            )
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/markdown"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(
+                                Intent.createChooser(shareIntent, context.getString(R.string.export_share_title))
+                            )
+                        }
                     }
-                    val file = java.io.File(context.cacheDir, fileName)
-                    file.writeText(content)
-                    val uri = FileProvider.getUriForFile(
-                        context,
-                        "${context.packageName}.provider",
-                        file
-                    )
-                    val mimeType = if (format == "JSON") "application/json" else "text/markdown"
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = mimeType
-                        putExtra(Intent.EXTRA_STREAM, uri)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }
-                    context.startActivity(
-                        Intent.createChooser(shareIntent, context.getString(R.string.export_share_title))
-                    )
                     Toast.makeText(context, context.getString(R.string.toast_export_done), Toast.LENGTH_SHORT).show()
                 }
             }
@@ -245,6 +294,70 @@ private fun LanguagePreferenceSection(onApplied: () -> Unit) {
                     }
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun PostImageQualitySection() {
+    val context = LocalContext.current
+    val appCtx = context.applicationContext
+    val scope = rememberCoroutineScope()
+    var original by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        original = UiPreferences.getPostImagesOriginalQuality(appCtx)
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.settings_post_images_section),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = GrayDark
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 12.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_post_images_original_title),
+                        fontSize = 15.sp,
+                        color = GrayDark
+                    )
+                    Text(
+                        text = stringResource(R.string.settings_post_images_original_subtitle),
+                        fontSize = 12.sp,
+                        color = GrayMiddle,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                Switch(
+                    checked = original,
+                    onCheckedChange = { v ->
+                        scope.launch {
+                            UiPreferences.setPostImagesOriginalQuality(appCtx, v)
+                            original = v
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -412,35 +525,23 @@ private fun MenuItem(
 @Composable
 private fun ImportDialog(
     onDismiss: () -> Unit,
-    onImport: (String, Boolean) -> Unit
+    onImportFromText: (String, Boolean) -> Unit,
+    onImportFromFile: (Uri, Boolean) -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     var jsonInput by remember { mutableStateOf("") }
     var pickedFileName by remember { mutableStateOf<String?>(null) }
+    var pickedUri by remember { mutableStateOf<Uri?>(null) }
     var override by remember { mutableStateOf(false) }
 
     val openJsonLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            val displayName = queryDisplayName(context, uri)
-            val text = withContext(Dispatchers.IO) {
-                runCatching {
-                    context.contentResolver.openInputStream(uri)?.use { input ->
-                        input.bufferedReader(Charsets.UTF_8).readText()
-                    }.orEmpty()
-                }.getOrDefault("")
-            }
-            if (text.isBlank()) {
-                Toast.makeText(context, context.getString(R.string.toast_file_read_fail), Toast.LENGTH_SHORT).show()
-                pickedFileName = null
-            } else {
-                jsonInput = text
-                pickedFileName = displayName
-            }
-        }
+        val displayName = queryDisplayName(context, uri)
+        pickedUri = uri
+        pickedFileName = displayName
+        jsonInput = ""
     }
 
     AlertDialog(
@@ -452,7 +553,13 @@ private fun ImportDialog(
                 TextButton(
                     onClick = {
                         openJsonLauncher.launch(
-                            arrayOf("application/json", "text/plain", "application/*", "*/*")
+                            arrayOf(
+                                "application/json",
+                                "application/zip",
+                                "application/x-zip-compressed",
+                                "text/plain",
+                                "*/*"
+                            )
                         )
                     },
                     modifier = Modifier
@@ -474,6 +581,7 @@ private fun ImportDialog(
                     onValueChange = {
                         jsonInput = it
                         pickedFileName = null
+                        pickedUri = null
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -504,13 +612,19 @@ private fun ImportDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val trimmed = jsonInput.trim().trimStart('\uFEFF')
-                    if (trimmed.isNotBlank()) {
-                        onImport(trimmed, override)
+                    val uri = pickedUri
+                    if (uri != null) {
+                        onImportFromFile(uri, override)
                         onDismiss()
+                    } else {
+                        val trimmed = jsonInput.trim().trimStart('\uFEFF')
+                        if (trimmed.isNotBlank()) {
+                            onImportFromText(trimmed, override)
+                            onDismiss()
+                        }
                     }
                 },
-                enabled = jsonInput.isNotBlank()
+                enabled = pickedUri != null || jsonInput.isNotBlank()
             ) {
                 Text(stringResource(R.string.import_confirm))
             }
@@ -528,7 +642,7 @@ private fun ExportDialog(
     onDismiss: () -> Unit,
     onExport: (String) -> Unit
 ) {
-    var selectedFormat by remember { mutableStateOf("JSON") }
+    var selectedFormat by remember { mutableStateOf("ZIP") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -538,6 +652,16 @@ private fun ExportDialog(
                 Text(stringResource(R.string.export_intro), fontSize = 14.sp, color = GrayMiddle)
                 Row(
                     modifier = Modifier.padding(top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    androidx.compose.material3.RadioButton(
+                        selected = selectedFormat == "ZIP",
+                        onClick = { selectedFormat = "ZIP" }
+                    )
+                    Text(stringResource(R.string.export_zip), fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
+                }
+                Row(
+                    modifier = Modifier.padding(top = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     androidx.compose.material3.RadioButton(

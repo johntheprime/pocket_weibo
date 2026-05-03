@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pocketweibo.data.local.dao.PostWithIdentity
+import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.theme.GrayMiddle
@@ -116,6 +117,14 @@ fun PostCard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 8.dp)
             )
+
+            if (PostAttachmentStorage.parseStoredPaths(post.imageUris).isNotEmpty()) {
+                PostImageGallery(
+                    imageUris = post.imageUris,
+                    maxHeight = 88.dp,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
 
             Row(
                 modifier = Modifier

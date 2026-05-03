@@ -14,4 +14,12 @@ object DatabaseMigrations {
             // No-op: schema unchanged from v2; avoids destructive rebuild.
         }
     }
+
+    val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE posts ADD COLUMN extrasJson TEXT NOT NULL DEFAULT '{}'"
+            )
+        }
+    }
 }
