@@ -42,6 +42,7 @@ import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.util.copyPlainToClipboard
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -172,10 +173,7 @@ private fun CommentItem(
             .combinedClickable(
                 onClick = { },
                 onLongClick = {
-                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    val clip = android.content.ClipData.newPlainText("评论", comment.content)
-                    clipboard.setPrimaryClip(clip)
-                    android.widget.Toast.makeText(context, "评论已复制", android.widget.Toast.LENGTH_SHORT).show()
+                    context.copyPlainToClipboard("评论", comment.content, toast = "评论已复制")
                 }
             )
     ) {

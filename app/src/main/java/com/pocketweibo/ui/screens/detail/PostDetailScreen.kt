@@ -4,9 +4,11 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,7 +63,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.ui.components.Avatar
+import com.pocketweibo.ui.components.SelectablePostBody
 import com.pocketweibo.ui.components.WeiboTitleBar
+import com.pocketweibo.ui.util.copyPlainToClipboard
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
@@ -235,11 +240,14 @@ private fun PostDetailCard(
                 }
             }
             
-            Text(
+            SelectablePostBody(
                 text = post.content,
-                fontSize = 16.sp,
-                color = GrayDark,
-                lineHeight = 24.sp,
+                style = TextStyle(
+                    fontSize = 16.sp,
+                    color = GrayDark,
+                    lineHeight = 24.sp,
+                    fontWeight = FontWeight.Normal
+                ),
                 modifier = Modifier.padding(top = 12.dp)
             )
             
@@ -343,10 +351,19 @@ private fun CommentsHeader(commentCount: Int) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CommentCard(comment: CommentWithIdentity) {
+    val context = LocalContext.current
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {},
+                onLongClick = {
+                    context.copyPlainToClipboard("评论", comment.content, toast = "评论已复制")
+                }
+            ),
         color = Color.White
     ) {
         Column(

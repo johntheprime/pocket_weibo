@@ -1,7 +1,8 @@
 package com.pocketweibo.ui.screens.message
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +50,7 @@ import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.util.copyPlainToClipboard
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -168,15 +170,22 @@ fun MessageScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ReceivedMessageItem(
     message: ReceivedMessage,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    context.copyPlainToClipboard("评论", message.commentContent, toast = "评论已复制")
+                }
+            ),
         color = Color.White
     ) {
         Row(
@@ -241,15 +250,22 @@ private fun ReceivedMessageItem(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SentMessageItem(
     message: ReceivedMessage,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    context.copyPlainToClipboard("评论", message.commentContent, toast = "评论已复制")
+                }
+            ),
         color = Color.White
     ) {
         Row(

@@ -8,6 +8,7 @@ This file records **resolved requirements** and the **standard process** for eve
 
 | Date (UTC) | Requirement | Resolution | Verified |
 |-------------|---------------|------------|----------|
+| 2026-05-03 | Long-press copy for **comments** and selectable copy for **posts**; track new product work in **FEATURE.md** with todo → test → done → push. | See [FEATURE.md](FEATURE.md) F-001–F-003. `ClipboardUtils`, `SelectablePostBody`, `SelectableCopyDialog`; updates in `PostCard`, `PostDetailScreen`, `DiscoverScreen`, `MessageScreen`, `CommentBottomSheet`. | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-03 | CI APKs must **upgrade in place** (same Android signature); avoid data loss from uninstall/reinstall. Use **semantic versioning** and bump **versionCode** each release. | CI runs `assembleRelease` with `keystore.properties` + `ci-release.keystore` decoded from **GitHub Actions secrets** (fixed keystore). `app/build.gradle.kts`: `versionName` semver (e.g. `3.0.0`), `versionCode` monotonic (`100`). APK artifact renamed `pocket-weibo-release-v…`. See **CI release signing** below. | `./gradlew assembleDebug` and `./gradlew assembleRelease` — BUILD SUCCESSFUL |
 | 2026-05-03 | GitHub Actions: **each** successful publish should create a **new** release (do not reuse/overwrite one rolling tag). APK **filename** must include an app **version** (from Gradle). | Same workflow file; release APK naming + unique tag per run. | Same as above |
 | 2026-05-03 | Discover search: tapping a **微博** search result opens that post’s **detail and comments** (same as home / trending). | Wired `onPostClick` through `SearchResultsContent` → `PostSearchItem`; row uses `Modifier.clickable` and navigates via `postDetailId` → `PostDetailScreen`. File: `app/src/main/java/com/pocketweibo/ui/screens/discover/DiscoverScreen.kt`. | `./gradlew assembleDebug` — BUILD SUCCESSFUL (confirmed before commit) |
@@ -37,6 +38,7 @@ _Add new rows above this line for each shipped fix._
 
 ## Notes
 
+- **Product features** (new behavior, UX) are tracked in [FEATURE.md](FEATURE.md) with a **todo → implement → test → mark done → commit/push** flow.
 - **APK on GitHub:** Pushes to `apk-build` run [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml). CI builds a **signed release** APK so upgrades keep app data. The workflow **fails fast** if signing secrets are missing (see workflow file header).
 - **Semantic version:** Maintain `versionName` as `MAJOR.MINOR.PATCH` in `app/build.gradle.kts`. Increase **`versionCode` by at least 1** before every release you want Android to accept as an upgrade over the previous CI APK.
 - **One-time migration:** APKs built earlier on CI with the **default debug** key cannot upgrade to the new signed release; uninstall once, install the new APK, then future CI builds upgrade normally.
