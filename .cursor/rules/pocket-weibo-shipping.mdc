@@ -1,0 +1,14 @@
+---
+description: Bilingual UI and semver/versionCode whenever shipping features or fixes
+alwaysApply: true
+---
+
+# PocketWeibo — ship features & fixes
+
+Read **`RULES.md`** in the repo root for the full checklist.
+
+**Bilingual (required):** Every user-visible string must exist in **`app/src/main/res/values/strings.xml`** (Chinese default) **and** **`app/src/main/res/values-en/strings.xml`** (English). Use `stringResource` / `getString`; keep keys in parity. Settings-driven locale must keep working.
+
+**Version (`app/build.gradle.kts`):** Increment **`versionCode`** by 1 for every shippable change. Bump **`versionName`**: **MINOR** for new user-facing **features**, **PATCH** for **fixes** / small corrections with no new capability. See `RULES.md` for examples.
+
+**Verify:** `./gradlew test assembleDebug` before merge; note `FEATURE.md` / `FIX.md` when appropriate.
