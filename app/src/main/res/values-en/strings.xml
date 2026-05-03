@@ -136,6 +136,7 @@
     <string name="compose_label_location">Location</string>
     <string name="compose_label_mention">Mention</string>
     <string name="compose_no_identity_hint">Add an identity on the Me tab first</string>
+    <string name="compose_shake_hint">Shake to send: enabled after you pause typing (~1s), pick an identity, and wait ~2s on this screen—reduces accidental posts.</string>
 
     <string name="empty_feed">No posts yet. Tap + to publish.</string>
     <string name="empty_feed_title">No posts yet</string>

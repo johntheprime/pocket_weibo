@@ -136,6 +136,7 @@
     <string name="compose_label_location">位置</string>
     <string name="compose_label_mention">艾特</string>
     <string name="compose_no_identity_hint">请先在「我」页面添加身份</string>
+    <string name="compose_shake_hint">摇一摇发送：输入停顿约 1 秒、已选身份且打开本页约 2 秒后可用，减少误发。</string>
 
     <string name="empty_feed">还没有微博，点击中间+号发布第一条</string>
     <string name="empty_feed_title">还没有微博</string>

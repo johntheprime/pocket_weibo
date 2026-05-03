@@ -1,6 +1,7 @@
 package com.pocketweibo.ui.screens.compose
 
 import android.net.Uri
+import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -81,6 +81,10 @@ fun ComposeScreen(
     var showIdentityPicker by remember { mutableStateOf(false) }
     var imageUris by remember { mutableStateOf(listOf<Uri>()) }
 
+    var lastContentEditedAt by remember { mutableStateOf(SystemClock.elapsedRealtime()) }
+    val composeOpenedAt = remember { SystemClock.elapsedRealtime() }
+    var lastPostedAt by remember { mutableStateOf(0L) }
+
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
@@ -93,6 +97,7 @@ fun ComposeScreen(
         val draft = app.repository.loadDraft()
         if (draft != null) {
             content = draft.first
+            lastContentEditedAt = SystemClock.elapsedRealtime()
             val identityId = draft.second
             val identity = identities.find { it.id == identityId }
             if (identity != null) {
@@ -117,6 +122,29 @@ fun ComposeScreen(
             selectedIdentity = activeIdentity
         }
     }
+
+    fun performSend() {
+        if (!content.isNotBlank() || selectedIdentity == null) return
+        lastPostedAt = SystemClock.elapsedRealtime()
+        scope.launch {
+            app.repository.insertPost(
+                PostEntity(
+                    identityId = selectedIdentity!!.id,
+                    content = content
+                )
+            )
+            app.repository.clearDraft()
+            onDismiss()
+        }
+    }
+
+    ShakeToSendEffect(
+        canSend = content.isNotBlank() && selectedIdentity != null,
+        lastContentEditedAtMark = lastContentEditedAt,
+        composeOpenedAtMark = composeOpenedAt,
+        lastPostedAtMark = lastPostedAt,
+        onShakeSend = { performSend() }
+    )
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -153,20 +181,7 @@ fun ComposeScreen(
                 )
 
                 Button(
-                    onClick = {
-                        if (content.isNotBlank() && selectedIdentity != null) {
-                            scope.launch {
-                                app.repository.insertPost(
-                                    PostEntity(
-                                        identityId = selectedIdentity!!.id,
-                                        content = content
-                                    )
-                                )
-                                app.repository.clearDraft()
-                                onDismiss()
-                            }
-                        }
-                    },
+                    onClick = { performSend() },
                     enabled = content.isNotBlank() && selectedIdentity != null,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = WeiboOrange,
@@ -262,8 +277,11 @@ fun ComposeScreen(
 
                     TextField(
                         value = content,
-                        onValueChange = { 
-                            if (it.length <= 2000) content = it 
+                        onValueChange = {
+                            if (it.length <= 2000) {
+                                content = it
+                                lastContentEditedAt = SystemClock.elapsedRealtime()
+                            }
                         },
                         placeholder = { Text(stringResource(R.string.compose_content_hint), color = GrayMiddle) },
                         modifier = Modifier
@@ -290,6 +308,14 @@ fun ComposeScreen(
                             color = if (content.length > 1900) Color(0xFFFF5136) else GrayMiddle
                         )
                     }
+                    Text(
+                        text = stringResource(R.string.compose_shake_hint),
+                        fontSize = 11.sp,
+                        color = GrayMiddle,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp)
+                    )
 
                     if (imageUris.isNotEmpty()) {
                         LazyRow(
