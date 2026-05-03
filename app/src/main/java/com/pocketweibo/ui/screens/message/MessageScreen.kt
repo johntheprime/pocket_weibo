@@ -79,6 +79,39 @@ fun MessageScreen(
     val tabReceived = stringResource(R.string.message_tab_received)
     val tabSent = stringResource(R.string.message_tab_sent)
 
+    if (activeIdentity == null) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(Background)
+        ) {
+            WeiboTitleBar(title = stringResource(R.string.title_message))
+            Divider(thickness = 0.5.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = stringResource(R.string.message_need_identity_title),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GrayDark
+                    )
+                    Text(
+                        text = stringResource(R.string.message_need_identity_subtitle),
+                        fontSize = 14.sp,
+                        color = GrayMiddle,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+        }
+        return
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -94,6 +127,16 @@ fun MessageScreen(
                     modifier = Modifier.size(24.dp)
                 )
             }
+        )
+
+        Text(
+            text = stringResource(R.string.message_scope_banner, activeIdentity!!.name),
+            fontSize = 12.sp,
+            color = GrayMiddle,
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFF8F8F8))
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
         TabRow(

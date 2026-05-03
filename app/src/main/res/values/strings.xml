@@ -115,6 +115,9 @@
 
     <string name="message_tab_received">收到的评论</string>
     <string name="message_tab_sent">发出的评论</string>
+    <string name="message_need_identity_title">请先选择一个身份</string>
+    <string name="message_need_identity_subtitle">在「我」中管理身份并设为当前后，消息页会只显示与该身份相关的评论。</string>
+    <string name="message_scope_banner">仅显示与「%1$s」相关的评论</string>
     <string name="message_compose_cd">发起聊天</string>
     <string name="message_empty_received">暂无收到的评论</string>
     <string name="message_empty_sent">暂无发出的评论</string>

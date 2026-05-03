@@ -5,7 +5,7 @@ Each row matches **one git commit** and a **version bump** in `app/build.gradle.
 | Step | ID   | Commit (after push) | versionName | versionCode | Summary |
 |------|------|---------------------|-------------|---------------|---------|
 | 1    | F-010 | `feat(F-010): home refresh, search, title & more menus` | 3.7.0       | 108           | Home: `pullRefresh` + indicator; search dialog filters body/name; title dialog = refresh; ⋮ → 设置 / 发现；`material` for pullRefresh；`WeiboTitleBar` 左侧 48dp 触控。 |
-| 2    | F-011 | …                   | 3.8.0       | 109           | Messages: received = others on my posts only; empty copy for current identity |
+| 2    | F-011 | `feat(F-011): messages scoped to active identity` | 3.8.0       | 109           | 「收到」仅非本人评论；无当前身份时说明空态；横幅提示当前身份范围。 |
 | 3    | F-012 | …                   | 3.9.0       | 110           | Comment delete only within 48h (device time); strings ZH/EN |
 | 4    | F-013 | …                   | 3.9.1       | 111           | Remove non-functional edit icon on message title bar |
 | 5    | F-014 | …                   | 3.10.0      | 112           | Compose: location (coarse + Geocoder best-effort), @ opens identity picker to insert @name |

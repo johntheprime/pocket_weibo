@@ -53,24 +53,24 @@ class MessageViewModel(private val repository: WeiboRepository) : ViewModel() {
                 Pair(activeIdentity, allPosts)
             }.collect { (activeIdentity, allPosts) ->
                 if (activeIdentity != null) {
-                    val myPostIds = allPosts.filter { it.identityId == activeIdentity.id }.map { it.id }.toSet()
-                    
                     val received = mutableListOf<ReceivedMessage>()
                     val sent = mutableListOf<ReceivedMessage>()
                     
                     for (post in allPosts.filter { it.identityId == activeIdentity.id }) {
                         repository.getCommentsByPost(post.id).first().forEach { comment ->
-                            received.add(
-                                ReceivedMessage(
-                                    commentId = comment.id,
-                                    postId = post.id,
-                                    postContent = post.content,
-                                    commentContent = comment.content,
-                                    commentIdentityName = comment.identityName,
-                                    commentIdentityResName = comment.identityAvatarResName,
-                                    createdAt = comment.createdAt
+                            if (comment.identityId != activeIdentity.id) {
+                                received.add(
+                                    ReceivedMessage(
+                                        commentId = comment.id,
+                                        postId = post.id,
+                                        postContent = post.content,
+                                        commentContent = comment.content,
+                                        commentIdentityName = comment.identityName,
+                                        commentIdentityResName = comment.identityAvatarResName,
+                                        createdAt = comment.createdAt
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                     
@@ -94,6 +94,9 @@ class MessageViewModel(private val repository: WeiboRepository) : ViewModel() {
                     
                     _receivedMessages.value = received.sortedByDescending { it.createdAt }
                     _sentMessages.value = sent.sortedByDescending { it.createdAt }
+                } else {
+                    _receivedMessages.value = emptyList()
+                    _sentMessages.value = emptyList()
                 }
             }
         }
