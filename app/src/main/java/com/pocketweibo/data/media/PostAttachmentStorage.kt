@@ -14,6 +14,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 /**
  * Persists post images under [Context.getFilesDir]/post_attachments/{postId}/...
@@ -27,6 +29,8 @@ object PostAttachmentStorage {
 
     const val REL_ROOT = "post_attachments"
 
+    private const val COMPOSE_PREP_SUBDIR = "compose_prepare"
+
     /** Only compress when the decoded copy from the picker exceeds this size. */
     private const val COMPRESS_THRESHOLD_BYTES = 1_048_576L
 
@@ -36,6 +40,9 @@ object PostAttachmentStorage {
     private const val COMPRESS_MAX_EDGE_PX = 2048
 
     fun rootDir(context: Context): File = File(context.filesDir, REL_ROOT)
+
+    private fun composePrepareDir(context: Context): File =
+        File(context.cacheDir, COMPOSE_PREP_SUBDIR).apply { mkdirs() }
 
     fun parseStoredPaths(imageUris: String): List<String> {
         val t = imageUris.trim()
@@ -65,53 +72,89 @@ object PostAttachmentStorage {
     fun fileForRelativePath(context: Context, relative: String): File =
         File(context.filesDir, relative)
 
-    suspend fun copyGalleryUrisIntoPost(
+    /**
+     * Reads [uri], optionally compresses, writes a finished file under [composePrepareDir].
+     * Caller must delete returned files when discarding the draft or after a successful attach.
+     */
+    suspend fun prepareOneGalleryImage(
         context: Context,
-        postId: Long,
-        uris: List<Uri>,
+        uri: Uri,
         storeOriginalQuality: Boolean
-    ): String = withContext(Dispatchers.IO) {
-        if (uris.isEmpty()) return@withContext ""
-        val postDir = File(rootDir(context), postId.toString())
-        postDir.mkdirs()
-        val relativePaths = mutableListOf<String>()
-        uris.take(9).forEachIndexed { index, uri ->
-            val mimeExt = extensionForUri(context, uri)
-            val temp = File.createTempFile("pw_src_", null, context.cacheDir)
-            try {
-                val filled = context.contentResolver.openInputStream(uri)?.use { input ->
-                    temp.outputStream().use { output -> input.copyTo(output) }
-                    temp.isFile && temp.length() > 0L
-                } ?: false
-                if (!filled) return@forEachIndexed
+    ): File? = withContext(Dispatchers.IO) {
+        val mimeExt = extensionForUri(context, uri)
+        val temp = File.createTempFile("pw_src_", null, context.cacheDir)
+        try {
+            val filled = context.contentResolver.openInputStream(uri)?.use { input ->
+                temp.outputStream().use { output -> input.copyTo(output) }
+                temp.isFile && temp.length() > 0L
+            } ?: false
+            if (!filled) return@withContext null
 
-                val useJpegOutput = !storeOriginalQuality && temp.length() > COMPRESS_THRESHOLD_BYTES
-                val fileName = if (useJpegOutput) "$index.jpg" else "$index$mimeExt"
-                val outFile = File(postDir, fileName)
+            val useJpegOutput = !storeOriginalQuality && temp.length() > COMPRESS_THRESHOLD_BYTES
+            val suffix = if (useJpegOutput) ".jpg" else mimeExt
+            val out = File(composePrepareDir(context), "pw_${System.nanoTime()}$suffix")
 
-                val ok = if (storeOriginalQuality || temp.length() <= COMPRESS_THRESHOLD_BYTES) {
-                    temp.copyTo(outFile, overwrite = true)
-                    outFile.isFile && outFile.length() > 0L
-                } else {
-                    compressWithCompressor(context, temp, outFile) || run {
-                        temp.copyTo(outFile, overwrite = true)
-                        outFile.isFile && outFile.length() > 0L
-                    }
+            val ok = if (storeOriginalQuality || temp.length() <= COMPRESS_THRESHOLD_BYTES) {
+                temp.copyTo(out, overwrite = true)
+                out.isFile && out.length() > 0L
+            } else {
+                compressWithCompressor(context, temp, out) || run {
+                    temp.copyTo(out, overwrite = true)
+                    out.isFile && out.length() > 0L
                 }
-                if (ok) {
-                    relativePaths += "$REL_ROOT/$postId/$fileName"
-                } else if (outFile.exists()) {
-                    outFile.delete()
+            }
+            if (ok) out else {
+                if (out.exists()) out.delete()
+                null
+            }
+        } finally {
+            if (temp.exists()) temp.delete()
+        }
+    }
+
+    /**
+     * Moves [files] into [REL_ROOT]/[postId]/ with indices 0..n; deletes each source after success.
+     */
+    suspend fun movePreparedFilesIntoPost(context: Context, postId: Long, files: List<File>): String =
+        withContext(Dispatchers.IO) {
+            if (files.isEmpty()) return@withContext ""
+            val postDir = File(rootDir(context), postId.toString())
+            postDir.mkdirs()
+            val relativePaths = mutableListOf<String>()
+            files.take(9).forEachIndexed { index, src ->
+                if (!src.isFile || src.length() == 0L) return@forEachIndexed
+                val ext = extensionFromFilename(src.name)
+                val dest = File(postDir, "$index$ext")
+                moveOrReplaceFile(src, dest)
+                if (dest.isFile && dest.length() > 0L) {
+                    relativePaths += "$REL_ROOT/$postId/${dest.name}"
                 }
-            } finally {
-                if (temp.exists()) temp.delete()
+            }
+            if (relativePaths.isEmpty()) {
+                if (postDir.exists() && postDir.listFiles()?.isEmpty() == true) postDir.delete()
+                ""
+            } else {
+                serializePaths(relativePaths)
             }
         }
-        if (relativePaths.isEmpty()) {
-            if (postDir.exists() && postDir.listFiles()?.isEmpty() == true) postDir.delete()
-            ""
-        } else {
-            serializePaths(relativePaths)
+
+    private fun extensionFromFilename(name: String): String {
+        val dot = name.lastIndexOf('.')
+        return if (dot >= 0) name.substring(dot) else ".jpg"
+    }
+
+    private fun moveOrReplaceFile(src: File, dest: File) {
+        dest.parentFile?.mkdirs()
+        try {
+            Files.move(
+                src.toPath(),
+                dest.toPath(),
+                StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.ATOMIC_MOVE
+            )
+        } catch (_: Exception) {
+            src.copyTo(dest, overwrite = true)
+            src.delete()
         }
     }
 

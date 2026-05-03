@@ -34,6 +34,7 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-006 | **摇一摇发微博**：在写微博界面，除点「发送」外，**用力摇一摇**也可发布；通过输入停顿、进入页面暖机、发送冷却、线性加速度/加速度阈值与短时多脉冲识别，降低走路打字时的误发；附简短说明文案。 | Done |
 | F-007 | **微博配图与备份**：发布时保存配图到应用私有目录并在首页/详情/发现等展示；导出支持 **ZIP（data.json + post_attachments）** 与原有 JSON/Markdown；导入支持 JSON 文本与 ZIP；数据库增加 `extrasJson` 预留扩展（如可见范围）。 | Done |
 | F-008 | **配图体积控制**：超过约 1 MB 的待存图片使用 **zelory Compressor** 压缩（最长边 2048、目标约 1 MB）；设置中可选 **原画质保存**（关闭压缩，占用更大）。 | Done |
+| F-009 | **配图体验**：写微博选图后在后台 **预先处理**（压缩/复制），发送时仅移动文件并 **防重复发送**（发送中/处理中禁用按钮与摇一摇）；详情页配图可 **全屏查看**（滑动换图、双指缩放）。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 

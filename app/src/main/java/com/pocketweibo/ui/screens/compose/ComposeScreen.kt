@@ -26,19 +26,23 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.AlternateEmail
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +59,8 @@ import coil.request.ImageRequest
 import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.IdentityEntity
+import com.pocketweibo.data.media.PostAttachmentStorage
+import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
@@ -63,6 +69,9 @@ import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.Surface
 import com.pocketweibo.ui.theme.WeiboOrange
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.io.File
 
 @Composable
 fun ComposeScreen(
@@ -74,21 +83,48 @@ fun ComposeScreen(
     val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
     val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
     val scope = rememberCoroutineScope()
+    val prepMutex = remember { Mutex() }
 
     var selectedIdentity by remember { mutableStateOf<IdentityEntity?>(null) }
     var content by remember { mutableStateOf("") }
     var showIdentityPicker by remember { mutableStateOf(false) }
-    var imageUris by remember { mutableStateOf(listOf<Uri>()) }
+    var preparedImageFiles by remember { mutableStateOf(listOf<File>()) }
+    var isPreparingImages by remember { mutableStateOf(false) }
+    var isSending by remember { mutableStateOf(false) }
 
     var lastContentEditedAt by remember { mutableStateOf(SystemClock.elapsedRealtime()) }
     val composeOpenedAt = remember { SystemClock.elapsedRealtime() }
     var lastPostedAt by remember { mutableStateOf(0L) }
 
+    val preparedSnapshot by rememberUpdatedState(preparedImageFiles)
+    DisposableEffect(Unit) {
+        onDispose {
+            preparedSnapshot.forEach { f -> if (f.exists()) f.delete() }
+        }
+    }
+
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
-        if (uris.isNotEmpty()) {
-            imageUris = (imageUris + uris).take(9)
+        if (uris.isEmpty()) return@rememberLauncherForActivityResult
+        scope.launch {
+            prepMutex.withLock {
+                isPreparingImages = true
+                try {
+                    val storeOriginal = UiPreferences.getPostImagesOriginalQuality(context)
+                    val merged = preparedImageFiles.toMutableList()
+                    val slotsLeft = (9 - merged.size).coerceAtLeast(0)
+                    if (slotsLeft == 0) return@withLock
+                    val toProcess = uris.take(slotsLeft)
+                    for (u in toProcess) {
+                        val f = PostAttachmentStorage.prepareOneGalleryImage(context, u, storeOriginal)
+                        if (f != null) merged.add(f)
+                    }
+                    preparedImageFiles = merged.take(9)
+                } finally {
+                    isPreparingImages = false
+                }
+            }
         }
     }
 
@@ -124,21 +160,34 @@ fun ComposeScreen(
 
     fun performSend() {
         if (selectedIdentity == null) return
-        if (!content.isNotBlank() && imageUris.isEmpty()) return
+        if (!content.isNotBlank() && preparedImageFiles.isEmpty()) return
+        if (isSending || isPreparingImages) return
+        isSending = true
         lastPostedAt = SystemClock.elapsedRealtime()
+        val identityId = selectedIdentity!!.id
+        val text = content
+        val filesToSend = preparedImageFiles.toList()
         scope.launch {
-            app.repository.insertPostWithGallery(
-                identityId = selectedIdentity!!.id,
-                content = content,
-                galleryUris = imageUris
-            )
-            app.repository.clearDraft()
-            onDismiss()
+            try {
+                app.repository.insertPostWithPreparedGallery(
+                    identityId = identityId,
+                    content = text,
+                    preparedFiles = filesToSend
+                )
+                app.repository.clearDraft()
+                preparedImageFiles = emptyList()
+                onDismiss()
+            } finally {
+                isSending = false
+            }
         }
     }
 
     ShakeToSendEffect(
-        canSend = (content.isNotBlank() || imageUris.isNotEmpty()) && selectedIdentity != null,
+        canSend = (content.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
+            selectedIdentity != null &&
+            !isSending &&
+            !isPreparingImages,
         lastContentEditedAtMark = lastContentEditedAt,
         composeOpenedAtMark = composeOpenedAt,
         lastPostedAtMark = lastPostedAt,
@@ -152,6 +201,12 @@ fun ComposeScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
+            if (isPreparingImages) {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = WeiboOrange
+                )
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -181,13 +236,24 @@ fun ComposeScreen(
 
                 Button(
                     onClick = { performSend() },
-                    enabled = (content.isNotBlank() || imageUris.isNotEmpty()) && selectedIdentity != null,
+                    enabled = (content.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
+                        selectedIdentity != null &&
+                        !isSending &&
+                        !isPreparingImages,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = WeiboOrange,
                         disabledContainerColor = GrayLight
                     )
                 ) {
-                    Text(stringResource(R.string.compose_send))
+                    if (isSending) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(stringResource(R.string.compose_send))
+                    }
                 }
             }
 
@@ -315,21 +381,31 @@ fun ComposeScreen(
                             .fillMaxWidth()
                             .padding(top = 6.dp)
                     )
+                    if (isPreparingImages) {
+                        Text(
+                            text = stringResource(R.string.compose_preparing_images),
+                            fontSize = 11.sp,
+                            color = WeiboOrange,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp)
+                        )
+                    }
 
-                    if (imageUris.isNotEmpty()) {
+                    if (preparedImageFiles.isNotEmpty()) {
                         LazyRow(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 8.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(imageUris) { uri ->
+                            items(preparedImageFiles, key = { it.absolutePath }) { file ->
                                 Box(
                                     modifier = Modifier.size(80.dp)
                                 ) {
                                     AsyncImage(
                                         model = ImageRequest.Builder(context)
-                                            .data(uri)
+                                            .data(file)
                                             .crossfade(true)
                                             .build(),
                                         contentDescription = stringResource(R.string.compose_image_cd),
@@ -339,7 +415,11 @@ fun ComposeScreen(
                                             .clip(RoundedCornerShape(8.dp))
                                     )
                                     IconButton(
-                                        onClick = { imageUris = imageUris.filter { it != uri } },
+                                        onClick = {
+                                            if (file.exists()) file.delete()
+                                            preparedImageFiles =
+                                                preparedImageFiles.filter { it.absolutePath != file.absolutePath }
+                                        },
                                         modifier = Modifier
                                             .align(Alignment.TopEnd)
                                             .size(20.dp)

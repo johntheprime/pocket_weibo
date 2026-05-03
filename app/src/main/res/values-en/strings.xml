@@ -139,6 +139,11 @@
     <string name="compose_remove_image_cd">Remove</string>
     <string name="compose_label_image">Image</string>
     <string name="post_image_cd">Post image</string>
+    <string name="post_image_viewer_cd">View image</string>
+    <string name="post_image_close_cd">Close</string>
+    <string name="post_image_prev_cd">Previous image</string>
+    <string name="post_image_next_cd">Next image</string>
+    <string name="compose_preparing_images">Processing images…</string>
     <string name="compose_label_location">Location</string>
     <string name="compose_label_mention">Mention</string>
     <string name="compose_no_identity_hint">Add an identity on the Me tab first</string>

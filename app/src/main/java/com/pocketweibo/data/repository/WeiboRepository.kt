@@ -66,8 +66,30 @@ class WeiboRepository(
     /**
      * Creates a post and copies [galleryUris] into app-private storage under [PostAttachmentStorage.REL_ROOT].
      * [content] may be blank when only images are attached.
+     * Prefer [insertPostWithPreparedGallery] from compose when images are already prepared (faster send).
      */
     suspend fun insertPostWithGallery(identityId: Long, content: String, galleryUris: List<Uri>): Long {
+        if (galleryUris.isEmpty()) {
+            return insertPostWithPreparedGallery(identityId, content, emptyList())
+        }
+        val storeOriginal = UiPreferences.getPostImagesOriginalQuality(context)
+        val prepared = withContext(Dispatchers.IO) {
+            galleryUris.take(9).mapNotNull { uri ->
+                PostAttachmentStorage.prepareOneGalleryImage(context, uri, storeOriginal)
+            }
+        }
+        return insertPostWithPreparedGallery(identityId, content, prepared)
+    }
+
+    /**
+     * Inserts a post and moves [preparedFiles] (from [PostAttachmentStorage.prepareOneGalleryImage]) into
+     * [PostAttachmentStorage.REL_ROOT] for that post. Deletes each prepared file after a successful move.
+     */
+    suspend fun insertPostWithPreparedGallery(
+        identityId: Long,
+        content: String,
+        preparedFiles: List<File>
+    ): Long {
         val base = PostEntity(
             identityId = identityId,
             content = content.trim(),
@@ -75,14 +97,8 @@ class WeiboRepository(
             extrasJson = "{}"
         )
         val newId = postDao.insert(base)
-        if (galleryUris.isNotEmpty()) {
-            val storeOriginal = UiPreferences.getPostImagesOriginalQuality(context)
-            val json = PostAttachmentStorage.copyGalleryUrisIntoPost(
-                context,
-                newId,
-                galleryUris,
-                storeOriginalQuality = storeOriginal
-            )
+        if (preparedFiles.isNotEmpty()) {
+            val json = PostAttachmentStorage.movePreparedFilesIntoPost(context, newId, preparedFiles)
             if (json.isNotEmpty()) {
                 postDao.update(base.copy(id = newId, imageUris = json))
             }

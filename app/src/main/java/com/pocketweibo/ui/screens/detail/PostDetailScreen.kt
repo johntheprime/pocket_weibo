@@ -61,6 +61,7 @@ import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.ui.components.Avatar
+import com.pocketweibo.ui.components.PostImageFullscreenViewer
 import com.pocketweibo.ui.components.PostImageGallery
 import com.pocketweibo.ui.components.SelectablePostBody
 import com.pocketweibo.ui.components.WeiboTitleBar
@@ -89,11 +90,13 @@ fun PostDetailScreen(
     val post by viewModel.post.collectAsState()
     val comments by viewModel.comments.collectAsState()
     var commentText by remember { mutableStateOf("") }
+    var imageViewer by remember { mutableStateOf<Pair<List<String>, Int>?>(null) }
 
+    Box(modifier = modifier.fillMaxSize()) {
     // Use Scaffold: It is specifically designed to handle top bars and bottom bars
     // while managing inner content padding correctly.
     androidx.compose.material3.Scaffold(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             Column {
                 WeiboTitleBar(
@@ -179,7 +182,10 @@ fun PostDetailScreen(
                     PostDetailCard(
                         post = currentPost,
                         onLikeClick = { viewModel.toggleLike() },
-                        onShareClick = { sharePost(context, currentPost.identityName, currentPost.content) }
+                        onShareClick = { sharePost(context, currentPost.identityName, currentPost.content) },
+                        onPostImageClick = { index ->
+                            imageViewer = PostAttachmentStorage.parseStoredPaths(currentPost.imageUris) to index
+                        }
                     )
                 }
 
@@ -204,13 +210,23 @@ fun PostDetailScreen(
             }
         }
     }
+
+        imageViewer?.let { (paths, start) ->
+            PostImageFullscreenViewer(
+                paths = paths,
+                initialIndex = start,
+                onDismiss = { imageViewer = null }
+            )
+        }
+    }
 }
 
 @Composable
 private fun PostDetailCard(
     post: com.pocketweibo.data.local.dao.PostWithIdentity,
     onLikeClick: () -> Unit,
-    onShareClick: () -> Unit
+    onShareClick: () -> Unit,
+    onPostImageClick: (Int) -> Unit
 ) {
     val resources = LocalContext.current.resources
     val shareLabel = stringResource(R.string.post_detail_action_share)
@@ -277,7 +293,9 @@ private fun PostDetailCard(
                 PostImageGallery(
                     imageUris = post.imageUris,
                     maxHeight = 160.dp,
-                    modifier = Modifier.padding(top = 12.dp)
+                    modifier = Modifier.padding(top = 12.dp),
+                    enableImageClick = true,
+                    onImageClick = onPostImageClick
                 )
             }
 
