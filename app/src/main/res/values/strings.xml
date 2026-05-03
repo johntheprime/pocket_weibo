@@ -132,6 +132,22 @@
     <string name="post_detail_like_cd">点赞</string>
     <string name="post_detail_comment_cd">评论</string>
     <string name="post_detail_more_cd">更多</string>
+    <string name="post_detail_menu_copy">复制全文</string>
+    <string name="post_detail_menu_share">分享</string>
+    <string name="post_detail_menu_remind">提醒</string>
+    <string name="post_detail_menu_delete">删除微博</string>
+    <string name="post_detail_copy_label">微博正文</string>
+    <string name="post_detail_delete_confirm_title">删除这条微博？</string>
+    <string name="post_detail_delete_confirm_body">删除后无法恢复（评论与配图一并删除）。</string>
+    <string name="post_detail_remind_title">多久后提醒</string>
+    <string name="post_detail_remind_15m">15 分钟后</string>
+    <string name="post_detail_remind_1h">1 小时后</string>
+    <string name="post_detail_remind_3h">3 小时后</string>
+    <string name="reminder_scheduled_toast">已设置本地提醒</string>
+    <string name="reminder_channel_name">微博提醒</string>
+    <string name="reminder_channel_desc">单条微博一次性本地提醒</string>
+    <string name="reminder_notification_title">微博提醒</string>
+    <string name="reminder_notification_body_fallback">你设置的提醒时间到了</string>
     <string name="comments_header">评论</string>
     <string name="comments_empty">暂无评论，快来抢沙发吧</string>
 

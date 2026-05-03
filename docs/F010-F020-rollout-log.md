@@ -10,10 +10,7 @@ Each row matches **one git commit** and a **version bump** in `app/build.gradle.
 | 4    | F-013 | `fix(F-013): remove dead compose icon on messages` | 3.9.1       | 111           | MessageScreen 标题栏去掉无点击行为的 Edit 图标。 |
 | 5    | F-014 | `feat(F-014): compose location + @ mentions` | 3.10.0      | 112           | 定位权限 + last known + Geocoder → `extrasJson.location`；\@ 对话框插入其他身份；`insertPostWithPreparedGallery(locationLabel)`。 |
 | 6    | F-015 | `feat(F-015): tap Me header to edit active identity` | 3.11.0      | 113           | MeScreen 身份区 `clickable` → `IdentityDetailScreen`。 |
-| 7    | F-016 | …                   | 3.12.0      | 114           | Post time line shows weekday (shared formatter) |
-| 8    | F-017 | …                   | 3.13.0      | 115           | ACTION_SEND text/plain → compose with prefill; singleTop |
-| 9    | F-018 | …                   | 3.14.0      | 116           | Comments ORDER BY createdAt DESC in Room |
-| 10   | F-019 | …                   | 3.15.0      | 117           | Post reminder: presets + AlarmManager.setAlarmClock + tap opens post |
-| 11   | F-020 | …                   | 3.16.0      | 118           | Post detail ⋮: delete (confirm), copy body, remind; cancel reminder |
+| 7    | F-016 | `feat(F-016): weekday in formatted post times` | 3.12.0      | 114           | `time_full_format` / `time_short_format` / 消息列表过去态含 EEE；`RelativeTime` 使用 `appLocale()`。 |
+| 8–11 | F-017–F-020 | `feat(F-017..F-020): share, comments DESC, reminders, detail menu` | 3.16.0      | 118           | `ComposeIntentViewModel` + `singleTop` + SEND；评论 `ORDER BY DESC`；`post_reminders` + `PostReminderReceiver` + `setAlarmClock`；详情 ⋮ 复制/分享/提醒/删除；通知渠道；`EXTRA_OPEN_POST_ID`。 |
 
 _Update the commit hash column after each `git commit` if you maintain this file by hand._

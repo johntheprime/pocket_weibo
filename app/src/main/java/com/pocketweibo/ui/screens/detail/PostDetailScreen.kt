@@ -31,7 +31,10 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +42,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -185,6 +189,22 @@ fun PostDetailScreen(
                         onShareClick = { sharePost(context, currentPost.identityName, currentPost.content) },
                         onPostImageClick = { index ->
                             imageViewer = PostAttachmentStorage.parseStoredPaths(currentPost.imageUris) to index
+                        },
+                        onCopyPost = {
+                            context.copyPlainToClipboard(
+                                context.getString(R.string.post_detail_copy_label),
+                                currentPost.content,
+                                toast = context.getString(R.string.toast_clipboard_copied)
+                            )
+                        },
+                        onDeletePost = { viewModel.deletePost(onBack) },
+                        onRemindAfterMinutes = { minutes ->
+                            viewModel.scheduleReminderAfterMinutes(minutes)
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.reminder_scheduled_toast),
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     )
                 }
@@ -226,15 +246,22 @@ private fun PostDetailCard(
     post: com.pocketweibo.data.local.dao.PostWithIdentity,
     onLikeClick: () -> Unit,
     onShareClick: () -> Unit,
-    onPostImageClick: (Int) -> Unit
+    onPostImageClick: (Int) -> Unit,
+    onCopyPost: () -> Unit,
+    onDeletePost: () -> Unit,
+    onRemindAfterMinutes: (Long) -> Unit
 ) {
-    val resources = LocalContext.current.resources
+    val context = LocalContext.current
+    val resources = context.resources
     val shareLabel = stringResource(R.string.post_detail_action_share)
     val likeCd = stringResource(R.string.post_detail_like_cd)
     val commentCd = stringResource(R.string.post_detail_comment_cd)
     val moreCd = stringResource(R.string.post_detail_more_cd)
     val shareCd = stringResource(R.string.post_detail_share_cd)
     val likeLabelZero = stringResource(R.string.action_like)
+    var moreExpanded by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showRemindPicker by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White
@@ -269,12 +296,47 @@ private fun PostDetailCard(
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
-                IconButton(onClick = { }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = moreCd,
-                        tint = GrayMiddle
-                    )
+                Box {
+                    IconButton(onClick = { moreExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = moreCd,
+                            tint = GrayMiddle
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = moreExpanded,
+                        onDismissRequest = { moreExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.post_detail_menu_copy)) },
+                            onClick = {
+                                moreExpanded = false
+                                onCopyPost()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.post_detail_menu_share)) },
+                            onClick = {
+                                moreExpanded = false
+                                onShareClick()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.post_detail_menu_remind)) },
+                            onClick = {
+                                moreExpanded = false
+                                showRemindPicker = true
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.post_detail_menu_delete)) },
+                            onClick = {
+                                moreExpanded = false
+                                showDeleteConfirm = true
+                            }
+                        )
+                    }
                 }
             }
             
@@ -343,6 +405,56 @@ private fun PostDetailCard(
                     },
                     text = "${post.commentCount}",
                     onClick = { }
+                )
+            }
+
+            if (showDeleteConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteConfirm = false },
+                    title = { Text(stringResource(R.string.post_detail_delete_confirm_title)) },
+                    text = { Text(stringResource(R.string.post_detail_delete_confirm_body)) },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showDeleteConfirm = false
+                                onDeletePost()
+                            }
+                        ) {
+                            Text(stringResource(R.string.delete))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteConfirm = false }) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                    }
+                )
+            }
+            if (showRemindPicker) {
+                AlertDialog(
+                    onDismissRequest = { showRemindPicker = false },
+                    title = { Text(stringResource(R.string.post_detail_remind_title)) },
+                    text = {
+                        Column {
+                            TextButton(onClick = {
+                                showRemindPicker = false
+                                onRemindAfterMinutes(15)
+                            }) { Text(stringResource(R.string.post_detail_remind_15m)) }
+                            TextButton(onClick = {
+                                showRemindPicker = false
+                                onRemindAfterMinutes(60)
+                            }) { Text(stringResource(R.string.post_detail_remind_1h)) }
+                            TextButton(onClick = {
+                                showRemindPicker = false
+                                onRemindAfterMinutes(180)
+                            }) { Text(stringResource(R.string.post_detail_remind_3h)) }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showRemindPicker = false }) {
+                            Text(stringResource(R.string.close_cd))
+                        }
+                    }
                 )
             }
         }

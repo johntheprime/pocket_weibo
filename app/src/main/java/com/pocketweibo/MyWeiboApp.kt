@@ -1,6 +1,10 @@
 package com.pocketweibo
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
+import com.pocketweibo.R
 import com.pocketweibo.data.DataSeeder
 import com.pocketweibo.data.local.AppDatabase
 import com.pocketweibo.data.repository.WeiboRepository
@@ -12,6 +16,7 @@ class PocketWeiboApp : Application() {
             database.identityDao(),
             database.postDao(),
             database.commentDao(),
+            database.postReminderDao(),
             this
         )
     }
@@ -31,6 +36,22 @@ class PocketWeiboApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        ensureReminderChannel()
         DataSeeder.seedIfEmpty(repository)
+    }
+
+    private fun ensureReminderChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val nm = getSystemService(NotificationManager::class.java) ?: return
+        val ch = NotificationChannel(
+            REMINDER_CHANNEL_ID,
+            getString(R.string.reminder_channel_name),
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply { description = getString(R.string.reminder_channel_desc) }
+        nm.createNotificationChannel(ch)
+    }
+
+    companion object {
+        const val REMINDER_CHANNEL_ID = "post_reminders"
     }
 }

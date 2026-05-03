@@ -22,4 +22,20 @@ object DatabaseMigrations {
             )
         }
     }
+
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `post_reminders` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `postId` INTEGER NOT NULL,
+                    `fireAtMillis` INTEGER NOT NULL,
+                    FOREIGN KEY(`postId`) REFERENCES `posts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_post_reminders_postId` ON `post_reminders` (`postId`)")
+        }
+    }
 }

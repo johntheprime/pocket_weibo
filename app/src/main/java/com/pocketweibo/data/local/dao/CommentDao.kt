@@ -30,7 +30,7 @@ interface CommentDao {
         FROM comments c
         INNER JOIN identities i ON c.identityId = i.id
         WHERE c.postId = :postId
-        ORDER BY c.createdAt ASC
+        ORDER BY c.createdAt DESC
     """)
     fun getCommentsByPost(postId: Long, currentIdentityId: Long = 0): Flow<List<CommentWithIdentity>>
 
@@ -43,7 +43,7 @@ interface CommentDao {
         FROM comments c
         INNER JOIN identities i ON c.identityId = i.id
         WHERE c.postId = :postId
-        ORDER BY c.createdAt ASC
+        ORDER BY c.createdAt DESC
     """)
     fun getCommentsByPostNoAuth(postId: Long): Flow<List<CommentWithIdentity>>
 

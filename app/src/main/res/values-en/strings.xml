@@ -132,6 +132,22 @@
     <string name="post_detail_like_cd">Like</string>
     <string name="post_detail_comment_cd">Comments</string>
     <string name="post_detail_more_cd">More</string>
+    <string name="post_detail_menu_copy">Copy full text</string>
+    <string name="post_detail_menu_share">Share</string>
+    <string name="post_detail_menu_remind">Remind me</string>
+    <string name="post_detail_menu_delete">Delete post</string>
+    <string name="post_detail_copy_label">Post body</string>
+    <string name="post_detail_delete_confirm_title">Delete this post?</string>
+    <string name="post_detail_delete_confirm_body">This cannot be undone. Comments and images for this post are removed too.</string>
+    <string name="post_detail_remind_title">Remind me in</string>
+    <string name="post_detail_remind_15m">15 minutes</string>
+    <string name="post_detail_remind_1h">1 hour</string>
+    <string name="post_detail_remind_3h">3 hours</string>
+    <string name="reminder_scheduled_toast">Local reminder set</string>
+    <string name="reminder_channel_name">Post reminders</string>
+    <string name="reminder_channel_desc">One-time local reminders for a post</string>
+    <string name="reminder_notification_title">Post reminder</string>
+    <string name="reminder_notification_body_fallback">Your reminder time is up</string>
     <string name="comments_header">Comments</string>
     <string name="comments_empty">No comments yet</string>
 

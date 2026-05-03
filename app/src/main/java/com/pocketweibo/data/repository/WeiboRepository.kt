@@ -10,12 +10,15 @@ import com.pocketweibo.data.local.dao.CommentDao
 import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.data.local.dao.IdentityDao
 import com.pocketweibo.data.local.dao.PostDao
+import com.pocketweibo.data.local.dao.PostReminderDao
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.local.entity.Gender
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.PostEntity
+import com.pocketweibo.data.local.entity.PostReminderEntity
 import com.pocketweibo.data.media.PostAttachmentStorage
+import com.pocketweibo.reminder.PostReminderAlarmScheduler
 import com.pocketweibo.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -39,6 +42,7 @@ class WeiboRepository(
     private val identityDao: IdentityDao,
     private val postDao: PostDao,
     private val commentDao: CommentDao,
+    private val postReminderDao: PostReminderDao,
     private val context: Context
 ) {
     val allIdentities: Flow<List<IdentityEntity>> = identityDao.getAllIdentities()
@@ -115,9 +119,30 @@ class WeiboRepository(
         return newId
     }
 
+    suspend fun getPostEntityById(id: Long): PostEntity? = postDao.getPostEntityById(id)
+
     suspend fun deletePost(post: PostEntity) {
+        cancelPostRemindersInternal(post.id)
         PostAttachmentStorage.deleteAllForPost(context, post.id)
         postDao.delete(post)
+    }
+
+    suspend fun schedulePostReminder(postId: Long, fireAtMillis: Long) {
+        withContext(Dispatchers.IO) {
+            cancelPostRemindersInternal(postId)
+            val rowId = postReminderDao.insert(
+                PostReminderEntity(postId = postId, fireAtMillis = fireAtMillis)
+            )
+            PostReminderAlarmScheduler.schedule(context, rowId, postId, fireAtMillis)
+        }
+    }
+
+    private suspend fun cancelPostRemindersInternal(postId: Long) {
+        val rows = postReminderDao.listForPost(postId)
+        for (r in rows) {
+            PostReminderAlarmScheduler.cancel(context, r.id, r.postId)
+        }
+        postReminderDao.deleteByPostId(postId)
     }
 
     suspend fun togglePostLike(postId: Long) = postDao.toggleLike(postId)

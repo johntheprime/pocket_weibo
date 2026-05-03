@@ -84,6 +84,8 @@ import java.io.File
 @Composable
 fun ComposeScreen(
     onDismiss: () -> Unit,
+    initialShareText: String = "",
+    onConsumeInitialShare: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -164,16 +166,22 @@ fun ComposeScreen(
     }
 
     LaunchedEffect(Unit) {
-        val draft = app.repository.loadDraft()
-        if (draft != null) {
-            content = draft.first
+        if (initialShareText.isNotBlank()) {
+            content = initialShareText.trim().take(2000)
             lastContentEditedAt = SystemClock.elapsedRealtime()
-            val identityId = draft.second
-            val identity = identities.find { it.id == identityId }
-            if (identity != null) {
-                selectedIdentity = identity
-            } else if (activeIdentity != null) {
-                selectedIdentity = activeIdentity
+            onConsumeInitialShare()
+        } else {
+            val draft = app.repository.loadDraft()
+            if (draft != null) {
+                content = draft.first
+                lastContentEditedAt = SystemClock.elapsedRealtime()
+                val identityId = draft.second
+                val identity = identities.find { it.id == identityId }
+                if (identity != null) {
+                    selectedIdentity = identity
+                } else if (activeIdentity != null) {
+                    selectedIdentity = activeIdentity
+                }
             }
         }
     }
