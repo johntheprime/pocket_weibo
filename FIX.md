@@ -8,6 +8,7 @@ This file records **resolved requirements** and the **standard process** for eve
 
 | Date (UTC) | Requirement | Resolution | Verified |
 |-------------|---------------|------------|----------|
+| 2026-05-03 | GitHub Actions: **each** successful publish should create a **new** release (do not reuse/overwrite one rolling tag). APK **filename** must include an app **version** (from Gradle). | `.github/workflows/build-apk.yml`: parse `versionName`/`versionCode` from `app/build.gradle.kts`; rename APK to `pocket-weibo-debug-v{name}-{code}-r{run}_{attempt}.apk`; source tarball `pocket-weibo-v{name}-{code}-source-{sha}.tar.gz`; publish with `softprops/action-gh-release@v2` and unique tag `apk-v{name}-{code}-r{run}_{attempt}`. | `./gradlew assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-03 | Discover search: tapping a **微博** search result opens that post’s **detail and comments** (same as home / trending). | Wired `onPostClick` through `SearchResultsContent` → `PostSearchItem`; row uses `Modifier.clickable` and navigates via `postDetailId` → `PostDetailScreen`. File: `app/src/main/java/com/pocketweibo/ui/screens/discover/DiscoverScreen.kt`. | `./gradlew assembleDebug` — BUILD SUCCESSFUL (confirmed before commit) |
 | 2026-05-03 | Maintain **FIX.md** as the fix ledger and **plan → implement → verify → record → ship** checklist for all future work. | Added this file; links CI expectation to `assembleDebug`. | Same build as above |
 
@@ -35,5 +36,5 @@ _Add new rows above this line for each shipped fix._
 
 ## Notes
 
-- **APK on GitHub:** Pushes to `apk-build` trigger the workflow that builds the debug APK; keeping `assembleDebug` green keeps releases unblocked.
+- **APK on GitHub:** Pushes to `apk-build` run [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml), which creates a **new** release each time (versioned tag + APK name). Keeping `./gradlew assembleDebug` green keeps CI unblocked.
 - If a change is **reverted** or **superseded**, add a short note in the ledger row or a new row pointing to the follow-up fix.
