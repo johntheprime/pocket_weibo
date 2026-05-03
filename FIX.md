@@ -19,6 +19,28 @@ _Add new rows above this line for each shipped fix._
 
 ---
 
+## Planned backlog (not started — todos only)
+
+以下需求已整理为 **FEATURE.md** 中的 **Todo** 行，实现前请逐条确认产品与交互细节；**勿在未确认前开工**。
+
+| 追踪 | 摘要 |
+|------|------|
+| [FEATURE.md](FEATURE.md) **F-010** | 首页下拉 / 搜索 / 首页键 / 更多 — 实现或移除死控件 |
+| [FEATURE.md](FEATURE.md) **F-011** | 消息页：按身份收窄或移除入口 |
+| [FEATURE.md](FEATURE.md) **F-012** | 评论删除仅 48 小时内可用 |
+| [FEATURE.md](FEATURE.md) **F-013** | 消息页异常笔形图标移除或替换 |
+| [FEATURE.md](FEATURE.md) **F-014** | 发微博：位置（离线近似城市）、@ 行为 |
+| [FEATURE.md](FEATURE.md) **F-015** | 我页点击身份可编辑 |
+| [FEATURE.md](FEATURE.md) **F-016** | 发帖时间附带星期 |
+| [FEATURE.md](FEATURE.md) **F-017** | 系统分享文本 → 新微博 |
+| [FEATURE.md](FEATURE.md) **F-018** | 评论最新在上排序 |
+| [FEATURE.md](FEATURE.md) **F-019** | 本地闹钟 / 提醒（与帖关联） |
+| [FEATURE.md](FEATURE.md) **F-020** | 详情 ⋮：删除等合适操作 |
+
+完整验收说明见 [FEATURE.md — Backlog detail (Todo)](FEATURE.md#backlog-detail-todo) 小节。
+
+---
+
 ## Workflow for every request (plan → implement → verify → record → ship)
 
 1. **Plan** — Restate the goal, list files or areas to touch, and note risks (navigation, DB, CI).
