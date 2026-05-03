@@ -14,8 +14,10 @@ android {
         applicationId = "com.pocketweibo"
         minSdk = 26
         targetSdk = 34
-        versionCode = 12
-        versionName = "2.2"
+        // versionName: semantic versioning (MAJOR.MINOR.PATCH). Bump when you ship user-facing changes.
+        versionName = "3.0.0"
+        // versionCode: must increase for every release APK that should upgrade in-place (same signing key).
+        versionCode = 100
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
