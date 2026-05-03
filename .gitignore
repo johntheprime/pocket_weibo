@@ -7,5 +7,9 @@ local.properties
 keystore.properties
 release.keystore
 ci-release.keystore
+# Local GitHub release keystore + secrets (never commit)
+pocket-weibo-github-release.keystore
+ANDROID_KEYSTORE_BASE64.local.txt
+github-keystore-secrets.local.txt
 *.jks
 .DS_Store
