@@ -51,9 +51,9 @@ _Add new rows for upcoming work; keep IDs incrementing._
 
 ---
 
-## Backlog detail (Todo)
+## Backlog detail (F-010–F-020 — shipped)
 
-**在未与产品/维护者确认细节前不要开工。** 以下与上表 **F-010–F-020** 一一对应，便于对齐与追溯。
+以下为实现前对齐用草稿说明；**对应功能已交付**，保留作设计追溯。
 
 ### F-010 主导航与首页控件
 
