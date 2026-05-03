@@ -16,7 +16,6 @@ import com.pocketweibo.data.local.entity.Gender
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.media.PostAttachmentStorage
-import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -68,14 +67,18 @@ class WeiboRepository(
      * [content] may be blank when only images are attached.
      * Prefer [insertPostWithPreparedGallery] from compose when images are already prepared (faster send).
      */
-    suspend fun insertPostWithGallery(identityId: Long, content: String, galleryUris: List<Uri>): Long {
+    suspend fun insertPostWithGallery(
+        identityId: Long,
+        content: String,
+        galleryUris: List<Uri>,
+        storeOriginalQuality: Boolean = false
+    ): Long {
         if (galleryUris.isEmpty()) {
             return insertPostWithPreparedGallery(identityId, content, emptyList())
         }
-        val storeOriginal = UiPreferences.getPostImagesOriginalQuality(context)
         val prepared = withContext(Dispatchers.IO) {
             galleryUris.take(9).mapNotNull { uri ->
-                PostAttachmentStorage.prepareOneGalleryImage(context, uri, storeOriginal)
+                PostAttachmentStorage.prepareOneGalleryImage(context, uri, storeOriginalQuality)
             }
         }
         return insertPostWithPreparedGallery(identityId, content, prepared)

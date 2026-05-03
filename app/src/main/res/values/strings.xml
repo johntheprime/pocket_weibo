@@ -46,10 +46,6 @@
     <string name="settings_language_zh">简体中文</string>
     <string name="settings_language_en">English</string>
 
-    <string name="settings_post_images_section">微博配图</string>
-    <string name="settings_post_images_original_title">原画质保存</string>
-    <string name="settings_post_images_original_subtitle">开启后发布时保留相册原文件大小；关闭时超过约 1 MB 的图片会压缩（约 1 MB 上限，更清晰省空间）。</string>
-
     <string name="about_title">关于本软件</string>
     <string name="about_app_line">PocketWeibo（口袋微博）</string>
     <string name="about_version_unknown">版本未知</string>
@@ -144,6 +140,8 @@
     <string name="post_image_prev_cd">上一张</string>
     <string name="post_image_next_cd">下一张</string>
     <string name="compose_preparing_images">正在处理图片…</string>
+    <string name="compose_per_post_original_title">本帖原图（不压缩）</string>
+    <string name="compose_per_post_original_subtitle">开启后，本条微博中新添加的图片保留相册原文件大小；关闭时大图会压缩以节省空间。已添加的缩略图不受影响，可删除后重新选择。</string>
     <string name="compose_label_location">位置</string>
     <string name="compose_label_mention">艾特</string>
     <string name="compose_no_identity_hint">请先在「我」页面添加身份</string>

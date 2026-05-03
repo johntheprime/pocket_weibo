@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -60,7 +61,6 @@ import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.media.PostAttachmentStorage
-import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
@@ -91,6 +91,7 @@ fun ComposeScreen(
     var preparedImageFiles by remember { mutableStateOf(listOf<File>()) }
     var isPreparingImages by remember { mutableStateOf(false) }
     var isSending by remember { mutableStateOf(false) }
+    var useOriginalForThisPost by remember { mutableStateOf(false) }
 
     var lastContentEditedAt by remember { mutableStateOf(SystemClock.elapsedRealtime()) }
     val composeOpenedAt = remember { SystemClock.elapsedRealtime() }
@@ -111,13 +112,16 @@ fun ComposeScreen(
             prepMutex.withLock {
                 isPreparingImages = true
                 try {
-                    val storeOriginal = UiPreferences.getPostImagesOriginalQuality(context)
                     val merged = preparedImageFiles.toMutableList()
                     val slotsLeft = (9 - merged.size).coerceAtLeast(0)
                     if (slotsLeft == 0) return@withLock
                     val toProcess = uris.take(slotsLeft)
                     for (u in toProcess) {
-                        val f = PostAttachmentStorage.prepareOneGalleryImage(context, u, storeOriginal)
+                        val f = PostAttachmentStorage.prepareOneGalleryImage(
+                            context,
+                            u,
+                            useOriginalForThisPost
+                        )
                         if (f != null) merged.add(f)
                     }
                     preparedImageFiles = merged.take(9)
@@ -381,6 +385,36 @@ fun ComposeScreen(
                             .fillMaxWidth()
                             .padding(top = 6.dp)
                     )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 12.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.compose_per_post_original_title),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = GrayDark
+                            )
+                            Text(
+                                text = stringResource(R.string.compose_per_post_original_subtitle),
+                                fontSize = 11.sp,
+                                color = GrayMiddle,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                        Switch(
+                            checked = useOriginalForThisPost,
+                            onCheckedChange = { useOriginalForThisPost = it }
+                        )
+                    }
                     if (isPreparingImages) {
                         Text(
                             text = stringResource(R.string.compose_preparing_images),

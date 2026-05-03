@@ -46,10 +46,6 @@
     <string name="settings_language_zh">简体中文</string>
     <string name="settings_language_en">English</string>
 
-    <string name="settings_post_images_section">Post images</string>
-    <string name="settings_post_images_original_title">Save original quality</string>
-    <string name="settings_post_images_original_subtitle">When on, images are stored as copied from the picker. When off, photos over about 1 MB are compressed (max ~1 MB, longest edge up to 2048 px) for smaller storage.</string>
-
     <string name="about_title">About</string>
     <string name="about_app_line">PocketWeibo</string>
     <string name="about_version_unknown">Version unknown</string>
@@ -144,6 +140,8 @@
     <string name="post_image_prev_cd">Previous image</string>
     <string name="post_image_next_cd">Next image</string>
     <string name="compose_preparing_images">Processing images…</string>
+    <string name="compose_per_post_original_title">Original files for this post</string>
+    <string name="compose_per_post_original_subtitle">When on, new images you add below are stored without compression (larger). Existing thumbnails are unchanged; remove one and pick again to re-encode.</string>
     <string name="compose_label_location">Location</string>
     <string name="compose_label_mention">Mention</string>
     <string name="compose_no_identity_hint">Add an identity on the Me tab first</string>

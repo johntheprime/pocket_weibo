@@ -30,7 +30,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.Switch
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -119,10 +118,6 @@ fun MeSettingsScreen(
                 LanguagePreferenceSection(
                     onApplied = { context.findActivity()?.recreate() }
                 )
-            }
-            item {
-                Divider()
-                PostImageQualitySection()
             }
             item {
                 Divider()
@@ -294,70 +289,6 @@ private fun LanguagePreferenceSection(onApplied: () -> Unit) {
                     }
                 }
             )
-        }
-    }
-}
-
-@Composable
-private fun PostImageQualitySection() {
-    val context = LocalContext.current
-    val appCtx = context.applicationContext
-    val scope = rememberCoroutineScope()
-    var original by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        original = UiPreferences.getPostImagesOriginalQuality(appCtx)
-    }
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.White
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.settings_post_images_section),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = GrayDark
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 12.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.settings_post_images_original_title),
-                        fontSize = 15.sp,
-                        color = GrayDark
-                    )
-                    Text(
-                        text = stringResource(R.string.settings_post_images_original_subtitle),
-                        fontSize = 12.sp,
-                        color = GrayMiddle,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-                Switch(
-                    checked = original,
-                    onCheckedChange = { v ->
-                        scope.launch {
-                            UiPreferences.setPostImagesOriginalQuality(appCtx, v)
-                            original = v
-                        }
-                    }
-                )
-            }
         }
     }
 }

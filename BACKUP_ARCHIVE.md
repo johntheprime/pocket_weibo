@@ -9,7 +9,7 @@ This document describes how local data is exported and imported so you can exten
 - **Top-level keys:** `identities`, `posts`, `comments`, `exportedAt`, `version`.
 - **Posts:**
   - `content` — text body (may be empty if the post is image-only).
-  - `imageUris` — string: either a **JSON array** of paths relative to the app’s `filesDir`, e.g. `["post_attachments/12/0.jpg"]`, or legacy comma-separated values (older experiments). At publish time, images over **~1 MB** may be re-encoded to JPEG (longest edge up to 2048 px, target size ~1 MB) unless **Settings → 原画质保存 / Save original quality** is enabled; exports then contain whatever was stored.
+  - `imageUris` — string: either a **JSON array** of paths relative to the app’s `filesDir`, e.g. `["post_attachments/12/0.jpg"]`, or legacy comma-separated values (older experiments). At publish time, images over **~1 MB** may be re-encoded to JPEG (longest edge up to 2048 px, target size ~1 MB) unless **Compose → Original files for this post / 本帖原图** was on when those images were added; exports then contain whatever was stored.
   - `extrasJson` — string, JSON object, default `{}`. Reserved for future fields (e.g. audience). Importers should preserve unknown keys if merging.
 
 JSON alone does **not** embed binary image data. Paths in `imageUris` only resolve on the same device (or after a ZIP restore, see below).
