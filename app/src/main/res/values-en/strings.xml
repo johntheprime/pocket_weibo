@@ -118,6 +118,7 @@
     <string name="message_need_identity_title">Choose an identity first</string>
     <string name="message_need_identity_subtitle">In Me, pick an identity and set it as active. Messages will only show comments tied to that identity.</string>
     <string name="message_scope_banner">Showing comments for \"%1$s\" only</string>
+    <string name="comment_delete_locked_hint">Older than 48 hours — delete disabled (uses device time).</string>
     <string name="message_compose_cd">Compose</string>
     <string name="message_empty_received">No received comments</string>
     <string name="message_empty_sent">No sent comments</string>

@@ -46,6 +46,12 @@ import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
 import com.pocketweibo.ui.util.formatRelativeTime
 
+private const val COMMENT_DELETE_WINDOW_MS = 48L * 60L * 60L * 1000L
+
+/** Uses device clock; same rule as UI copy in [CommentItem]. */
+fun isCommentWithinDeleteWindow(createdAt: Long): Boolean =
+    System.currentTimeMillis() - createdAt <= COMMENT_DELETE_WINDOW_MS
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentBottomSheet(
@@ -114,6 +120,7 @@ fun CommentBottomSheet(
                         CommentItem(
                             comment = comment,
                             isOwnComment = comment.identityId == activeIdentityId,
+                            canDeleteComment = isCommentWithinDeleteWindow(comment.createdAt),
                             onDelete = { onDeleteComment(comment.id) }
                         )
                     }
@@ -160,6 +167,7 @@ fun CommentBottomSheet(
 private fun CommentItem(
     comment: CommentWithIdentity,
     isOwnComment: Boolean,
+    canDeleteComment: Boolean,
     onDelete: () -> Unit
 ) {
     val context = LocalContext.current
@@ -215,17 +223,26 @@ private fun CommentItem(
                     modifier = Modifier.padding(top = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    TextButton(onClick = onDelete) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = stringResource(R.string.delete),
-                            tint = WeiboOrange,
-                            modifier = Modifier.size(16.dp)
-                        )
+                    if (canDeleteComment) {
+                        TextButton(onClick = onDelete) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.delete),
+                                tint = WeiboOrange,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.delete),
+                                fontSize = 12.sp,
+                                color = WeiboOrange
+                            )
+                        }
+                    } else {
                         Text(
-                            text = stringResource(R.string.delete),
+                            text = stringResource(R.string.comment_delete_locked_hint),
                             fontSize = 12.sp,
-                            color = WeiboOrange
+                            color = GrayMiddle,
+                            modifier = Modifier.padding(top = 2.dp)
                         )
                     }
                 }
