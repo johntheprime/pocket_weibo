@@ -14,6 +14,7 @@ import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.local.entity.Gender
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.PostEntity
+import com.pocketweibo.R
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -177,41 +178,47 @@ class WeiboRepository(
     suspend fun exportAllDataToMarkdown(): String {
         val identities = identityDao.getAllIdentities().first()
         val posts = postDao.getAllPosts().first()
-        
+        val r = context.resources
+
         val sb = StringBuilder()
-        sb.appendLine("# PocketWeibo 备份")
+        sb.appendLine("# ${r.getString(R.string.md_backup_title)}")
         sb.appendLine()
-        sb.appendLine("## 身份列表")
+        sb.appendLine("## ${r.getString(R.string.md_section_identities)}")
         sb.appendLine()
-        
+
         identities.forEach { identity ->
             sb.appendLine("### ${identity.name}")
-            sb.appendLine("- 国籍: ${identity.nationality}")
-            sb.appendLine("- 性别: ${identity.gender}")
-            sb.appendLine("- 职业: ${identity.occupation}")
-            sb.appendLine("- 座右铭: ${identity.motto}")
-            sb.appendLine("- 代表作: ${identity.famousWork}")
-            sb.appendLine("- 简介: ${identity.bio}")
+            sb.appendLine("- ${r.getString(R.string.md_field_nationality)}: ${identity.nationality}")
+            sb.appendLine("- ${r.getString(R.string.md_field_gender)}: ${identity.gender}")
+            sb.appendLine("- ${r.getString(R.string.md_field_occupation)}: ${identity.occupation}")
+            sb.appendLine("- ${r.getString(R.string.md_field_motto)}: ${identity.motto}")
+            sb.appendLine("- ${r.getString(R.string.md_field_work)}: ${identity.famousWork}")
+            sb.appendLine("- ${r.getString(R.string.md_field_bio)}: ${identity.bio}")
             sb.appendLine()
         }
-        
-        sb.appendLine("## 微博列表")
+
+        sb.appendLine("## ${r.getString(R.string.md_section_posts)}")
         sb.appendLine()
-        
+
         posts.forEach { post ->
             val identity = identities.find { it.id == post.identityId }
-            sb.appendLine("### ${identity?.name ?: "未知"} 的微博")
+            val author = identity?.name ?: r.getString(R.string.md_unknown_author)
+            sb.appendLine("### ${r.getString(R.string.md_post_heading, author)}")
             sb.appendLine()
             sb.appendLine(post.content)
             sb.appendLine()
-            sb.appendLine("- 点赞: ${post.likeCount}")
-            sb.appendLine("- 评论: ${post.commentCount}")
-            sb.appendLine("- 发布时间: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(post.createdAt))}")
+            sb.appendLine("- ${r.getString(R.string.md_field_likes)}: ${post.likeCount}")
+            sb.appendLine("- ${r.getString(R.string.md_field_comments)}: ${post.commentCount}")
+            sb.appendLine(
+                "- ${r.getString(R.string.md_field_posted_at)}: ${
+                    SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(post.createdAt))
+                }"
+            )
             sb.appendLine()
             sb.appendLine("---")
             sb.appendLine()
         }
-        
+
         return sb.toString()
     }
 

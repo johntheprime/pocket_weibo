@@ -12,6 +12,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.pocketweibo.R
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
@@ -39,11 +41,12 @@ fun SelectablePostBody(
 fun SelectableCopyDialog(
     body: String,
     onDismiss: () -> Unit,
-    title: String = "选择并复制"
+    title: String? = null
 ) {
+    val resolvedTitle = title ?: stringResource(R.string.select_copy_title)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = title, fontSize = 16.sp) },
+        title = { Text(text = resolvedTitle, fontSize = 16.sp) },
         text = {
             Column(
                 modifier = Modifier
@@ -65,7 +68,7 @@ fun SelectableCopyDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("完成")
+                Text(stringResource(R.string.settings_done))
             }
         }
     )

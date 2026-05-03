@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PocketWeibo</string>
+    <string name="exit_hint">Press back again to exit</string>
+
+    <string name="tab_home">Home</string>
+    <string name="tab_message">Messages</string>
+    <string name="tab_discover">Discover</string>
+    <string name="tab_me">Me</string>
+    <string name="tab_compose_cd">New post</string>
+
+    <string name="title_home">Home</string>
+    <string name="title_message">Messages</string>
+    <string name="title_discover">Discover</string>
+    <string name="title_me">Me</string>
+    <string name="title_settings">Settings</string>
+    <string name="title_my_posts">My posts</string>
+    <string name="my_posts_empty_title">No posts for this identity</string>
+    <string name="my_posts_empty_subtitle">Switch identity or create a new post</string>
+    <string name="title_post_detail">Post</string>
+    <string name="title_identities">Identities</string>
+    <string name="title_compose">New post</string>
+
+    <string name="settings_cd">Settings</string>
+    <string name="back_cd">Back</string>
+    <string name="close_cd">Close</string>
+
+    <string name="me_identity_title">Identities</string>
+    <string name="me_identity_subtitle">View, edit, or add identities</string>
+    <string name="me_posts_title">My posts</string>
+    <string name="me_posts_subtitle">Everything you published</string>
+    <string name="me_no_identity">No identity selected</string>
+    <string name="me_identity_count">%1$d identities</string>
+    <string name="me_avatar_placeholder">?</string>
+    <string name="label_nationality">Nationality</string>
+    <string name="label_occupation">Occupation</string>
+    <string name="label_famous_work">Notable work</string>
+
+    <string name="settings_export_title">Export data</string>
+    <string name="settings_export_subtitle">Backup to JSON or Markdown</string>
+    <string name="settings_import_title">Import data</string>
+    <string name="settings_import_subtitle">Restore from JSON file or pasted text</string>
+
+    <string name="settings_language_section">Display language</string>
+    <string name="settings_language_system">Follow system</string>
+    <string name="settings_language_zh">简体中文</string>
+    <string name="settings_language_en">English</string>
+
+    <string name="about_title">About</string>
+    <string name="about_app_line">PocketWeibo</string>
+    <string name="about_version_unknown">Version unknown</string>
+    <string name="about_version_format">Version %1$s (%2$s)</string>
+    <string name="about_desc">A local, Weibo-style feed with multiple identities. Data stays on your device.</string>
+    <string name="about_authors">Authors and contributors are listed on GitHub. Issues and PRs are welcome.</string>
+    <string name="about_links_title">Links</string>
+    <string name="settings_done">Done</string>
+
+    <string name="import_title">Import data</string>
+    <string name="import_intro">Pick a JSON file or paste backup text:</string>
+    <string name="import_pick_file">Choose file…</string>
+    <string name="import_loaded">Loaded: %1$s</string>
+    <string name="import_placeholder">Or paste JSON here</string>
+    <string name="import_warn_override">Warning: this replaces existing data.</string>
+    <string name="import_warn_merge">This merges data without wiping existing records.</string>
+    <string name="import_override_label">Replace existing data</string>
+    <string name="import_confirm">Import</string>
+    <string name="import_cancel">Cancel</string>
+    <string name="toast_import_ok">Import succeeded</string>
+    <string name="toast_import_fail">Import failed</string>
+    <string name="toast_file_read_fail">Could not read this file</string>
+
+    <string name="export_title">Export data</string>
+    <string name="export_intro">Choose a format:</string>
+    <string name="export_json">JSON (re-importable)</string>
+    <string name="export_markdown">Markdown (backup only)</string>
+    <string name="export_confirm">Export</string>
+    <string name="export_cancel">Cancel</string>
+    <string name="export_share_title">Share backup</string>
+    <string name="toast_export_done">Export finished</string>
+
+    <string name="select_copy_title">Select and copy</string>
+
+    <string name="action_repost">Repost</string>
+    <string name="action_comment">Comments</string>
+    <string name="action_like">Like</string>
+
+    <string name="discover_search_identity_title">Search identities</string>
+    <string name="discover_search_identity_desc">Type a name, e.g. Su Shi, Shakespeare</string>
+    <string name="discover_search_content_title">Search posts</string>
+    <string name="discover_search_content_desc">Search by keywords in post text</string>
+    <string name="discover_trending_identities">Trending identities</string>
+    <string name="discover_trending_posts">Trending posts</string>
+    <string name="discover_search_tips">Search tips</string>
+    <string name="discover_search_hint">Search posts or identities</string>
+    <string name="discover_empty_results">No results</string>
+    <string name="discover_section_identity">Identities</string>
+    <string name="discover_section_posts">Posts</string>
+    <string name="discover_clear_search_cd">Clear</string>
+    <string name="count_likes">%1$d likes</string>
+    <string name="count_comments">%1$d comments</string>
+    <string name="identity_search_subtitle">Historical figure · microblog</string>
+
+    <string name="home_search_cd">Search</string>
+    <string name="home_more_cd">More</string>
+
+    <string name="message_tab_received">Received</string>
+    <string name="message_tab_sent">Sent</string>
+    <string name="message_compose_cd">Compose</string>
+    <string name="message_empty_received">No received comments</string>
+    <string name="message_empty_sent">No sent comments</string>
+    <string name="message_empty_hint">Interactions from your identities appear here</string>
+    <string name="message_preview_received">Commented on your post: %1$s</string>
+    <string name="message_preview_sent">You commented on: %1$s</string>
+
+    <string name="post_detail_comment_hint">Write a comment…</string>
+    <string name="post_detail_send_cd">Send</string>
+    <string name="post_detail_share_cd">Share</string>
+    <string name="post_detail_like_cd">Like</string>
+    <string name="post_detail_comment_cd">Comments</string>
+    <string name="post_detail_more_cd">More</string>
+    <string name="comments_header">Comments</string>
+    <string name="comments_empty">No comments yet</string>
+
+    <string name="comment_sheet_title">Comments</string>
+    <string name="comment_hint">Write a comment…</string>
+    <string name="comment_send_cd">Send</string>
+    <string name="toast_comment_copied">Comment copied</string>
+    <string name="toast_clipboard_copied">Copied to clipboard</string>
+
+    <string name="compose_select_identity">Choose identity</string>
+    <string name="compose_content_hint">What is happening?</string>
+    <string name="compose_send">Send</string>
+    <string name="compose_image_cd">Image</string>
+    <string name="compose_remove_image_cd">Remove</string>
+    <string name="compose_label_image">Image</string>
+    <string name="compose_label_location">Location</string>
+    <string name="compose_label_mention">Mention</string>
+    <string name="compose_no_identity_hint">Add an identity on the Me tab first</string>
+
+    <string name="empty_feed">No posts yet. Tap + to publish.</string>
+    <string name="empty_feed_title">No posts yet</string>
+    <string name="empty_feed_subtitle">Tap + to publish your first post</string>
+    <string name="share_chooser_title">Share post</string>
+    <string name="share_clip_label">Post</string>
+    <string name="empty_messages">No messages</string>
+
+    <string name="content_hint">What is happening?</string>
+    <string name="send">Send</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="identities">Identities</string>
+    <string name="add_identity">Add identity</string>
+    <string name="identity_name_hint">Identity name</string>
+    <string name="select_avatar">Choose avatar</string>
+
+    <string name="clipboard_label_comment">Comment</string>
+
+    <string name="time_just_now">Just now</string>
+    <string name="time_minutes_ago">%1$d min ago</string>
+    <string name="time_hours_ago">%1$d h ago</string>
+    <string name="time_days_ago">%1$d d ago</string>
+    <string name="time_full_format">yyyy-MM-dd HH:mm:ss.SSS</string>
+    <string name="time_short_format">MM-dd HH:mm</string>
+
+    <string name="identity_filter_all">All</string>
+    <string name="identity_activate">Activate</string>
+    <string name="identity_current_suffix"> · current</string>
+
+    <string name="identity_add_title">Add identity</string>
+    <string name="identity_edit_title">Edit identity</string>
+    <string name="identity_detail_title">Identity</string>
+    <string name="identity_tap_avatar">Tap to choose avatar</string>
+    <string name="identity_label_name">Name</string>
+    <string name="identity_label_region">Country / region</string>
+    <string name="identity_label_job">Occupation</string>
+    <string name="identity_label_gender">Gender</string>
+    <string name="identity_label_birth">Birth year</string>
+    <string name="identity_label_death">Death year</string>
+    <string name="identity_label_motto">Motto</string>
+    <string name="identity_label_work">Notable work</string>
+    <string name="identity_label_bio">Bio</string>
+    <string name="identity_label_years">Years of life</string>
+    <string name="identity_ph_name">Identity name</string>
+    <string name="identity_ph_region">e.g. China, USA, UK</string>
+    <string name="identity_ph_job">e.g. philosopher, writer</string>
+    <string name="identity_ph_birth">e.g. 1960</string>
+    <string name="identity_ph_death">Leave blank if alive</string>
+    <string name="identity_ph_motto">Famous quote or motto</string>
+    <string name="identity_ph_work">Major works or achievements</string>
+    <string name="identity_ph_bio">Short introduction</string>
+    <string name="gender_male">Male</string>
+    <string name="gender_female">Female</string>
+    <string name="gender_other">Other</string>
+
+    <string name="identity_delete_title">Delete identity</string>
+    <string name="identity_delete_message">Delete “%1$s”? This cannot be undone.</string>
+    <string name="identity_edit">Edit</string>
+    <string name="add_identity_cd">Add identity</string>
+
+    <string name="post_detail_action_share">Share</string>
+    <string name="post_detail_like_count">%1$d</string>
+    <string name="post_detail_comment_count">%1$d</string>
+
+    <string name="md_backup_title">PocketWeibo backup</string>
+    <string name="md_section_identities">Identities</string>
+    <string name="md_section_posts">Posts</string>
+    <string name="md_post_heading">Post by %1$s</string>
+    <string name="md_unknown_author">Unknown</string>
+    <string name="md_field_nationality">Nationality</string>
+    <string name="md_field_gender">Gender</string>
+    <string name="md_field_occupation">Occupation</string>
+    <string name="md_field_motto">Motto</string>
+    <string name="md_field_work">Notable work</string>
+    <string name="md_field_bio">Bio</string>
+    <string name="md_field_likes">Likes</string>
+    <string name="md_field_comments">Comments</string>
+    <string name="md_field_posted_at">Posted at</string>
+</resources>

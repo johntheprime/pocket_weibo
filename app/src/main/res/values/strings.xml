@@ -1,25 +1,219 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">我的微博</string>
-    <string name="home">首页</string>
-    <string name="message">消息</string>
-    <string name="discover">发现</string>
-    <string name="me">我</string>
-    <string name="compose">发微博</string>
-    <string name="settings">设置</string>
     <string name="exit_hint">再按一次返回键退出</string>
-    
+
+    <string name="tab_home">首页</string>
+    <string name="tab_message">消息</string>
+    <string name="tab_discover">发现</string>
+    <string name="tab_me">我</string>
+    <string name="tab_compose_cd">发微博</string>
+
+    <string name="title_home">首页</string>
+    <string name="title_message">消息</string>
+    <string name="title_discover">发现</string>
+    <string name="title_me">我</string>
+    <string name="title_settings">设置</string>
+    <string name="title_my_posts">我的发布</string>
+    <string name="my_posts_empty_title">该身份暂无发布内容</string>
+    <string name="my_posts_empty_subtitle">切换身份或发布新内容</string>
+    <string name="title_post_detail">微博详情</string>
+    <string name="title_identities">身份管理</string>
+    <string name="title_compose">发微博</string>
+
+    <string name="settings_cd">设置</string>
+    <string name="back_cd">返回</string>
+    <string name="close_cd">关闭</string>
+
+    <string name="me_identity_title">身份管理</string>
+    <string name="me_identity_subtitle">查看、编辑、添加身份</string>
+    <string name="me_posts_title">我的发布</string>
+    <string name="me_posts_subtitle">查看所有发布的内容</string>
+    <string name="me_no_identity">未选择身份</string>
+    <string name="me_identity_count">%1$d 个身份</string>
+    <string name="me_avatar_placeholder">?</string>
+    <string name="label_nationality">国籍</string>
+    <string name="label_occupation">职业</string>
+    <string name="label_famous_work">代表作</string>
+
+    <string name="settings_export_title">导出数据</string>
+    <string name="settings_export_subtitle">备份所有数据到 JSON / Markdown 文件</string>
+    <string name="settings_import_title">导入数据</string>
+    <string name="settings_import_subtitle">从 JSON 文件或粘贴内容恢复</string>
+
+    <string name="settings_language_section">界面语言</string>
+    <string name="settings_language_system">跟随系统</string>
+    <string name="settings_language_zh">简体中文</string>
+    <string name="settings_language_en">English</string>
+
+    <string name="about_title">关于本软件</string>
+    <string name="about_app_line">PocketWeibo（口袋微博）</string>
+    <string name="about_version_unknown">版本未知</string>
+    <string name="about_version_format">版本 %1$s（%2$s）</string>
+    <string name="about_desc">本地微博风格笔记与多身份内容管理；数据保存在本机。</string>
+    <string name="about_authors">作者与贡献者信息见 GitHub 仓库说明与提交历史；欢迎提交 Issue 与 PR。</string>
+    <string name="about_links_title">相关链接</string>
+    <string name="settings_done">完成</string>
+
+    <string name="import_title">导入数据</string>
+    <string name="import_intro">选择 JSON 文件或粘贴备份内容:</string>
+    <string name="import_pick_file">从文件选择…</string>
+    <string name="import_loaded">已载入: %1$s</string>
+    <string name="import_placeholder">或在此粘贴 JSON</string>
+    <string name="import_warn_override">警告: 此操作会清空现有数据并导入</string>
+    <string name="import_warn_merge">此操作会追加数据，不会覆盖现有数据</string>
+    <string name="import_override_label">覆盖现有数据</string>
+    <string name="import_confirm">导入</string>
+    <string name="import_cancel">取消</string>
+    <string name="toast_import_ok">数据导入成功</string>
+    <string name="toast_import_fail">数据导入失败</string>
+    <string name="toast_file_read_fail">无法读取该文件</string>
+
+    <string name="export_title">导出数据</string>
+    <string name="export_intro">选择导出格式:</string>
+    <string name="export_json">JSON (可导入)</string>
+    <string name="export_markdown">Markdown (仅备份)</string>
+    <string name="export_confirm">导出</string>
+    <string name="export_cancel">取消</string>
+    <string name="export_share_title">分享备份</string>
+    <string name="toast_export_done">数据已导出</string>
+
+    <string name="select_copy_title">选择并复制正文</string>
+
+    <string name="action_repost">转发</string>
+    <string name="action_comment">评论</string>
+    <string name="action_like">点赞</string>
+
+    <string name="discover_search_identity_title">搜索身份</string>
+    <string name="discover_search_identity_desc">输入身份名称，如：苏轼、莎士比亚</string>
+    <string name="discover_search_content_title">搜索内容</string>
+    <string name="discover_search_content_desc">输入微博内容关键词进行搜索</string>
+    <string name="discover_trending_identities">热门身份</string>
+    <string name="discover_trending_posts">热门微博</string>
+    <string name="discover_search_tips">搜索提示</string>
+    <string name="discover_search_hint">搜索内容、身份</string>
+    <string name="discover_empty_results">未找到相关结果</string>
+    <string name="discover_section_identity">身份</string>
+    <string name="discover_section_posts">微博</string>
+    <string name="discover_clear_search_cd">清除</string>
+    <string name="count_likes">%1$d 赞</string>
+    <string name="count_comments">%1$d 评论</string>
+    <string name="identity_search_subtitle">历史人物 · 微博达人</string>
+
+    <string name="home_search_cd">搜索</string>
+    <string name="home_more_cd">更多</string>
+
+    <string name="message_tab_received">收到的评论</string>
+    <string name="message_tab_sent">发出的评论</string>
+    <string name="message_compose_cd">发起聊天</string>
+    <string name="message_empty_received">暂无收到的评论</string>
+    <string name="message_empty_sent">暂无发出的评论</string>
+    <string name="message_empty_hint">来自各个身份的互动会在这里显示</string>
+    <string name="message_preview_received">评论了你的微博: %1$s</string>
+    <string name="message_preview_sent">你评论了: %1$s</string>
+
+    <string name="post_detail_comment_hint">写评论…</string>
+    <string name="post_detail_send_cd">发送</string>
+    <string name="post_detail_share_cd">分享</string>
+    <string name="post_detail_like_cd">点赞</string>
+    <string name="post_detail_comment_cd">评论</string>
+    <string name="post_detail_more_cd">更多</string>
+    <string name="comments_header">评论</string>
+    <string name="comments_empty">暂无评论，快来抢沙发吧</string>
+
+    <string name="comment_sheet_title">评论</string>
+    <string name="comment_hint">写评论…</string>
+    <string name="comment_send_cd">发送</string>
+    <string name="toast_comment_copied">评论已复制</string>
+    <string name="toast_clipboard_copied">已复制到剪贴板</string>
+
+    <string name="compose_select_identity">选择身份</string>
+    <string name="compose_content_hint">分享新鲜事…</string>
+    <string name="compose_send">发送</string>
+    <string name="compose_image_cd">图片</string>
+    <string name="compose_remove_image_cd">删除</string>
+    <string name="compose_label_image">图片</string>
+    <string name="compose_label_location">位置</string>
+    <string name="compose_label_mention">艾特</string>
+    <string name="compose_no_identity_hint">请先在「我」页面添加身份</string>
+
+    <string name="empty_feed">还没有微博，点击中间+号发布第一条</string>
+    <string name="empty_feed_title">还没有微博</string>
+    <string name="empty_feed_subtitle">点击中间+号发布第一条</string>
+    <string name="share_chooser_title">分享微博</string>
+    <string name="share_clip_label">微博内容</string>
+    <string name="empty_messages">暂无消息</string>
+
+    <string name="content_hint">分享新鲜事…</string>
+    <string name="send">发送</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="delete">删除</string>
     <string name="identities">身份管理</string>
     <string name="add_identity">添加身份</string>
     <string name="identity_name_hint">输入身份名称</string>
     <string name="select_avatar">选择头像</string>
-    <string name="save">保存</string>
-    <string name="cancel">取消</string>
-    <string name="delete">删除</string>
-    
-    <string name="content_hint">分享新鲜事..."</string>
-    <string name="send">发送</string>
-    
-    <string name="empty_feed">还没有微博，点击中间+号发布第一条</string>
-    <string name="empty_messages">暂无消息</string>
+
+    <string name="clipboard_label_comment">评论</string>
+
+    <string name="time_just_now">刚刚</string>
+    <string name="time_minutes_ago">%1$d分钟前</string>
+    <string name="time_hours_ago">%1$d小时前</string>
+    <string name="time_days_ago">%1$d天前</string>
+    <string name="time_full_format">yyyy-MM-dd HH:mm:ss.SSS</string>
+    <string name="time_short_format">MM-dd HH:mm</string>
+
+    <string name="identity_filter_all">全部</string>
+    <string name="identity_activate">激活</string>
+    <string name="identity_current_suffix"> · 当前</string>
+
+    <string name="identity_add_title">添加身份</string>
+    <string name="identity_edit_title">编辑身份</string>
+    <string name="identity_detail_title">身份详情</string>
+    <string name="identity_tap_avatar">点击选择头像</string>
+    <string name="identity_label_name">姓名</string>
+    <string name="identity_label_region">国籍/地区</string>
+    <string name="identity_label_job">职业</string>
+    <string name="identity_label_gender">性别</string>
+    <string name="identity_label_birth">出生年份</string>
+    <string name="identity_label_death">去世年份</string>
+    <string name="identity_label_motto">名言/座右铭</string>
+    <string name="identity_label_work">代表作</string>
+    <string name="identity_label_bio">简介</string>
+    <string name="identity_label_years">生卒年份</string>
+    <string name="identity_ph_name">输入身份名称</string>
+    <string name="identity_ph_region">如：中国、美国、英国</string>
+    <string name="identity_ph_job">如：哲学家、文学家、科学家</string>
+    <string name="identity_ph_birth">如：1960</string>
+    <string name="identity_ph_death">留空表示在世</string>
+    <string name="identity_ph_motto">输入名人名言或人生信条</string>
+    <string name="identity_ph_work">输入主要作品或成就</string>
+    <string name="identity_ph_bio">简要介绍这个身份</string>
+    <string name="gender_male">男</string>
+    <string name="gender_female">女</string>
+    <string name="gender_other">其他</string>
+
+    <string name="identity_delete_title">删除身份</string>
+    <string name="identity_delete_message">确定要删除「%1$s」吗？此操作不可恢复。</string>
+    <string name="identity_edit">编辑</string>
+    <string name="add_identity_cd">添加身份</string>
+
+    <string name="post_detail_action_share">分享</string>
+    <string name="post_detail_like_count">%1$d</string>
+    <string name="post_detail_comment_count">%1$d</string>
+
+    <string name="md_backup_title">PocketWeibo 备份</string>
+    <string name="md_section_identities">身份列表</string>
+    <string name="md_section_posts">微博列表</string>
+    <string name="md_post_heading">%1$s 的微博</string>
+    <string name="md_unknown_author">未知</string>
+    <string name="md_field_nationality">国籍</string>
+    <string name="md_field_gender">性别</string>
+    <string name="md_field_occupation">职业</string>
+    <string name="md_field_motto">座右铭</string>
+    <string name="md_field_work">代表作</string>
+    <string name="md_field_bio">简介</string>
+    <string name="md_field_likes">点赞</string>
+    <string name="md_field_comments">评论</string>
+    <string name="md_field_posted_at">发布时间</string>
 </resources>

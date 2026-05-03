@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -72,12 +73,12 @@ fun IdentityListScreen(
             .background(Background)
     ) {
         WeiboTitleBar(
-            title = "身份管理",
+            title = stringResource(R.string.title_identities),
             leftIcon = {
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "返回",
+                        contentDescription = stringResource(R.string.back_cd),
                         tint = WeiboOrange,
                         modifier = Modifier.size(24.dp)
                     )
@@ -87,7 +88,7 @@ fun IdentityListScreen(
                 IconButton(onClick = onAddIdentity) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "添加身份",
+                        contentDescription = stringResource(R.string.add_identity_cd),
                         tint = WeiboOrange,
                         modifier = Modifier.size(24.dp)
                     )
@@ -104,6 +105,8 @@ fun IdentityListScreen(
                 IdentityListItem(
                     identity = identity,
                     isActive = identity.id == activeIdentity?.id,
+                    currentSuffix = stringResource(R.string.identity_current_suffix),
+                    activateLabel = stringResource(R.string.identity_activate),
                     onClick = { onIdentityClick(identity.id) },
                     onDelete = { identityToDelete = identity },
                     onActivate = {
@@ -120,8 +123,10 @@ fun IdentityListScreen(
     identityToDelete?.let { identity ->
         AlertDialog(
             onDismissRequest = { identityToDelete = null },
-            title = { Text("删除身份") },
-            text = { Text("确定要删除「${identity.name}」吗？此操作不可恢复。") },
+            title = { Text(stringResource(R.string.identity_delete_title)) },
+            text = {
+                Text(stringResource(R.string.identity_delete_message, identity.name))
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -131,12 +136,12 @@ fun IdentityListScreen(
                         identityToDelete = null
                     }
                 ) {
-                    Text("删除", color = Color.Red)
+                    Text(stringResource(R.string.delete), color = Color.Red)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { identityToDelete = null }) {
-                    Text("取消")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )
@@ -147,6 +152,8 @@ fun IdentityListScreen(
 private fun IdentityListItem(
     identity: IdentityEntity,
     isActive: Boolean,
+    currentSuffix: String,
+    activateLabel: String,
     onClick: () -> Unit,
     onDelete: () -> Unit,
     onActivate: () -> Unit
@@ -179,7 +186,7 @@ private fun IdentityListItem(
                     )
                     if (isActive) {
                         Text(
-                            text = " · 当前",
+                            text = currentSuffix,
                             fontSize = 14.sp,
                             color = WeiboOrange
                         )
@@ -199,7 +206,7 @@ private fun IdentityListItem(
             
             if (!isActive) {
                 Text(
-                    text = "激活",
+                    text = activateLabel,
                     fontSize = 13.sp,
                     color = WeiboOrange,
                     modifier = Modifier

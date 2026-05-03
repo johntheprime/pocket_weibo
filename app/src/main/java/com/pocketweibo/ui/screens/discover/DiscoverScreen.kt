@@ -34,19 +34,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.ui.components.Avatar
@@ -80,12 +81,12 @@ fun DiscoverScreen(
             .fillMaxSize()
             .background(Background)
     ) {
-        WeiboTitleBar(title = "发现")
+        WeiboTitleBar(title = stringResource(R.string.title_discover))
 
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { viewModel.updateSearchQuery(it) },
-            placeholder = { Text("搜索内容、身份", color = GrayMiddle) },
+            placeholder = { Text(stringResource(R.string.discover_search_hint), color = GrayMiddle) },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
@@ -98,7 +99,7 @@ fun DiscoverScreen(
                     IconButton(onClick = { viewModel.updateSearchQuery("") }) {
                         Icon(
                             imageVector = Icons.Default.Clear,
-                            contentDescription = "清除",
+                            contentDescription = stringResource(R.string.discover_clear_search_cd),
                             tint = GrayMiddle
                         )
                     }
@@ -146,7 +147,7 @@ private fun TrendingContent(
     ) {
         item {
             Text(
-                text = "热门身份",
+                text = stringResource(R.string.discover_trending_identities),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = GrayDark,
@@ -174,7 +175,7 @@ private fun TrendingContent(
             item {
                 Divider(modifier = Modifier.padding(top = 20.dp))
                 Text(
-                    text = "热门微博",
+                    text = stringResource(R.string.discover_trending_posts),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = GrayDark,
@@ -193,7 +194,7 @@ private fun TrendingContent(
         item {
             Divider(modifier = Modifier.padding(top = 20.dp))
             Text(
-                text = "搜索提示",
+                text = stringResource(R.string.discover_search_tips),
                 fontSize = 14.sp,
                 color = GrayMiddle,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
@@ -202,16 +203,16 @@ private fun TrendingContent(
         
         item {
             SearchHintItem(
-                title = "搜索身份",
-                description = "输入身份名称，如：苏轼、莎士比亚",
+                title = stringResource(R.string.discover_search_identity_title),
+                description = stringResource(R.string.discover_search_identity_desc),
                 icon = Icons.Default.Person
             )
         }
         
         item {
             SearchHintItem(
-                title = "搜索内容",
-                description = "输入微博内容关键词进行搜索",
+                title = stringResource(R.string.discover_search_content_title),
+                description = stringResource(R.string.discover_search_content_desc),
                 icon = Icons.Default.Search
             )
         }
@@ -337,12 +338,12 @@ private fun TrendingPostItem(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "${post.likeCount} 赞",
+                        text = stringResource(R.string.count_likes, post.likeCount),
                         fontSize = 12.sp,
                         color = GrayMiddle
                     )
                     Text(
-                        text = "${post.commentCount} 评论",
+                        text = stringResource(R.string.count_comments, post.commentCount),
                         fontSize = 12.sp,
                         color = GrayMiddle
                     )
@@ -354,7 +355,7 @@ private fun TrendingPostItem(
             SelectableCopyDialog(
                 body = post.content,
                 onDismiss = { showSelectableCopy = false },
-                title = "选择并复制正文"
+                title = null
             )
         }
     }
@@ -381,7 +382,7 @@ private fun SearchResultsContent(
                     modifier = Modifier.size(48.dp)
                 )
                 Text(
-                    text = "未找到相关结果",
+                    text = stringResource(R.string.discover_empty_results),
                     fontSize = 16.sp,
                     color = GrayMiddle,
                     modifier = Modifier.padding(top = 12.dp)
@@ -398,14 +399,14 @@ private fun SearchResultsContent(
             if (identityResults.isNotEmpty()) {
                 item {
                     Text(
-                        text = "身份",
+                        text = stringResource(R.string.discover_section_identity),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = GrayDark,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
-                
+
                 items(identityResults) { result ->
                     IdentitySearchItem(
                         identity = result.identity,
@@ -417,14 +418,14 @@ private fun SearchResultsContent(
             if (postResults.isNotEmpty()) {
                 item {
                     Text(
-                        text = "微博",
+                        text = stringResource(R.string.discover_section_posts),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = GrayDark,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
-                
+
                 items(postResults) { result ->
                     PostSearchItem(
                         post = result.post,
@@ -466,7 +467,7 @@ private fun IdentitySearchItem(
                     color = GrayDark
                 )
                 Text(
-                    text = "历史人物 · 微博达人",
+                    text = stringResource(R.string.identity_search_subtitle),
                     fontSize = 12.sp,
                     color = GrayMiddle
                 )
@@ -524,7 +525,7 @@ private fun PostSearchItem(
             SelectableCopyDialog(
                 body = post.content,
                 onDismiss = { showSelectableCopy = false },
-                title = "选择并复制正文"
+                title = null
             )
         }
     }

@@ -3,10 +3,10 @@ package com.pocketweibo.ui.screens.detail
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -24,7 +23,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -33,8 +31,6 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -52,29 +48,28 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.components.SelectablePostBody
 import com.pocketweibo.ui.components.WeiboTitleBar
+import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
+import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostDetailScreen(
@@ -100,10 +95,14 @@ fun PostDetailScreen(
         topBar = {
             Column {
                 WeiboTitleBar(
-                    title = "微博详情",
+                    title = stringResource(R.string.title_post_detail),
                     leftIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.Default.ArrowBack, "返回", tint = WeiboOrange)
+                            Icon(
+                                Icons.Default.ArrowBack,
+                                stringResource(R.string.back_cd),
+                                tint = WeiboOrange
+                            )
                         }
                     }
                 )
@@ -129,7 +128,13 @@ fun PostDetailScreen(
                         OutlinedTextField(
                             value = commentText,
                             onValueChange = { commentText = it },
-                            placeholder = { Text("写评论...", fontSize = 14.sp, color = GrayMiddle) },
+                            placeholder = {
+                                Text(
+                                    stringResource(R.string.post_detail_comment_hint),
+                                    fontSize = 14.sp,
+                                    color = GrayMiddle
+                                )
+                            },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(24.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -149,7 +154,11 @@ fun PostDetailScreen(
                             },
                             enabled = commentText.isNotBlank()
                         ) {
-                            Icon(Icons.Default.Send, "发送", tint = if (commentText.isNotBlank()) WeiboOrange else GrayMiddle)
+                            Icon(
+                                Icons.Default.Send,
+                                stringResource(R.string.post_detail_send_cd),
+                                tint = if (commentText.isNotBlank()) WeiboOrange else GrayMiddle
+                            )
                         }
                     }
                 }
@@ -177,7 +186,11 @@ fun PostDetailScreen(
                 if (comments.isEmpty()) {
                     item {
                         Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                            Text("暂无评论，快来抢沙发吧", fontSize = 14.sp, color = GrayMiddle)
+                            Text(
+                                stringResource(R.string.comments_empty),
+                                fontSize = 14.sp,
+                                color = GrayMiddle
+                            )
                         }
                     }
                 } else {
@@ -197,6 +210,13 @@ private fun PostDetailCard(
     onLikeClick: () -> Unit,
     onShareClick: () -> Unit
 ) {
+    val resources = LocalContext.current.resources
+    val shareLabel = stringResource(R.string.post_detail_action_share)
+    val likeCd = stringResource(R.string.post_detail_like_cd)
+    val commentCd = stringResource(R.string.post_detail_comment_cd)
+    val moreCd = stringResource(R.string.post_detail_more_cd)
+    val shareCd = stringResource(R.string.post_detail_share_cd)
+    val likeLabelZero = stringResource(R.string.action_like)
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White
@@ -225,7 +245,7 @@ private fun PostDetailCard(
                         color = GrayDark
                     )
                     Text(
-                        text = formatTime(post.createdAt),
+                        text = resources.formatRelativeTime(post.createdAt, RelativeTimePreset.PostDetail),
                         fontSize = 13.sp,
                         color = GrayMiddle,
                         modifier = Modifier.padding(top = 2.dp)
@@ -234,7 +254,7 @@ private fun PostDetailCard(
                 IconButton(onClick = { }) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
-                        contentDescription = "更多",
+                        contentDescription = moreCd,
                         tint = GrayMiddle
                     )
                 }
@@ -261,12 +281,12 @@ private fun PostDetailCard(
                     icon = {
                         Icon(
                             imageVector = Icons.Default.Share,
-                            contentDescription = "分享",
+                            contentDescription = shareCd,
                             tint = GrayMiddle,
                             modifier = Modifier.size(20.dp)
                         )
                     },
-                    text = "分享",
+                    text = shareLabel,
                     onClick = onShareClick
                 )
                 Spacer(modifier = Modifier.width(24.dp))
@@ -274,12 +294,12 @@ private fun PostDetailCard(
                     icon = {
                         Icon(
                             imageVector = if (post.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "点赞",
+                            contentDescription = likeCd,
                             tint = if (post.isLiked) Color(0xFFFF5136) else GrayMiddle,
                             modifier = Modifier.size(20.dp)
                         )
                     },
-                    text = if (post.likeCount > 0) "${post.likeCount}" else "点赞",
+                    text = if (post.likeCount > 0) post.likeCount.toString() else likeLabelZero,
                     onClick = onLikeClick,
                     tint = if (post.isLiked) Color(0xFFFF5136) else GrayMiddle
                 )
@@ -288,7 +308,7 @@ private fun PostDetailCard(
                     icon = {
                         Icon(
                             imageVector = Icons.Default.Favorite,
-                            contentDescription = "评论",
+                            contentDescription = commentCd,
                             tint = GrayMiddle,
                             modifier = Modifier.size(20.dp)
                         )
@@ -324,6 +344,7 @@ private fun ActionButton(
 
 @Composable
 private fun CommentsHeader(commentCount: Int) {
+    val header = stringResource(R.string.comments_header)
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White
@@ -335,7 +356,7 @@ private fun CommentsHeader(commentCount: Int) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "评论",
+                text = header,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = GrayDark
@@ -355,13 +376,15 @@ private fun CommentsHeader(commentCount: Int) {
 @Composable
 private fun CommentCard(comment: CommentWithIdentity) {
     val context = LocalContext.current
+    val clipLabel = stringResource(R.string.clipboard_label_comment)
+    val copiedToast = stringResource(R.string.toast_comment_copied)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = {},
                 onLongClick = {
-                    context.copyPlainToClipboard("评论", comment.content, toast = "评论已复制")
+                    context.copyPlainToClipboard(clipLabel, comment.content, toast = copiedToast)
                 }
             ),
         color = Color.White
@@ -393,7 +416,7 @@ private fun CommentCard(comment: CommentWithIdentity) {
                             color = GrayDark
                         )
                         Text(
-                            text = " · ${formatCommentTime(comment.createdAt)}",
+                            text = " · ${context.resources.formatRelativeTime(comment.createdAt, RelativeTimePreset.PostDetail)}",
                             fontSize = 12.sp,
                             color = GrayMiddle
                         )
@@ -411,30 +434,20 @@ private fun CommentCard(comment: CommentWithIdentity) {
     }
 }
 
-private fun formatTime(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-    val seconds = diff / 1000
-    val minutes = seconds / 60
-    val hours = seconds / 3600
-    val days = seconds / 86400
-
-    return when {
-        seconds < 60 -> "刚刚"
-        minutes < 60 -> "${minutes}分钟前"
-        hours < 24 -> "${hours}小时前"
-        days < 7 -> "${days}天前"
-        else -> SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date(timestamp))
-    }
-}
-
-private fun formatCommentTime(timestamp: Long): String {
-    return formatTime(timestamp)
-}
-
 private fun sharePost(context: Context, authorName: String, content: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText("微博内容", "$authorName: $content")
-    clipboard.setPrimaryClip(clip)
-    Toast.makeText(context, "内容已复制到剪贴板", Toast.LENGTH_SHORT).show()
+    val shareText = "$authorName: $content"
+    val sendIntent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_TEXT, shareText)
+        type = "text/plain"
+    }
+    val shareIntent = Intent.createChooser(sendIntent, context.getString(R.string.share_chooser_title))
+    try {
+        context.startActivity(shareIntent)
+    } catch (e: Exception) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText(context.getString(R.string.share_clip_label), shareText)
+        clipboard.setPrimaryClip(clip)
+        Toast.makeText(context, context.getString(R.string.toast_clipboard_copied), Toast.LENGTH_SHORT).show()
+    }
 }

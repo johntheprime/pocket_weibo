@@ -26,6 +26,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.pocketweibo.R
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -34,13 +36,24 @@ import com.pocketweibo.ui.theme.TabBackground
 import com.pocketweibo.ui.theme.TabSelected
 import com.pocketweibo.ui.theme.TabUnselected
 
-enum class MainTab(val title: String) {
-    HOME("首页"),
-    MESSAGE("消息"),
-    PLUS(""),
-    DISCOVER("发现"),
-    ME("我")
+enum class MainTab {
+    HOME,
+    MESSAGE,
+    PLUS,
+    DISCOVER,
+    ME
 }
+
+@Composable
+private fun MainTab.tabLabel(): String = stringResource(
+    when (this) {
+        MainTab.HOME -> R.string.tab_home
+        MainTab.MESSAGE -> R.string.tab_message
+        MainTab.PLUS -> R.string.tab_compose_cd
+        MainTab.DISCOVER -> R.string.tab_discover
+        MainTab.ME -> R.string.tab_me
+    }
+)
 
 @Composable
 fun WeiboBottomTabBar(
@@ -56,14 +69,14 @@ fun WeiboBottomTabBar(
             .background(TabBackground)
     ) {
         TabItem(
-            title = MainTab.HOME.title,
+            title = MainTab.HOME.tabLabel(),
             selectedIcon = Icons.Filled.Home,
             unselectedIcon = Icons.Outlined.Home,
             isSelected = selectedTab == MainTab.HOME,
             onClick = { onTabSelected(MainTab.HOME) }
         )
         TabItem(
-            title = MainTab.MESSAGE.title,
+            title = MainTab.MESSAGE.tabLabel(),
             selectedIcon = Icons.Filled.Email,
             unselectedIcon = Icons.Outlined.Email,
             isSelected = selectedTab == MainTab.MESSAGE,
@@ -89,7 +102,7 @@ fun WeiboBottomTabBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = MainTab.PLUS.title,
+                        contentDescription = MainTab.PLUS.tabLabel(),
                         tint = Color.White,
                         modifier = Modifier.size(28.dp)
                     )
@@ -98,14 +111,14 @@ fun WeiboBottomTabBar(
         }
 
         TabItem(
-            title = MainTab.DISCOVER.title,
+            title = MainTab.DISCOVER.tabLabel(),
             selectedIcon = Icons.Filled.Search,
             unselectedIcon = Icons.Outlined.Search,
             isSelected = selectedTab == MainTab.DISCOVER,
             onClick = { onTabSelected(MainTab.DISCOVER) }
         )
         TabItem(
-            title = MainTab.ME.title,
+            title = MainTab.ME.tabLabel(),
             selectedIcon = Icons.Filled.Person,
             unselectedIcon = Icons.Outlined.Person,
             isSelected = selectedTab == MainTab.ME,

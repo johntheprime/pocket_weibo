@@ -1,7 +1,7 @@
 package com.pocketweibo
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -27,10 +27,13 @@ import com.pocketweibo.ui.screens.me.MeScreen
 import com.pocketweibo.ui.screens.me.MeSettingsScreen
 import com.pocketweibo.ui.screens.me.MyPostsScreen
 import com.pocketweibo.ui.screens.message.MessageScreen
+import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.ui.theme.PocketWeiboTheme
+import kotlinx.coroutines.runBlocking
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        runBlocking { UiPreferences.applyStored(applicationContext) }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {

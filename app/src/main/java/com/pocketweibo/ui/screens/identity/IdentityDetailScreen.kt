@@ -43,9 +43,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.Gender
 import com.pocketweibo.data.local.entity.IdentityEntity
@@ -57,7 +59,6 @@ import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 val avatarOptions = listOf(
@@ -83,7 +84,11 @@ fun IdentityAvatar(resName: String, size: Int) {
                 .background(Color(0xFF4A90D9), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "?", color = Color.White, fontSize = (size / 2).sp)
+            Text(
+                text = stringResource(R.string.me_avatar_placeholder),
+                color = Color.White,
+                fontSize = (size / 2).sp
+            )
         }
     }
 }
@@ -130,7 +135,11 @@ fun IdentityDetailScreen(
         }
     }
     
-    val title = if (identityId == 0L) "添加身份" else if (isEditing) "编辑身份" else "身份详情"
+    val title = when {
+        identityId == 0L -> stringResource(R.string.identity_add_title)
+        isEditing -> stringResource(R.string.identity_edit_title)
+        else -> stringResource(R.string.identity_detail_title)
+    }
 
     Column(
         modifier = modifier
@@ -161,7 +170,7 @@ fun IdentityDetailScreen(
                 }) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "返回",
+                        contentDescription = stringResource(R.string.back_cd),
                         tint = WeiboOrange,
                         modifier = Modifier.size(24.dp)
                     )
@@ -192,7 +201,7 @@ fun IdentityDetailScreen(
                         
                         if (isEditing) {
                             Text(
-                                text = "点击选择头像",
+                                text = stringResource(R.string.identity_tap_avatar),
                                 fontSize = 12.sp,
                                 color = GrayMiddle,
                                 modifier = Modifier.padding(top = 8.dp)
@@ -205,7 +214,7 @@ fun IdentityDetailScreen(
             if (isEditing) {
                 item {
                     Text(
-                        text = "选择头像",
+                        text = stringResource(R.string.select_avatar),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = GrayDark,
@@ -260,34 +269,34 @@ fun IdentityDetailScreen(
                 
                 item {
                     EditField(
-                        label = "姓名",
+                        label = stringResource(R.string.identity_label_name),
                         value = name,
                         onValueChange = { name = it },
-                        placeholder = "输入身份名称"
+                        placeholder = stringResource(R.string.identity_ph_name)
                     )
                 }
                 
                 item {
                     EditField(
-                        label = "国籍/地区",
+                        label = stringResource(R.string.identity_label_region),
                         value = nationality,
                         onValueChange = { nationality = it },
-                        placeholder = "如：中国、美国、英国"
+                        placeholder = stringResource(R.string.identity_ph_region)
                     )
                 }
                 
                 item {
                     EditField(
-                        label = "职业",
+                        label = stringResource(R.string.identity_label_job),
                         value = occupation,
                         onValueChange = { occupation = it },
-                        placeholder = "如：哲学家、文学家、科学家"
+                        placeholder = stringResource(R.string.identity_ph_job)
                     )
                 }
                 
                 item {
                     Text(
-                        text = "性别",
+                        text = stringResource(R.string.identity_label_gender),
                         fontSize = 14.sp,
                         color = GrayMiddle,
                         modifier = Modifier.padding(16.dp, 16.dp, 16.dp, 8.dp)
@@ -316,11 +325,7 @@ fun IdentityDetailScreen(
                                         )
                                     )
                                     Text(
-                                        text = when(g) {
-                                            Gender.MALE -> "男"
-                                            Gender.FEMALE -> "女"
-                                            Gender.OTHER -> "其他"
-                                        },
+                                        text = genderLabel(g),
                                         fontSize = 14.sp,
                                         color = GrayDark
                                     )
@@ -340,16 +345,16 @@ fun IdentityDetailScreen(
                         OutlinedTextField(
                             value = birthYear,
                             onValueChange = { birthYear = it.filter { c -> c.isDigit() }.take(4) },
-                            label = { Text("出生年份") },
-                            placeholder = { Text("如：1960") },
+                            label = { Text(stringResource(R.string.identity_label_birth)) },
+                            placeholder = { Text(stringResource(R.string.identity_ph_birth)) },
                             singleLine = true,
                             modifier = Modifier.weight(1f)
                         )
                         OutlinedTextField(
                             value = deathYear,
                             onValueChange = { deathYear = it.filter { c -> c.isDigit() }.take(4) },
-                            label = { Text("去世年份") },
-                            placeholder = { Text("留空表示在世") },
+                            label = { Text(stringResource(R.string.identity_label_death)) },
+                            placeholder = { Text(stringResource(R.string.identity_ph_death)) },
                             singleLine = true,
                             modifier = Modifier.weight(1f)
                         )
@@ -358,28 +363,28 @@ fun IdentityDetailScreen(
                 
                 item {
                     EditField(
-                        label = "名言/座右铭",
+                        label = stringResource(R.string.identity_label_motto),
                         value = motto,
                         onValueChange = { motto = it },
-                        placeholder = "输入名人名言或人生信条"
+                        placeholder = stringResource(R.string.identity_ph_motto)
                     )
                 }
                 
                 item {
                     EditField(
-                        label = "代表作",
+                        label = stringResource(R.string.identity_label_work),
                         value = famousWork,
                         onValueChange = { famousWork = it },
-                        placeholder = "输入主要作品或成就"
+                        placeholder = stringResource(R.string.identity_ph_work)
                     )
                 }
                 
                 item {
                     EditField(
-                        label = "简介",
+                        label = stringResource(R.string.identity_label_bio),
                         value = bio,
                         onValueChange = { bio = it },
-                        placeholder = "简要介绍这个身份",
+                        placeholder = stringResource(R.string.identity_ph_bio),
                         minLines = 3
                     )
                 }
@@ -416,29 +421,35 @@ fun IdentityDetailScreen(
                             containerColor = WeiboOrange
                         )
                     ) {
-                        Text("保存")
+                        Text(stringResource(R.string.save))
                     }
                 }
             } else {
                 identity?.let { i ->
                     item {
-                        DetailItem(label = "姓名", value = i.name)
+                        DetailItem(label = stringResource(R.string.identity_label_name), value = i.name)
                     }
                     if (i.nationality.isNotEmpty()) {
-                        item { DetailItem(label = "国籍/地区", value = i.nationality) }
+                        item {
+                            DetailItem(
+                                label = stringResource(R.string.identity_label_region),
+                                value = i.nationality
+                            )
+                        }
                     }
                     item {
                         DetailItem(
-                            label = "性别",
-                            value = when(i.gender) {
-                                Gender.MALE -> "男"
-                                Gender.FEMALE -> "女"
-                                Gender.OTHER -> "其他"
-                            }
+                            label = stringResource(R.string.identity_label_gender),
+                            value = genderLabel(i.gender)
                         )
                     }
                     if (i.occupation.isNotEmpty()) {
-                        item { DetailItem(label = "职业", value = i.occupation) }
+                        item {
+                            DetailItem(
+                                label = stringResource(R.string.identity_label_job),
+                                value = i.occupation
+                            )
+                        }
                     }
                     if (i.birthYear != null) {
                         val years = if (i.deathYear != null) {
@@ -446,16 +457,36 @@ fun IdentityDetailScreen(
                         } else {
                             "${i.birthYear} - "
                         }
-                        item { DetailItem(label = "生卒年份", value = years) }
+                        item {
+                            DetailItem(
+                                label = stringResource(R.string.identity_label_years),
+                                value = years
+                            )
+                        }
                     }
                     if (i.motto.isNotEmpty()) {
-                        item { DetailItem(label = "名言/座右铭", value = i.motto) }
+                        item {
+                            DetailItem(
+                                label = stringResource(R.string.identity_label_motto),
+                                value = i.motto
+                            )
+                        }
                     }
                     if (i.famousWork.isNotEmpty()) {
-                        item { DetailItem(label = "代表作", value = i.famousWork) }
+                        item {
+                            DetailItem(
+                                label = stringResource(R.string.identity_label_work),
+                                value = i.famousWork
+                            )
+                        }
                     }
                     if (i.bio.isNotEmpty()) {
-                        item { DetailItem(label = "简介", value = i.bio) }
+                        item {
+                            DetailItem(
+                                label = stringResource(R.string.identity_label_bio),
+                                value = i.bio
+                            )
+                        }
                     }
                     
                     item {
@@ -468,7 +499,7 @@ fun IdentityDetailScreen(
                                 containerColor = WeiboOrange
                             )
                         ) {
-                            Text("编辑")
+                            Text(stringResource(R.string.identity_edit))
                         }
                     }
                 }
@@ -478,6 +509,15 @@ fun IdentityDetailScreen(
         }
     }
 }
+
+@Composable
+private fun genderLabel(gender: Gender): String = stringResource(
+    when (gender) {
+        Gender.MALE -> R.string.gender_male
+        Gender.FEMALE -> R.string.gender_female
+        Gender.OTHER -> R.string.gender_other
+    }
+)
 
 @Composable
 private fun EditField(

@@ -27,10 +27,12 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,17 +42,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
+import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
+import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.util.findActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -75,12 +81,12 @@ fun MeSettingsScreen(
             .background(Background)
     ) {
         WeiboTitleBar(
-            title = "设置",
+            title = stringResource(R.string.title_settings),
             leftIcon = {
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "返回",
+                        contentDescription = stringResource(R.string.back_cd),
                         tint = WeiboOrange,
                         modifier = Modifier.size(24.dp)
                     )
@@ -93,17 +99,23 @@ fun MeSettingsScreen(
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             item {
                 MenuItem(
-                    title = "导出数据",
-                    subtitle = "备份所有数据到 JSON / Markdown 文件",
+                    title = stringResource(R.string.settings_export_title),
+                    subtitle = stringResource(R.string.settings_export_subtitle),
                     onClick = { showExportDialog = true }
                 )
             }
             item {
                 Divider()
                 MenuItem(
-                    title = "导入数据",
-                    subtitle = "从 JSON 文件或粘贴内容恢复",
+                    title = stringResource(R.string.settings_import_title),
+                    subtitle = stringResource(R.string.settings_import_subtitle),
                     onClick = { showImportDialog = true }
+                )
+            }
+            item {
+                Divider()
+                LanguagePreferenceSection(
+                    onApplied = { context.findActivity()?.recreate() }
                 )
             }
             item {
@@ -128,7 +140,8 @@ fun MeSettingsScreen(
                     val success = app.repository.importData(json, override)
                     Toast.makeText(
                         context,
-                        if (success) "数据导入成功" else "数据导入失败",
+                        if (success) context.getString(R.string.toast_import_ok)
+                        else context.getString(R.string.toast_import_fail),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
@@ -160,10 +173,103 @@ fun MeSettingsScreen(
                         putExtra(Intent.EXTRA_STREAM, uri)
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
-                    context.startActivity(Intent.createChooser(shareIntent, "分享备份"))
-                    Toast.makeText(context, "数据已导出", Toast.LENGTH_SHORT).show()
+                    context.startActivity(
+                        Intent.createChooser(shareIntent, context.getString(R.string.export_share_title))
+                    )
+                    Toast.makeText(context, context.getString(R.string.toast_export_done), Toast.LENGTH_SHORT).show()
                 }
             }
+        )
+    }
+}
+
+@Composable
+private fun LanguagePreferenceSection(onApplied: () -> Unit) {
+    val context = LocalContext.current
+    val appCtx = context.applicationContext
+    val scope = rememberCoroutineScope()
+    var selected by remember { mutableStateOf("system") }
+
+    LaunchedEffect(Unit) {
+        selected = UiPreferences.getLanguageCode(appCtx)
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.settings_language_section),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = GrayDark
+            )
+            LanguageRow(
+                label = stringResource(R.string.settings_language_system),
+                selected = selected == "system",
+                onClick = {
+                    scope.launch {
+                        UiPreferences.setLanguageCode(appCtx, "system")
+                        UiPreferences.applyLanguageCode("system")
+                        selected = "system"
+                        onApplied()
+                    }
+                }
+            )
+            LanguageRow(
+                label = stringResource(R.string.settings_language_zh),
+                selected = selected == "zh",
+                onClick = {
+                    scope.launch {
+                        UiPreferences.setLanguageCode(appCtx, "zh")
+                        UiPreferences.applyLanguageCode("zh")
+                        selected = "zh"
+                        onApplied()
+                    }
+                }
+            )
+            LanguageRow(
+                label = stringResource(R.string.settings_language_en),
+                selected = selected == "en",
+                onClick = {
+                    scope.launch {
+                        UiPreferences.setLanguageCode(appCtx, "en")
+                        UiPreferences.applyLanguageCode("en")
+                        selected = "en"
+                        onApplied()
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun LanguageRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Text(
+            text = label,
+            fontSize = 15.sp,
+            color = GrayDark,
+            modifier = Modifier
+                .padding(start = 4.dp)
+                .weight(1f)
+                .clickable(onClick = onClick)
         )
     }
 }
@@ -176,13 +282,13 @@ private fun rememberAppVersionLabel(context: android.content.Context): String {
             val pinfo = context.packageManager.getPackageInfo(context.packageName, 0)
             val name = pinfo.versionName ?: ""
             val code = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                pinfo.longVersionCode
+                pinfo.longVersionCode.toString()
             } else {
                 @Suppress("DEPRECATION")
-                pinfo.versionCode.toLong()
+                pinfo.versionCode.toString()
             }
-            "版本 $name（$code）"
-        }.getOrElse { "版本未知" }
+            context.getString(R.string.about_version_format, name, code)
+        }.getOrElse { context.getString(R.string.about_version_unknown) }
     }
 }
 
@@ -201,13 +307,13 @@ private fun AboutSection(
                 .padding(16.dp)
         ) {
             Text(
-                text = "关于本软件",
+                text = stringResource(R.string.about_title),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = GrayDark
             )
             Text(
-                text = "PocketWeibo（口袋微博）",
+                text = stringResource(R.string.about_app_line),
                 fontSize = 15.sp,
                 color = GrayDark,
                 modifier = Modifier.padding(top = 12.dp)
@@ -219,13 +325,13 @@ private fun AboutSection(
                 modifier = Modifier.padding(top = 4.dp)
             )
             Text(
-                text = "本地微博风格笔记与多身份内容管理；数据保存在本机。",
+                text = stringResource(R.string.about_desc),
                 fontSize = 13.sp,
                 color = GrayMiddle,
                 modifier = Modifier.padding(top = 10.dp)
             )
             Text(
-                text = "作者与贡献者信息见 GitHub 仓库说明与提交历史；欢迎提交 Issue 与 PR。",
+                text = stringResource(R.string.about_authors),
                 fontSize = 13.sp,
                 color = GrayMiddle,
                 modifier = Modifier.padding(top = 8.dp)
@@ -240,7 +346,7 @@ private fun AboutSection(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "相关链接",
+                        text = stringResource(R.string.about_links_title),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = GrayDark
@@ -328,7 +434,7 @@ private fun ImportDialog(
                 }.getOrDefault("")
             }
             if (text.isBlank()) {
-                Toast.makeText(context, "无法读取该文件", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.toast_file_read_fail), Toast.LENGTH_SHORT).show()
                 pickedFileName = null
             } else {
                 jsonInput = text
@@ -339,10 +445,10 @@ private fun ImportDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("导入数据") },
+        title = { Text(stringResource(R.string.import_title)) },
         text = {
             Column {
-                Text("选择 JSON 文件或粘贴备份内容:", fontSize = 14.sp, color = GrayMiddle)
+                Text(stringResource(R.string.import_intro), fontSize = 14.sp, color = GrayMiddle)
                 TextButton(
                     onClick = {
                         openJsonLauncher.launch(
@@ -353,11 +459,11 @@ private fun ImportDialog(
                         .fillMaxWidth()
                         .padding(top = 8.dp)
                 ) {
-                    Text("从文件选择…", color = WeiboOrange)
+                    Text(stringResource(R.string.import_pick_file), color = WeiboOrange)
                 }
                 pickedFileName?.let { name ->
                     Text(
-                        text = "已载入: $name",
+                        text = stringResource(R.string.import_loaded, name),
                         fontSize = 12.sp,
                         color = GrayMiddle,
                         modifier = Modifier.padding(bottom = 4.dp)
@@ -372,13 +478,13 @@ private fun ImportDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 120.dp, max = 280.dp),
-                    placeholder = { Text("或在此粘贴 JSON", fontSize = 13.sp) },
+                    placeholder = { Text(stringResource(R.string.import_placeholder), fontSize = 13.sp) },
                     maxLines = 10,
                     singleLine = false
                 )
                 Text(
-                    if (override) "警告: 此操作会清空现有数据并导入"
-                    else "此操作会追加数据，不会覆盖现有数据",
+                    if (override) stringResource(R.string.import_warn_override)
+                    else stringResource(R.string.import_warn_merge),
                     fontSize = 12.sp,
                     color = WeiboOrange,
                     modifier = Modifier.padding(top = 8.dp)
@@ -391,7 +497,7 @@ private fun ImportDialog(
                         checked = override,
                         onCheckedChange = { override = it }
                     )
-                    Text("覆盖现有数据", fontSize = 14.sp)
+                    Text(stringResource(R.string.import_override_label), fontSize = 14.sp)
                 }
             }
         },
@@ -406,12 +512,12 @@ private fun ImportDialog(
                 },
                 enabled = jsonInput.isNotBlank()
             ) {
-                Text("导入")
+                Text(stringResource(R.string.import_confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.import_cancel))
             }
         }
     )
@@ -426,10 +532,10 @@ private fun ExportDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("导出数据") },
+        title = { Text(stringResource(R.string.export_title)) },
         text = {
             Column {
-                Text("选择导出格式:", fontSize = 14.sp, color = GrayMiddle)
+                Text(stringResource(R.string.export_intro), fontSize = 14.sp, color = GrayMiddle)
                 Row(
                     modifier = Modifier.padding(top = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -438,7 +544,7 @@ private fun ExportDialog(
                         selected = selectedFormat == "JSON",
                         onClick = { selectedFormat = "JSON" }
                     )
-                    Text("JSON (可导入)", fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
+                    Text(stringResource(R.string.export_json), fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
                 }
                 Row(
                     modifier = Modifier.padding(top = 8.dp),
@@ -448,18 +554,18 @@ private fun ExportDialog(
                         selected = selectedFormat == "Markdown",
                         onClick = { selectedFormat = "Markdown" }
                     )
-                    Text("Markdown (仅备份)", fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
+                    Text(stringResource(R.string.export_markdown), fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
                 }
             }
         },
         confirmButton = {
             Button(onClick = { onExport(selectedFormat) }) {
-                Text("导出")
+                Text(stringResource(R.string.export_confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消")
+                Text(stringResource(R.string.export_cancel))
             }
         }
     )

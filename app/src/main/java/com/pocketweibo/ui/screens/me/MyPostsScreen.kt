@@ -3,6 +3,7 @@ package com.pocketweibo.ui.screens.me
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,10 +38,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.ui.components.Avatar
@@ -82,12 +85,12 @@ fun MyPostsScreen(
             .background(Background)
     ) {
         WeiboTitleBar(
-            title = "我的发布",
+            title = stringResource(R.string.title_my_posts),
             leftIcon = {
                 IconButton(onClick = onBack) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "返回",
+                        contentDescription = stringResource(R.string.back_cd),
                         tint = WeiboOrange,
                         modifier = Modifier.size(24.dp)
                     )
@@ -100,7 +103,8 @@ fun MyPostsScreen(
         IdentityFilterRow(
             identities = identities,
             selectedIdentityId = selectedIdentityId,
-            onIdentitySelected = { viewModel.selectIdentity(it) }
+            onIdentitySelected = { viewModel.selectIdentity(it) },
+            allLabel = stringResource(R.string.identity_filter_all)
         )
         
         Divider(thickness = 0.5.dp)
@@ -114,12 +118,12 @@ fun MyPostsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "该身份暂无发布内容",
+                        text = stringResource(R.string.my_posts_empty_title),
                         fontSize = 16.sp,
                         color = GrayMiddle
                     )
                     Text(
-                        text = "切换身份或发布新内容",
+                        text = stringResource(R.string.my_posts_empty_subtitle),
                         fontSize = 14.sp,
                         color = GrayMiddle,
                         modifier = Modifier.padding(top = 8.dp)
@@ -166,7 +170,8 @@ fun MyPostsScreen(
 private fun IdentityFilterRow(
     identities: List<IdentityEntity>,
     selectedIdentityId: Long?,
-    onIdentitySelected: (Long?) -> Unit
+    onIdentitySelected: (Long?) -> Unit,
+    allLabel: String
 ) {
     val scrollState = rememberScrollState()
     
@@ -182,7 +187,7 @@ private fun IdentityFilterRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             IdentityFilterChip(
-                label = "全部",
+                label = allLabel,
                 isSelected = selectedIdentityId == null,
                 color = WeiboOrange,
                 onClick = { onIdentitySelected(null) }
@@ -232,8 +237,19 @@ private fun IdentityFilterChip(
 }
 
 private fun sharePost(context: Context, authorName: String, content: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    val clip = ClipData.newPlainText("微博内容", "$authorName: $content")
-    clipboard.setPrimaryClip(clip)
-    Toast.makeText(context, "内容已复制到剪贴板", Toast.LENGTH_SHORT).show()
+    val shareText = "$authorName: $content"
+    val sendIntent = Intent().apply {
+        action = Intent.ACTION_SEND
+        putExtra(Intent.EXTRA_TEXT, shareText)
+        type = "text/plain"
+    }
+    val shareIntent = Intent.createChooser(sendIntent, context.getString(R.string.share_chooser_title))
+    try {
+        context.startActivity(shareIntent)
+    } catch (e: Exception) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText(context.getString(R.string.share_clip_label), shareText)
+        clipboard.setPrimaryClip(clip)
+        Toast.makeText(context, context.getString(R.string.toast_clipboard_copied), Toast.LENGTH_SHORT).show()
+    }
 }

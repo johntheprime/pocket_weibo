@@ -31,7 +31,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.pocketweibo.R
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pocketweibo.PocketWeiboApp
@@ -70,13 +72,13 @@ fun HomeScreen(
                 .background(Background)
         ) {
             WeiboTitleBar(
-                title = "首页",
+                title = stringResource(R.string.title_home),
                 showDropdown = true,
                 onTitleClick = { showCategoryDropdown = !showCategoryDropdown },
                 leftIcon = {
                     Icon(
                         imageVector = Icons.Default.PersonSearch,
-                        contentDescription = "搜索",
+                        contentDescription = stringResource(R.string.home_search_cd),
                         tint = WeiboOrange,
                         modifier = Modifier.size(24.dp)
                     )
@@ -84,7 +86,7 @@ fun HomeScreen(
                 rightIcon = {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
-                        contentDescription = "更多",
+                        contentDescription = stringResource(R.string.home_more_cd),
                         tint = WeiboOrange,
                         modifier = Modifier.size(24.dp)
                     )
@@ -139,14 +141,14 @@ private fun sharePost(context: Context, authorName: String, content: String) {
         putExtra(Intent.EXTRA_TEXT, shareText)
         type = "text/plain"
     }
-    val shareIntent = Intent.createChooser(sendIntent, "分享微博")
+    val shareIntent = Intent.createChooser(sendIntent, context.getString(R.string.share_chooser_title))
     try {
         context.startActivity(shareIntent)
     } catch (e: Exception) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("微博内容", shareText)
+        val clip = ClipData.newPlainText(context.getString(R.string.share_clip_label), shareText)
         clipboard.setPrimaryClip(clip)
-        Toast.makeText(context, "内容已复制到剪贴板", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.toast_clipboard_copied), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -160,12 +162,12 @@ private fun EmptyFeed() {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "还没有微博",
+                text = stringResource(R.string.empty_feed_title),
                 fontSize = 16.sp,
                 color = GrayMiddle
             )
             Text(
-                text = "点击中间+号发布第一条",
+                text = stringResource(R.string.empty_feed_subtitle),
                 fontSize = 14.sp,
                 color = GrayMiddle,
                 modifier = Modifier.padding(top = 8.dp)

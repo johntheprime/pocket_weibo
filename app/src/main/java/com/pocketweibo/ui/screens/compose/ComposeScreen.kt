@@ -46,11 +46,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.PostEntity
@@ -138,13 +140,13 @@ fun ComposeScreen(
                 }) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "关闭",
+                        contentDescription = stringResource(R.string.close_cd),
                         tint = GrayDark
                     )
                 }
 
                 Text(
-                    text = "发微博",
+                    text = stringResource(R.string.title_compose),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = GrayDark
@@ -171,7 +173,7 @@ fun ComposeScreen(
                         disabledContainerColor = GrayLight
                     )
                 ) {
-                    Text("发送")
+                    Text(stringResource(R.string.compose_send))
                 }
             }
 
@@ -212,7 +214,7 @@ fun ComposeScreen(
                                 Text(text = "?", fontSize = 14.sp, color = GrayMiddle)
                             }
                             Text(
-                                text = "选择身份",
+                                text = stringResource(R.string.compose_select_identity),
                                 fontSize = 14.sp,
                                 color = GrayMiddle,
                                 modifier = Modifier.padding(start = 8.dp)
@@ -263,7 +265,7 @@ fun ComposeScreen(
                         onValueChange = { 
                             if (it.length <= 2000) content = it 
                         },
-                        placeholder = { Text("分享新鲜事...", color = GrayMiddle) },
+                        placeholder = { Text(stringResource(R.string.compose_content_hint), color = GrayMiddle) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 12.dp),
@@ -305,7 +307,7 @@ fun ComposeScreen(
                                             .data(uri)
                                             .crossfade(true)
                                             .build(),
-                                        contentDescription = "图片",
+                                        contentDescription = stringResource(R.string.compose_image_cd),
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier
                                             .size(80.dp)
@@ -320,7 +322,7 @@ fun ComposeScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
-                                            contentDescription = "删除",
+                                            contentDescription = stringResource(R.string.compose_remove_image_cd),
                                             tint = Color.White,
                                             modifier = Modifier.size(12.dp)
                                         )
@@ -340,17 +342,17 @@ fun ComposeScreen(
             ) {
                 ActionButton(
                     icon = Icons.Default.Image,
-                    label = "图片",
+                    label = stringResource(R.string.compose_label_image),
                     onClick = { imagePickerLauncher.launch("image/*") }
                 )
                 ActionButton(
                     icon = Icons.Default.LocationOn,
-                    label = "位置",
+                    label = stringResource(R.string.compose_label_location),
                     onClick = { }
                 )
                 ActionButton(
                     icon = Icons.Default.AlternateEmail,
-                    label = "艾特",
+                    label = stringResource(R.string.compose_label_mention),
                     onClick = { }
                 )
             }
@@ -363,7 +365,7 @@ fun ComposeScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "请先在\"我\"页面添加身份",
+                        text = stringResource(R.string.compose_no_identity_hint),
                         fontSize = 14.sp,
                         color = GrayMiddle
                     )

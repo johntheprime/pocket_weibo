@@ -36,11 +36,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.components.CommentBottomSheet
@@ -50,10 +52,9 @@ import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.pocketweibo.ui.util.formatRelativeTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,7 +76,8 @@ fun MessageScreen(
     
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("收到的评论", "发出的评论")
+    val tabReceived = stringResource(R.string.message_tab_received)
+    val tabSent = stringResource(R.string.message_tab_sent)
 
     Column(
         modifier = modifier
@@ -83,11 +85,11 @@ fun MessageScreen(
             .background(Background)
     ) {
         WeiboTitleBar(
-            title = "消息",
+            title = stringResource(R.string.title_message),
             rightIcon = {
                 Icon(
                     imageVector = Icons.Default.Edit,
-                    contentDescription = "发起聊天",
+                    contentDescription = stringResource(R.string.message_compose_cd),
                     tint = WeiboOrange,
                     modifier = Modifier.size(24.dp)
                 )
@@ -99,7 +101,7 @@ fun MessageScreen(
             containerColor = Color.White,
             contentColor = WeiboOrange
         ) {
-            tabs.forEachIndexed { index, title ->
+            listOf(tabReceived, tabSent).forEachIndexed { index, title ->
                 Tab(
                     selected = selectedTab == index,
                     onClick = { selectedTab = index },
@@ -119,7 +121,7 @@ fun MessageScreen(
         when (selectedTab) {
             0 -> {
                 if (receivedMessages.isEmpty()) {
-                    EmptyMessages("暂无收到的评论")
+                    EmptyMessages(stringResource(R.string.message_empty_received))
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()
@@ -136,7 +138,7 @@ fun MessageScreen(
             }
             1 -> {
                 if (sentMessages.isEmpty()) {
-                    EmptyMessages("暂无发出的评论")
+                    EmptyMessages(stringResource(R.string.message_empty_sent))
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize()
@@ -177,13 +179,16 @@ private fun ReceivedMessageItem(
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val clipLabel = stringResource(R.string.clipboard_label_comment)
+    val copiedToast = stringResource(R.string.toast_comment_copied)
+    val preview = stringResource(R.string.message_preview_received, message.postContent)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = {
-                    context.copyPlainToClipboard("评论", message.commentContent, toast = "评论已复制")
+                    context.copyPlainToClipboard(clipLabel, message.commentContent, toast = copiedToast)
                 }
             ),
         color = Color.White
@@ -216,21 +221,24 @@ private fun ReceivedMessageItem(
                         color = GrayDark
                     )
                     Text(
-                        text = formatMessageTime(message.createdAt),
+                        text = context.resources.formatRelativeTime(
+                            message.createdAt,
+                            RelativeTimePreset.MessageList
+                        ),
                         fontSize = 12.sp,
                         color = GrayMiddle
                     )
                 }
-                
+
                 Text(
-                    text = "评论了你的微博: ${message.postContent}",
+                    text = preview,
                     fontSize = 13.sp,
                     color = GrayMiddle,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 4.dp)
                 )
-                
+
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -257,13 +265,16 @@ private fun SentMessageItem(
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
+    val clipLabel = stringResource(R.string.clipboard_label_comment)
+    val copiedToast = stringResource(R.string.toast_comment_copied)
+    val preview = stringResource(R.string.message_preview_sent, message.postContent)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = {
-                    context.copyPlainToClipboard("评论", message.commentContent, toast = "评论已复制")
+                    context.copyPlainToClipboard(clipLabel, message.commentContent, toast = copiedToast)
                 }
             ),
         color = Color.White
@@ -280,7 +291,7 @@ private fun SentMessageItem(
                 size = 48.dp,
                 avatarResName = message.commentIdentityResName
             )
-            
+
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -296,21 +307,24 @@ private fun SentMessageItem(
                         color = GrayDark
                     )
                     Text(
-                        text = formatMessageTime(message.createdAt),
+                        text = context.resources.formatRelativeTime(
+                            message.createdAt,
+                            RelativeTimePreset.MessageList
+                        ),
                         fontSize = 12.sp,
                         color = GrayMiddle
                     )
                 }
-                
+
                 Text(
-                    text = "你评论了: ${message.postContent}",
+                    text = preview,
                     fontSize = 13.sp,
                     color = GrayMiddle,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 4.dp)
                 )
-                
+
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -332,6 +346,7 @@ private fun SentMessageItem(
 
 @Composable
 private fun EmptyMessages(subtitle: String) {
+    val hint = stringResource(R.string.message_empty_hint)
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -353,27 +368,11 @@ private fun EmptyMessages(subtitle: String) {
                 color = GrayMiddle
             )
             Text(
-                text = "来自各个身份的互动会在这里显示",
+                text = hint,
                 fontSize = 14.sp,
                 color = GrayMiddle,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
-    }
-}
-
-private fun formatMessageTime(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-    val minutes = diff / (1000 * 60)
-    val hours = diff / (1000 * 60 * 60)
-    val days = diff / (1000 * 60 * 60 * 24)
-
-    return when {
-        minutes < 1 -> "刚刚"
-        minutes < 60 -> "${minutes}分钟前"
-        hours < 24 -> "${hours}小时前"
-        days < 7 -> "${days}天前"
-        else -> SimpleDateFormat("MM-dd", Locale.getDefault()).format(Date(timestamp))
     }
 }

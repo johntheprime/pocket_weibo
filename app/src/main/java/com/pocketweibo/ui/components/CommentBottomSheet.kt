@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
@@ -26,7 +25,6 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,17 +33,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.pocketweibo.R
 import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.pocketweibo.ui.util.formatRelativeTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,7 +78,7 @@ fun CommentBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "评论",
+                    text = stringResource(R.string.comment_sheet_title),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = GrayDark,
@@ -88,7 +87,7 @@ fun CommentBottomSheet(
                 IconButton(onClick = onDismiss) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "关闭",
+                        contentDescription = stringResource(R.string.close_cd),
                         tint = GrayMiddle
                     )
                 }
@@ -98,7 +97,7 @@ fun CommentBottomSheet(
             
             if (comments.isEmpty()) {
                 Text(
-                    text = "暂无评论，快来抢沙发吧",
+                    text = stringResource(R.string.comments_empty),
                     fontSize = 14.sp,
                     color = GrayMiddle,
                     modifier = Modifier
@@ -132,7 +131,7 @@ fun CommentBottomSheet(
                 OutlinedTextField(
                     value = commentText,
                     onValueChange = { commentText = it },
-                    placeholder = { Text("写评论...", fontSize = 14.sp) },
+                    placeholder = { Text(stringResource(R.string.comment_hint), fontSize = 14.sp) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(20.dp),
                     singleLine = true
@@ -147,7 +146,7 @@ fun CommentBottomSheet(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Send,
-                        contentDescription = "发送",
+                        contentDescription = stringResource(R.string.comment_send_cd),
                         tint = if (commentText.isNotBlank()) Color(0xFFFD8225) else GrayMiddle
                     )
                 }
@@ -164,8 +163,9 @@ private fun CommentItem(
     onDelete: () -> Unit
 ) {
     val context = LocalContext.current
-    var showMenu by remember { mutableStateOf(false) }
-    
+    val clipLabel = stringResource(R.string.clipboard_label_comment)
+    val copiedToast = stringResource(R.string.toast_comment_copied)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -173,7 +173,7 @@ private fun CommentItem(
             .combinedClickable(
                 onClick = { },
                 onLongClick = {
-                    context.copyPlainToClipboard("评论", comment.content, toast = "评论已复制")
+                    context.copyPlainToClipboard(clipLabel, comment.content, toast = copiedToast)
                 }
             )
     ) {
@@ -198,7 +198,7 @@ private fun CommentItem(
                     color = GrayDark
                 )
                 Text(
-                    text = " · ${formatCommentTime(comment.createdAt)}",
+                    text = " · ${context.resources.formatRelativeTime(comment.createdAt, RelativeTimePreset.CommentSheet)}",
                     fontSize = 12.sp,
                     color = GrayMiddle
                 )
@@ -218,12 +218,12 @@ private fun CommentItem(
                     TextButton(onClick = onDelete) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "删除",
+                            contentDescription = stringResource(R.string.delete),
                             tint = WeiboOrange,
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "删除",
+                            text = stringResource(R.string.delete),
                             fontSize = 12.sp,
                             color = WeiboOrange
                         )
@@ -231,21 +231,5 @@ private fun CommentItem(
                 }
             }
         }
-    }
-}
-
-private fun formatCommentTime(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-    val minutes = diff / (1000 * 60)
-    val hours = diff / (1000 * 60 * 60)
-    val days = diff / (1000 * 60 * 60 * 24)
-
-    return when {
-        minutes < 1 -> "刚刚"
-        minutes < 60 -> "${minutes}分钟前"
-        hours < 24 -> "${hours}小时前"
-        days < 7 -> "${days}天前"
-        else -> SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(Date(timestamp))
     }
 }

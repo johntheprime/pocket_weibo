@@ -31,19 +31,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.pocketweibo.R
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pocketweibo.data.local.dao.PostWithIdentity
+import com.pocketweibo.ui.util.RelativeTimePreset
+import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.GrayDark
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PostCard(
@@ -55,6 +56,7 @@ fun PostCard(
     modifier: Modifier = Modifier
 ) {
     var showSelectableCopy by remember { mutableStateOf(false) }
+    val resources = LocalContext.current.resources
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -96,7 +98,7 @@ fun PostCard(
                     )
                     
                     Text(
-                        text = formatTime(post.createdAt),
+                        text = resources.formatRelativeTime(post.createdAt, RelativeTimePreset.FeedCard),
                         fontSize = 11.sp,
                         color = GrayMiddle,
                         maxLines = 1,
@@ -124,7 +126,7 @@ fun PostCard(
             ) {
                 ActionButton(
                     icon = Icons.Default.Share,
-                    text = "转发",
+                    text = stringResource(R.string.action_repost),
                     count = null,
                     onClick = onShareClick
                 )
@@ -133,7 +135,7 @@ fun PostCard(
                 
                 ActionButton(
                     icon = Icons.Default.ChatBubbleOutline,
-                    text = "评论",
+                    text = stringResource(R.string.action_comment),
                     count = post.commentCount,
                     onClick = onCommentClick
                 )
@@ -142,7 +144,7 @@ fun PostCard(
                 
                 ActionButton(
                     icon = if (post.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    text = "点赞",
+                    text = stringResource(R.string.action_like),
                     count = post.likeCount,
                     isLiked = post.isLiked,
                     onClick = onLikeClick
@@ -152,8 +154,7 @@ fun PostCard(
         if (showSelectableCopy) {
             SelectableCopyDialog(
                 body = post.content,
-                onDismiss = { showSelectableCopy = false },
-                title = "选择并复制正文"
+                onDismiss = { showSelectableCopy = false }
             )
         }
     }
@@ -216,21 +217,5 @@ private fun ActionButton(
                 )
             }
         }
-    }
-}
-
-private fun formatTime(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-    val seconds = diff / 1000
-    val minutes = seconds / 60
-    val hours = seconds / 3600
-    val days = seconds / 86400
-
-    return when {
-        seconds < 60 -> "刚刚"
-        minutes < 60 -> "${minutes}分钟前"
-        hours < 12 -> "${hours}小时前"
-        else -> SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault()).format(Date(timestamp))
     }
 }

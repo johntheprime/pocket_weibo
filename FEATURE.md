@@ -30,6 +30,7 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-002 | **微博长按选择复制**：在首页/我的发布卡片、发现页热门与搜索结果、微博详情中，长按微博区域可**选择部分正文并复制**（详情页正文为内联可选中；列表/发现为对话框内 `SelectionContainer`）。 | Done |
 | F-003 | **消息页评论长按**：在「消息」收到的评论/发出的评论列表行上长按，复制该条**评论正文**。 | Done |
 | F-004 | **我 · 设置**：右上角设置图标可进入**设置**页；**导入/导出**迁入设置；**关于本软件**展示版本号、简介、作者/贡献说明与 **GitHub** 相关链接。 | Done |
+| F-005 | **中英界面**：默认中文 `values`；英文 `values-en`；设置中可选**跟随系统 / 简体中文 / English**（`UiPreferences` + `AppCompatDelegate.setApplicationLocales`）；主要界面文案与相对时间、剪贴板、导出 Markdown 标签等均走资源。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 

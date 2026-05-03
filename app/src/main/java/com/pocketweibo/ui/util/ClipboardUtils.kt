@@ -4,13 +4,14 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import com.pocketweibo.R
 
 fun Context.copyPlainToClipboard(
     label: String,
     text: String,
-    toast: String = "已复制到剪贴板"
+    toast: String? = null
 ) {
     val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     cm.setPrimaryClip(ClipData.newPlainText(label, text))
-    Toast.makeText(this, toast, Toast.LENGTH_SHORT).show()
+    Toast.makeText(this, toast ?: getString(R.string.toast_clipboard_copied), Toast.LENGTH_SHORT).show()
 }

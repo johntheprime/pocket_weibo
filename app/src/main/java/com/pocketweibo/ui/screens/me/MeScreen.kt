@@ -25,7 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.pocketweibo.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pocketweibo.PocketWeiboApp
@@ -56,11 +58,11 @@ fun MeScreen(
             .background(Background)
     ) {
         WeiboTitleBar(
-            title = "我",
+            title = stringResource(R.string.title_me),
             rightIcon = {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = "设置",
+                    contentDescription = stringResource(R.string.settings_cd),
                     tint = WeiboOrange,
                     modifier = Modifier.size(24.dp)
                 )
@@ -96,7 +98,11 @@ fun MeScreen(
                                         .background(GrayLight, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(text = "?", fontSize = 24.sp, color = GrayMiddle)
+                                    Text(
+                                        text = stringResource(R.string.me_avatar_placeholder),
+                                        fontSize = 24.sp,
+                                        color = GrayMiddle
+                                    )
                                 }
                             }
 
@@ -106,7 +112,8 @@ fun MeScreen(
                                     .padding(start = 16.dp)
                             ) {
                                 Text(
-                                    text = activeIdentity?.name ?: "未选择身份",
+                                    text = activeIdentity?.name
+                                        ?: stringResource(R.string.me_no_identity),
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = GrayDark
@@ -120,7 +127,7 @@ fun MeScreen(
                                     )
                                 }
                                 Text(
-                                    text = "${identities.size} 个身份",
+                                    text = stringResource(R.string.me_identity_count, identities.size),
                                     fontSize = 14.sp,
                                     color = GrayMiddle,
                                     modifier = Modifier.padding(top = 4.dp)
@@ -134,8 +141,8 @@ fun MeScreen(
             item {
                 Divider()
                 MenuItem(
-                    title = "身份管理",
-                    subtitle = "查看、编辑、添加身份",
+                    title = stringResource(R.string.me_identity_title),
+                    subtitle = stringResource(R.string.me_identity_subtitle),
                     onClick = onNavigateToIdentities
                 )
             }
@@ -143,8 +150,8 @@ fun MeScreen(
             item {
                 Divider()
                 MenuItem(
-                    title = "我的发布",
-                    subtitle = "查看所有发布的内容",
+                    title = stringResource(R.string.me_posts_title),
+                    subtitle = stringResource(R.string.me_posts_subtitle),
                     onClick = onNavigateToMyPosts
                 )
             }
@@ -161,13 +168,16 @@ fun MeScreen(
                                 modifier = Modifier.padding(16.dp)
                             ) {
                                 if (identity.nationality.isNotEmpty()) {
-                                    InfoRow(label = "国籍", value = identity.nationality)
+                                    InfoRow(label = stringResource(R.string.label_nationality), value = identity.nationality)
                                 }
                                 if (identity.occupation.isNotEmpty()) {
-                                    InfoRow(label = "职业", value = identity.occupation)
+                                    InfoRow(label = stringResource(R.string.label_occupation), value = identity.occupation)
                                 }
                                 if (identity.famousWork.isNotEmpty()) {
-                                    InfoRow(label = "代表作", value = identity.famousWork)
+                                    InfoRow(
+                                        label = stringResource(R.string.label_famous_work),
+                                        value = identity.famousWork
+                                    )
                                 }
                             }
                         }
