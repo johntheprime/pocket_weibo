@@ -357,7 +357,9 @@ private fun PostDetailCard(
                     maxHeight = 160.dp,
                     modifier = Modifier.padding(top = 12.dp),
                     enableImageClick = true,
-                    onImageClick = onPostImageClick
+                    onImageClick = onPostImageClick,
+                    openFullScreenOnDoubleTap = true,
+                    imageContentDescription = stringResource(R.string.post_image_detail_cd)
                 )
             }
 

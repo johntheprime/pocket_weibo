@@ -2,6 +2,7 @@ package com.pocketweibo.ui.components
 
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -69,7 +70,8 @@ fun PostImageFullscreenViewer(
                 ZoomableImagePage(
                     model = model,
                     resetKey = page,
-                    contentDescription = stringResource(R.string.post_image_viewer_cd)
+                    contentDescription = stringResource(R.string.post_image_viewer_cd),
+                    onDoubleTapExit = onDismiss
                 )
             }
 
@@ -130,7 +132,8 @@ fun PostImageFullscreenViewer(
 private fun ZoomableImagePage(
     model: Any,
     resetKey: Int,
-    contentDescription: String
+    contentDescription: String,
+    onDoubleTapExit: () -> Unit
 ) {
     val context = LocalContext.current
     var scale by remember(resetKey) { mutableFloatStateOf(1f) }
@@ -160,6 +163,18 @@ private fun ZoomableImagePage(
                         scale = (scale * zoom).coerceIn(1f, 5f)
                         offset += pan
                     }
+                }
+                .pointerInput(resetKey) {
+                    detectTapGestures(
+                        onDoubleTap = {
+                            if (scale > 1.05f) {
+                                scale = 1f
+                                offset = Offset.Zero
+                            } else {
+                                onDoubleTapExit()
+                            }
+                        }
+                    )
                 }
         )
     }

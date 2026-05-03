@@ -22,8 +22,9 @@ import java.nio.file.StandardCopyOption
  * [PostEntity.imageUris] stores a JSON array of paths relative to filesDir, e.g.
  * ["post_attachments/12/0.jpg","post_attachments/12/1.png"].
  *
- * Images larger than [COMPRESS_THRESHOLD_BYTES] are re-encoded with [Compressor] to stay near
- * [COMPRESS_TARGET_MAX_BYTES] unless [storeOriginalQuality] is true.
+ * Images larger than [COMPRESS_THRESHOLD_BYTES] are re-encoded with [Compressor] unless
+ * [storeOriginalQuality] is true: first pass uses high JPEG quality with a resolution cap; a second
+ * pass with a soft size cap runs only when the first output still exceeds [COMPRESS_TARGET_MAX_BYTES].
  */
 object PostAttachmentStorage {
 
@@ -159,18 +160,60 @@ object PostAttachmentStorage {
     }
 
     private suspend fun compressWithCompressor(context: Context, source: File, dest: File): Boolean {
+        val workDir = composePrepareDir(context)
+        val pass1 = File(workDir, "pw_cmp1_${System.nanoTime()}.jpg")
+        var pass2: File? = null
         return try {
             dest.parentFile?.mkdirs()
-            val compressed = Compressor.compress(context, source, Dispatchers.IO) {
+            Compressor.compress(context, source, Dispatchers.IO) {
                 resolution(COMPRESS_MAX_EDGE_PX, COMPRESS_MAX_EDGE_PX)
-                quality(86)
+                quality(92)
                 format(Bitmap.CompressFormat.JPEG)
-                size(maxFileSize = COMPRESS_TARGET_MAX_BYTES, stepSize = 8, maxIteration = 18)
-                destination(dest)
+                destination(pass1)
             }
-            compressed.isFile && compressed.length() > 0L
+            if (!pass1.isFile || pass1.length() == 0L) {
+                if (pass1.exists()) pass1.delete()
+                false
+            } else {
+                val fits = pass1.length() <= COMPRESS_TARGET_MAX_BYTES
+                val ok = if (fits) {
+                    moveCompressedToDest(pass1, dest)
+                } else {
+                    val p2 = File(workDir, "pw_cmp2_${System.nanoTime()}.jpg").also { pass2 = it }
+                    Compressor.compress(context, pass1, Dispatchers.IO) {
+                        resolution(COMPRESS_MAX_EDGE_PX, COMPRESS_MAX_EDGE_PX)
+                        quality(86)
+                        format(Bitmap.CompressFormat.JPEG)
+                        size(maxFileSize = COMPRESS_TARGET_MAX_BYTES, stepSize = 3, maxIteration = 22)
+                        destination(p2)
+                    }
+                    val pass2Ok = p2.isFile && p2.length() > 0L
+                    if (pass1.exists()) pass1.delete()
+                    if (!pass2Ok) {
+                        if (p2.exists()) p2.delete()
+                        false
+                    } else {
+                        moveCompressedToDest(p2, dest)
+                    }
+                }
+                if (pass1.exists() && pass1.absolutePath != dest.absolutePath) pass1.delete()
+                ok
+            }
         } catch (_: Exception) {
+            if (pass1.exists()) pass1.delete()
+            pass2?.let { if (it.exists()) it.delete() }
             if (dest.exists() && dest.length() == 0L) dest.delete()
+            false
+        }
+    }
+
+    private fun moveCompressedToDest(from: File, dest: File): Boolean {
+        return try {
+            if (from.absolutePath == dest.absolutePath) return from.isFile && from.length() > 0L
+            from.copyTo(dest, overwrite = true)
+            from.delete()
+            dest.isFile && dest.length() > 0L
+        } catch (_: Exception) {
             false
         }
     }

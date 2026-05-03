@@ -164,7 +164,8 @@
     <string name="compose_remove_image_cd">Remove</string>
     <string name="compose_label_image">Image</string>
     <string name="post_image_cd">Post image</string>
-    <string name="post_image_viewer_cd">View image</string>
+    <string name="post_image_detail_cd">Post image, double-tap to view fullscreen</string>
+    <string name="post_image_viewer_cd">View image, double-tap to go back when not zoomed in</string>
     <string name="post_image_close_cd">Close</string>
     <string name="post_image_prev_cd">Previous image</string>
     <string name="post_image_next_cd">Next image</string>
