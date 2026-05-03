@@ -120,7 +120,8 @@ fun DiscoverScreen(
                 results = searchResults,
                 onIdentityClick = { identity ->
                     viewModel.updateSearchQuery(identity.name)
-                }
+                },
+                onPostClick = onPostClick
             )
         }
     }
@@ -341,7 +342,8 @@ private fun TrendingPostItem(
 @Composable
 private fun SearchResultsContent(
     results: List<SearchResult>,
-    onIdentityClick: (IdentityEntity) -> Unit
+    onIdentityClick: (IdentityEntity) -> Unit,
+    onPostClick: (Long) -> Unit
 ) {
     if (results.isEmpty()) {
         Box(
@@ -403,7 +405,10 @@ private fun SearchResultsContent(
                 }
                 
                 items(postResults) { result ->
-                    PostSearchItem(post = result.post)
+                    PostSearchItem(
+                        post = result.post,
+                        onClick = { onPostClick(result.post.id) }
+                    )
                 }
             }
         }
@@ -450,9 +455,14 @@ private fun IdentitySearchItem(
 }
 
 @Composable
-private fun PostSearchItem(post: com.pocketweibo.data.local.dao.PostWithIdentity) {
+private fun PostSearchItem(
+    post: com.pocketweibo.data.local.dao.PostWithIdentity,
+    onClick: () -> Unit
+) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         color = Color.White
     ) {
         Row(
