@@ -91,13 +91,19 @@ class WeiboRepository(
     suspend fun insertPostWithPreparedGallery(
         identityId: Long,
         content: String,
-        preparedFiles: List<File>
+        preparedFiles: List<File>,
+        locationLabel: String? = null
     ): Long {
+        val extrasJson = if (locationLabel.isNullOrBlank()) {
+            "{}"
+        } else {
+            JSONObject().apply { put("location", locationLabel.trim()) }.toString()
+        }
         val base = PostEntity(
             identityId = identityId,
             content = content.trim(),
             imageUris = "",
-            extrasJson = "{}"
+            extrasJson = extrasJson
         )
         val newId = postDao.insert(base)
         if (preparedFiles.isNotEmpty()) {

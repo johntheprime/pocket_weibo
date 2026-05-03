@@ -155,6 +155,11 @@
     <string name="compose_preparing_images">Processing images…</string>
     <string name="compose_per_post_original_title">Original files for this post</string>
     <string name="compose_per_post_original_subtitle">When on, new images you add below are stored without compression (larger). Existing thumbnails are unchanged; remove one and pick again to re-encode.</string>
+    <string name="compose_location_badge">Location: %1$s (tap to clear)</string>
+    <string name="compose_location_clear_cd">Clear location</string>
+    <string name="compose_location_failed">Could not resolve a city label. Try again or check location permission.</string>
+    <string name="compose_mention_title">Insert \@ mention</string>
+    <string name="compose_mention_empty">No other identities to pick</string>
     <string name="compose_label_location">Location</string>
     <string name="compose_label_mention">Mention</string>
     <string name="compose_no_identity_hint">Add an identity on the Me tab first</string>

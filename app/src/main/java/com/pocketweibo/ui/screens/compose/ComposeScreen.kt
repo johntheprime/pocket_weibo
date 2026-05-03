@@ -1,7 +1,9 @@
 package com.pocketweibo.ui.screens.compose
 
+import android.Manifest
 import android.net.Uri
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -24,6 +26,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.AlternateEmail
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,6 +38,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -68,6 +74,8 @@ import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.Surface
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.util.hasLocationPermission
+import com.pocketweibo.ui.util.tryResolveApproxLocationLabel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -92,6 +100,8 @@ fun ComposeScreen(
     var isPreparingImages by remember { mutableStateOf(false) }
     var isSending by remember { mutableStateOf(false) }
     var useOriginalForThisPost by remember { mutableStateOf(false) }
+    var locationLabel by remember { mutableStateOf<String?>(null) }
+    var showMentionDialog by remember { mutableStateOf(false) }
 
     var lastContentEditedAt by remember { mutableStateOf(SystemClock.elapsedRealtime()) }
     val composeOpenedAt = remember { SystemClock.elapsedRealtime() }
@@ -101,6 +111,27 @@ fun ComposeScreen(
     DisposableEffect(Unit) {
         onDispose {
             preparedSnapshot.forEach { f -> if (f.exists()) f.delete() }
+        }
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        val ok = grants[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (ok) {
+            scope.launch {
+                val label = tryResolveApproxLocationLabel(context.applicationContext)
+                if (label != null) {
+                    locationLabel = label
+                } else {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.compose_location_failed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
         }
     }
 
@@ -176,7 +207,8 @@ fun ComposeScreen(
                 app.repository.insertPostWithPreparedGallery(
                     identityId = identityId,
                     content = text,
-                    preparedFiles = filesToSend
+                    preparedFiles = filesToSend,
+                    locationLabel = locationLabel
                 )
                 app.repository.clearDraft()
                 preparedImageFiles = emptyList()
@@ -487,12 +519,48 @@ fun ComposeScreen(
                 ActionButton(
                     icon = Icons.Default.LocationOn,
                     label = stringResource(R.string.compose_label_location),
-                    onClick = { }
+                    onClick = {
+                        if (hasLocationPermission(context)) {
+                            scope.launch {
+                                val label = tryResolveApproxLocationLabel(context.applicationContext)
+                                if (label != null) {
+                                    locationLabel = label
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.compose_location_failed),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        } else {
+                            locationPermissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
+                            )
+                        }
+                    }
                 )
                 ActionButton(
                     icon = Icons.Default.AlternateEmail,
                     label = stringResource(R.string.compose_label_mention),
-                    onClick = { }
+                    onClick = { showMentionDialog = true }
+                )
+            }
+
+            locationLabel?.let { loc ->
+                Text(
+                    text = stringResource(R.string.compose_location_badge, loc),
+                    fontSize = 12.sp,
+                    color = WeiboOrange,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp)
+                        .clickable {
+                            locationLabel = null
+                        }
                 )
             }
 
@@ -510,6 +578,46 @@ fun ComposeScreen(
                     )
                 }
             }
+        }
+
+        if (showMentionDialog) {
+            val others = identities.filter { it.id != selectedIdentity?.id }
+            AlertDialog(
+                onDismissRequest = { showMentionDialog = false },
+                title = { Text(stringResource(R.string.compose_mention_title)) },
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        if (others.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.compose_mention_empty),
+                                fontSize = 14.sp,
+                                color = GrayMiddle
+                            )
+                        } else {
+                            others.forEach { id ->
+                                TextButton(
+                                    onClick = {
+                                        content = "${content}@${id.name} "
+                                        lastContentEditedAt = SystemClock.elapsedRealtime()
+                                        showMentionDialog = false
+                                    }
+                                ) {
+                                    Text("@${id.name}")
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showMentionDialog = false }) {
+                        Text(stringResource(R.string.close_cd))
+                    }
+                }
+            )
         }
     }
 }
