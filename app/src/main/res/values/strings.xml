@@ -164,8 +164,8 @@
     <string name="compose_remove_image_cd">删除</string>
     <string name="compose_label_image">图片</string>
     <string name="post_image_cd">微博配图</string>
-    <string name="post_image_detail_cd">微博配图，双击可全屏查看</string>
-    <string name="post_image_viewer_cd">大图查看，未放大时双击可返回</string>
+    <string name="post_image_detail_cd">微博配图，单击可全屏预览</string>
+    <string name="post_image_viewer_cd">大图预览，双击放大或缩小，单击关闭</string>
     <string name="post_image_close_cd">关闭</string>
     <string name="post_image_prev_cd">上一张</string>
     <string name="post_image_next_cd">下一张</string>

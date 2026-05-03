@@ -71,7 +71,7 @@ fun PostImageFullscreenViewer(
                     model = model,
                     resetKey = page,
                     contentDescription = stringResource(R.string.post_image_viewer_cd),
-                    onDoubleTapExit = onDismiss
+                    onDismiss = onDismiss
                 )
             }
 
@@ -128,12 +128,14 @@ fun PostImageFullscreenViewer(
     }
 }
 
+private const val DoubleTapZoomScale = 2.5f
+
 @Composable
 private fun ZoomableImagePage(
     model: Any,
     resetKey: Int,
     contentDescription: String,
-    onDoubleTapExit: () -> Unit
+    onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
     var scale by remember(resetKey) { mutableFloatStateOf(1f) }
@@ -166,12 +168,14 @@ private fun ZoomableImagePage(
                 }
                 .pointerInput(resetKey) {
                     detectTapGestures(
+                        onTap = { onDismiss() },
                         onDoubleTap = {
                             if (scale > 1.05f) {
                                 scale = 1f
                                 offset = Offset.Zero
                             } else {
-                                onDoubleTapExit()
+                                scale = DoubleTapZoomScale
+                                offset = Offset.Zero
                             }
                         }
                     )

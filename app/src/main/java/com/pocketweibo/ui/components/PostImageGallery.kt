@@ -2,7 +2,6 @@ package com.pocketweibo.ui.components
 
 import android.net.Uri
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -31,9 +29,7 @@ fun PostImageGallery(
     maxHeight: androidx.compose.ui.unit.Dp = 120.dp,
     enableImageClick: Boolean = false,
     onImageClick: ((index: Int) -> Unit)? = null,
-    /** When true (e.g. post detail), opens [onImageClick] on **double** tap instead of single tap. */
-    openFullScreenOnDoubleTap: Boolean = false,
-    /** Overrides [R.string.post_image_cd] for the same image row (e.g. double-tap hint on detail). */
+    /** Overrides [R.string.post_image_cd] for this row (e.g. detail thumbnail hint). */
     imageContentDescription: String? = null
 ) {
     val context = LocalContext.current
@@ -58,13 +54,8 @@ fun PostImageGallery(
                 }
             }
             if (model != null) {
-                val interactionModifier = when {
-                    !clickable -> Modifier
-                    openFullScreenOnDoubleTap -> Modifier.pointerInput(rel, index) {
-                        detectTapGestures(onDoubleTap = { onImageClick!!.invoke(index) })
-                    }
-                    else -> Modifier.clickable { onImageClick!!.invoke(index) }
-                }
+                val interactionModifier =
+                    if (clickable) Modifier.clickable { onImageClick!!.invoke(index) } else Modifier
                 val boxModifier = Modifier
                     .size(maxHeight)
                     .clip(RoundedCornerShape(6.dp))
