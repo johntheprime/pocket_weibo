@@ -103,6 +103,15 @@
 
     <string name="home_search_cd">搜索</string>
     <string name="home_more_cd">更多</string>
+    <string name="home_title_menu_title">首页</string>
+    <string name="home_title_menu_refresh">刷新时间线</string>
+    <string name="home_search_dialog_title">搜索微博</string>
+    <string name="home_search_hint">正文或昵称关键词</string>
+    <string name="home_search_apply">搜索</string>
+    <string name="home_search_clear">清除筛选</string>
+    <string name="home_more_settings">设置</string>
+    <string name="home_more_discover">发现</string>
+    <string name="home_empty_search">没有匹配的动态</string>
 
     <string name="message_tab_received">收到的评论</string>
     <string name="message_tab_sent">发出的评论</string>

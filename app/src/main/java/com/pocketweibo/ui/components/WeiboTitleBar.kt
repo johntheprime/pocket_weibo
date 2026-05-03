@@ -44,11 +44,14 @@ fun WeiboTitleBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (leftIcon != null) {
-            Box(modifier = Modifier.size(24.dp)) {
+            Box(
+                modifier = Modifier.size(48.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 leftIcon()
             }
         } else {
-            Box(modifier = Modifier.size(24.dp)) {}
+            Box(modifier = Modifier.size(48.dp)) {}
         }
 
         Box(
@@ -97,7 +100,7 @@ fun WeiboTitleBar(
                 rightIcon()
             }
         } else {
-            Box(modifier = Modifier.size(24.dp)) {}
+            Box(modifier = Modifier.size(48.dp)) {}
         }
     }
 }

@@ -134,6 +134,8 @@ fun MainScreen() {
                     when (selectedTab) {
                         MainTab.HOME -> HomeScreen(
                             onPostClick = { postId -> postDetailId = postId },
+                            onOpenSettings = { showMeSettings = true },
+                            onNavigateToDiscover = { selectedTab = MainTab.DISCOVER },
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.MESSAGE -> MessageScreen(modifier = Modifier.padding(paddingValues))
