@@ -52,11 +52,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.compose.ui.res.stringResource
@@ -76,11 +80,13 @@ import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.Surface
 import com.pocketweibo.ui.theme.WeiboOrange
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ComposeScreen(
     onDismiss: () -> Unit,
@@ -94,6 +100,8 @@ fun ComposeScreen(
     val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
     val scope = rememberCoroutineScope()
     val prepMutex = remember { Mutex() }
+    val contentFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     var pendingCameraFile by remember { mutableStateOf<File?>(null) }
     var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
@@ -230,6 +238,9 @@ fun ComposeScreen(
                 }
             }
         }
+        delay(50L)
+        contentFocusRequester.requestFocus()
+        keyboardController?.show()
     }
 
     fun saveAndDismiss() {
@@ -440,7 +451,8 @@ fun ComposeScreen(
                         placeholder = { Text(stringResource(R.string.compose_content_hint), color = GrayMiddle) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 12.dp),
+                            .padding(top = 12.dp)
+                            .focusRequester(contentFocusRequester),
                         colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = Color.Transparent,
                             focusedContainerColor = Color.Transparent,
