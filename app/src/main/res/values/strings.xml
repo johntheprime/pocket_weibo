@@ -270,6 +270,13 @@
     <string name="identity_edit_title">编辑身份</string>
     <string name="identity_detail_title">身份详情</string>
     <string name="identity_tap_avatar">点击选择头像</string>
+    <string name="identity_avatar_from_gallery">从相册上传头像</string>
+    <string name="identity_avatar_from_gallery_cd">从相册选择图片作为头像</string>
+    <string name="identity_avatar_section_custom">自定义头像</string>
+    <string name="identity_avatar_section_cartoon_boy">萌系卡通头像（男）</string>
+    <string name="identity_avatar_section_more_presets">更多预设</string>
+    <string name="identity_avatar_clear_custom">移除照片，使用下方预设</string>
+    <string name="identity_avatar_clear_custom_cd">移除自定义头像并改用预设</string>
     <string name="identity_label_name">姓名</string>
     <string name="identity_label_region">国籍/地区</string>
     <string name="identity_label_job">职业</string>

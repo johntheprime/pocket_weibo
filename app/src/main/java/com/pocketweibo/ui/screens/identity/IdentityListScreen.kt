@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.R
 import com.pocketweibo.data.local.entity.IdentityEntity
+import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
@@ -171,9 +172,12 @@ private fun IdentityListItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            IdentityAvatar(
-                resName = identity.avatarResName,
-                size = 48
+            Avatar(
+                name = identity.name,
+                color = Color(0xFF4A90D9),
+                size = 48.dp,
+                avatarResName = identity.avatarResName,
+                customAvatarUri = identity.customAvatarUri
             )
             
             Column(modifier = Modifier.weight(1f)) {
@@ -220,41 +224,6 @@ private fun IdentityListItem(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
                 tint = GrayLight
-            )
-        }
-    }
-}
-
-@Composable
-fun IdentityAvatar(
-    resName: String,
-    size: Int,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val resourceId = remember(resName) {
-        context.resources.getIdentifier(resName, "drawable", context.packageName)
-    }
-    
-    if (resourceId != 0) {
-        androidx.compose.foundation.Image(
-            painter = androidx.compose.ui.res.painterResource(id = resourceId),
-            contentDescription = null,
-            modifier = modifier.size(size.dp),
-            contentScale = androidx.compose.ui.layout.ContentScale.Fit
-        )
-    } else {
-        Box(
-            modifier = modifier
-                .size(size.dp)
-                .background(GrayLight, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = resName.firstOrNull()?.toString() ?: "?",
-                fontSize = (size / 2.5).sp,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
             )
         }
     }

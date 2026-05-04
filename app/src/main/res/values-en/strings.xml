@@ -270,6 +270,13 @@
     <string name="identity_edit_title">Edit identity</string>
     <string name="identity_detail_title">Identity</string>
     <string name="identity_tap_avatar">Tap to choose avatar</string>
+    <string name="identity_avatar_from_gallery">Upload from gallery</string>
+    <string name="identity_avatar_from_gallery_cd">Pick an image from gallery for the avatar</string>
+    <string name="identity_avatar_section_custom">Custom photo</string>
+    <string name="identity_avatar_section_cartoon_boy">Cute cartoon (male)</string>
+    <string name="identity_avatar_section_more_presets">More presets</string>
+    <string name="identity_avatar_clear_custom">Remove photo and use a preset below</string>
+    <string name="identity_avatar_clear_custom_cd">Remove custom avatar and use a preset</string>
     <string name="identity_label_name">Name</string>
     <string name="identity_label_region">Country / region</string>
     <string name="identity_label_job">Occupation</string>

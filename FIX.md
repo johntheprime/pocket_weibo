@@ -8,6 +8,7 @@ This file records **resolved requirements** and the **standard process** for eve
 
 | Date (UTC) | Requirement | Resolution | Verified |
 |-------------|---------------|------------|----------|
+| 2026-05-04 | 身份 **萌系男卡通** 预设未在编辑页突出；**相册自定义头像** 未接入保存（仍调用 `insertIdentity`，无选图入口） | `IdentityDetailScreen`：`PickVisualMedia` 选图、**自定义 / 男卡通 / 更多预设** 分区、`saveIdentityWithAvatarOptions` + 移除照片；头图与 **`Avatar`** 一致。**`IdentityListScreen`** 行内改用 **`Avatar`**（含 `customAvatarUri`）。`FEATURE.md` **F-037**。版本 **3.36.0 (150)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-04 | **我** 页 **待处理提醒** 不应压在 **身份简介**（国籍/职业/代表作）之上；**固定资料在上、可变列表在下** | `MeScreen` `LazyColumn` 将 **简介 `InfoRow` 区块** 移到 **待处理提醒** `item` **之前**（顺序：身份卡片 → 简介 → 提醒）。版本 **3.35.3 (149)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-04 | 从 **微博详情** 返回或 **切换 Tab** 再回首页时，不应再出现 **下拉刷新动效**（仅应在 **双击首页 Tab** / **发帖成功回顶** 时播放） | `HomeScreen` 的 `LaunchedEffect(scrollToLatestSignal)` 在离开再进入组合时会 **带着旧的正数 signal 重跑**；在 `MainScreen` 增加 **`homeScrollToLatestConsumed`**，仅在 **`scrollToLatestSignal > scrollToLatestConsumedSignal`** 时播放动效并在结束后 **`onScrollToLatestConsumed`**。版本 **3.35.2 (148)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-04 | 发博成功后 **首页列表不“刷新”**（新帖在顶部，列表仍停在旧滚动位置） | `ComposeScreen` 增加 **`onPostPublished`**；`MainActivity` 在发帖成功回调里 **`selectedTab = HOME`**、**`homeListState.scrollToItem(0)`** 并递增 **`homeScrollToLatestSignal`**（与首页双击 Tab 一致的下拉动效 + 清筛选）。版本 **3.35.1 (147)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |

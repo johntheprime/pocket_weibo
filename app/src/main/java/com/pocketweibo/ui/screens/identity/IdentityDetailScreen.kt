@@ -1,5 +1,10 @@
 package com.pocketweibo.ui.screens.identity
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,6 +27,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -32,16 +39,19 @@ import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -51,23 +61,30 @@ import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.Gender
 import com.pocketweibo.data.local.entity.IdentityEntity
+import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-val avatarOptions = listOf(
-    "avatar_default", "avatar_scholar", "avatar_artist", "avatar_scientist",
+/** Male cartoon-style vector presets (F-035 / identity editor). */
+internal val avatarBoyCartoonPresets = listOf(
+    "avatar_boy_hoodie", "avatar_boy_sport", "avatar_boy_shades", "avatar_boy_formal"
+)
+
+internal val avatarOtherPresets = listOf(
+    "avatar_default",
+    "avatar_scholar", "avatar_artist", "avatar_scientist",
     "avatar_writer", "avatar_female_scholar", "avatar_western", "avatar_chinese_scholar"
 )
 
 @Composable
-fun IdentityAvatar(resName: String, size: Int) {
+private fun PresetAvatarThumbnail(resName: String, size: Int) {
     val context = LocalContext.current
     val resourceId = context.resources.getIdentifier(resName, "drawable", context.packageName)
     
@@ -88,6 +105,39 @@ fun IdentityAvatar(resName: String, size: Int) {
                 text = stringResource(R.string.me_avatar_placeholder),
                 color = Color.White,
                 fontSize = (size / 2).sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun PresetAvatarRow(
+    resName: String,
+    selected: Boolean,
+    onSelect: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(56.dp)
+            .clip(CircleShape)
+            .border(
+                width = if (selected) 3.dp else 0.dp,
+                color = if (selected) WeiboOrange else Color.Transparent,
+                shape = CircleShape
+            )
+            .clickable(onClick = onSelect),
+        contentAlignment = Alignment.Center
+    ) {
+        PresetAvatarThumbnail(resName = resName, size = 48)
+        if (selected) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = WeiboOrange,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .size(20.dp)
+                    .background(Color.White, CircleShape)
             )
         }
     }
@@ -118,7 +168,29 @@ fun IdentityDetailScreen(
     var bio by remember { mutableStateOf("") }
     
     val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
-    
+    val scope = rememberCoroutineScope()
+
+    var pendingAvatarUri by remember { mutableStateOf<Uri?>(null) }
+    var preferCustomAvatar by remember { mutableStateOf(false) }
+
+    val pickAvatarLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            pendingAvatarUri = uri
+            preferCustomAvatar = true
+        }
+    }
+
+    LaunchedEffect(isEditing, identityId, identity) {
+        if (!isEditing) return@LaunchedEffect
+        pendingAvatarUri = null
+        preferCustomAvatar = when {
+            identityId == 0L -> false
+            else -> identity?.customAvatarUri.isNullOrBlank().not()
+        }
+    }
+
     if (identityId > 0 && identity == null) {
         identity = identities.find { it.id == identityId }
         identity?.let { i ->
@@ -194,11 +266,24 @@ fun IdentityDetailScreen(
                         modifier = Modifier.padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        IdentityAvatar(
-                            resName = avatarResName,
-                            size = 80
+                        val displayName =
+                            (if (isEditing) name else identity?.name ?: name).ifBlank { "?" }
+                        val displayCustom: String? = when {
+                            !isEditing -> identity?.customAvatarUri
+                            pendingAvatarUri != null -> pendingAvatarUri.toString()
+                            preferCustomAvatar -> identity?.customAvatarUri
+                            else -> null
+                        }
+                        val displayRes =
+                            if (isEditing) avatarResName else identity?.avatarResName ?: avatarResName
+                        Avatar(
+                            name = displayName,
+                            color = Color(0xFF4A90D9),
+                            size = 80.dp,
+                            avatarResName = displayRes,
+                            customAvatarUri = displayCustom
                         )
-                        
+
                         if (isEditing) {
                             Text(
                                 text = stringResource(R.string.identity_tap_avatar),
@@ -210,7 +295,7 @@ fun IdentityDetailScreen(
                     }
                 }
             }
-            
+
             if (isEditing) {
                 item {
                     Text(
@@ -221,7 +306,76 @@ fun IdentityDetailScreen(
                         modifier = Modifier.padding(16.dp, 12.dp, 16.dp, 8.dp)
                     )
                 }
-                
+
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.White
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.identity_avatar_section_custom),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = GrayDark
+                            )
+                            OutlinedButton(
+                                onClick = {
+                                    pickAvatarLauncher.launch(
+                                        PickVisualMediaRequest(PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 10.dp)
+                                    .semantics {
+                                        contentDescription =
+                                            context.getString(R.string.identity_avatar_from_gallery_cd)
+                                    },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = WeiboOrange)
+                            ) {
+                                Text(stringResource(R.string.identity_avatar_from_gallery))
+                            }
+                            if (preferCustomAvatar &&
+                                (pendingAvatarUri != null || !identity?.customAvatarUri.isNullOrBlank())
+                            ) {
+                                TextButton(
+                                    onClick = {
+                                        pendingAvatarUri = null
+                                        preferCustomAvatar = false
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp)
+                                        .semantics {
+                                            contentDescription =
+                                                context.getString(R.string.identity_avatar_clear_custom_cd)
+                                        }
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.identity_avatar_clear_custom),
+                                        color = GrayMiddle
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    Text(
+                        text = stringResource(R.string.identity_avatar_section_cartoon_boy),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = GrayDark,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+
                 item {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
@@ -233,40 +387,61 @@ fun IdentityDetailScreen(
                                 .padding(16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(avatarOptions) { resName ->
-                                Box(
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .clip(CircleShape)
-                                        .border(
-                                            width = if (avatarResName == resName) 3.dp else 0.dp,
-                                            color = if (avatarResName == resName) WeiboOrange else Color.Transparent,
-                                            shape = CircleShape
-                                        )
-                                        .clickable { avatarResName = resName },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    IdentityAvatar(
-                                        resName = resName,
-                                        size = 48
-                                    )
-                                    if (avatarResName == resName) {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = null,
-                                            tint = WeiboOrange,
-                                            modifier = Modifier
-                                                .align(Alignment.BottomEnd)
-                                                .size(20.dp)
-                                                .background(Color.White, CircleShape)
-                                        )
+                            items(avatarBoyCartoonPresets) { resName ->
+                                val selected =
+                                    !preferCustomAvatar && avatarResName == resName
+                                PresetAvatarRow(
+                                    resName = resName,
+                                    selected = selected,
+                                    onSelect = {
+                                        preferCustomAvatar = false
+                                        pendingAvatarUri = null
+                                        avatarResName = resName
                                     }
-                                }
+                                )
                             }
                         }
                     }
                 }
-                
+
+                item {
+                    Text(
+                        text = stringResource(R.string.identity_avatar_section_more_presets),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = GrayDark,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.White
+                    ) {
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(avatarOtherPresets) { resName ->
+                                val selected =
+                                    !preferCustomAvatar && avatarResName == resName
+                                PresetAvatarRow(
+                                    resName = resName,
+                                    selected = selected,
+                                    onSelect = {
+                                        preferCustomAvatar = false
+                                        pendingAvatarUri = null
+                                        avatarResName = resName
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
                 item {
                     EditField(
                         label = stringResource(R.string.identity_label_name),
@@ -393,24 +568,38 @@ fun IdentityDetailScreen(
                     Button(
                         onClick = {
                             if (name.isNotBlank()) {
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    val newIdentity = IdentityEntity(
-                                        id = if (identityId > 0) identityId else 0,
-                                        name = name,
-                                        avatarResName = avatarResName,
-                                        nationality = nationality,
-                                        gender = gender,
-                                        birthYear = birthYear.toIntOrNull(),
-                                        deathYear = deathYear.toIntOrNull(),
-                                        occupation = occupation,
-                                        motto = motto,
-                                        famousWork = famousWork,
-                                        bio = bio,
-                                        isActive = identity?.isActive ?: false
-                                    )
-                                    app.repository.insertIdentity(newIdentity)
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        val picked =
+                                            pendingAvatarUri.takeIf { preferCustomAvatar }
+                                        val deleteCustom =
+                                            !preferCustomAvatar &&
+                                                !identity?.customAvatarUri.isNullOrBlank()
+                                        val newIdentity = IdentityEntity(
+                                            id = if (identityId > 0) identityId else 0,
+                                            name = name.trim(),
+                                            avatarResName = avatarResName,
+                                            customAvatarUri = identity?.customAvatarUri,
+                                            nationality = nationality,
+                                            gender = gender,
+                                            birthYear = birthYear.toIntOrNull(),
+                                            deathYear = deathYear.toIntOrNull(),
+                                            occupation = occupation,
+                                            motto = motto,
+                                            famousWork = famousWork,
+                                            bio = bio,
+                                            createdAt = identity?.createdAt
+                                                ?: System.currentTimeMillis(),
+                                            isActive = identity?.isActive ?: false
+                                        )
+                                        app.repository.saveIdentityWithAvatarOptions(
+                                            identity = newIdentity,
+                                            pickedAvatarUri = picked,
+                                            deleteCustomAvatar = deleteCustom
+                                        )
+                                    }
+                                    onBack()
                                 }
-                                onBack()
                             }
                         },
                         enabled = name.isNotBlank(),
