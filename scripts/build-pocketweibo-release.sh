@@ -19,9 +19,11 @@
 #   3) ANDROID_KEYSTORE_BASE64=... inline in the secrets file (single line)
 #
 # After build: renames the APK to pocketweibo-v<versionName>-<versionCode>-local-<timestamp>.apk
-# in the repo root.
+# in the repo root, then (unless --no-copy) cp to /storage/emulated/0/Download and rm the root copy
+# so the APK is not left in the repo root.
 #
-# Default: cp the APK to /storage/emulated/0/Download (override with --copy-dest). Skip with --no-copy.
+# Default: cp the APK to /storage/emulated/0/Download (override with --copy-dest). Skip with --no-copy
+# (with --no-copy the APK stays in the repo root only).
 #
 # Usage:
 #   ./scripts/build-pocketweibo-release.sh
@@ -214,6 +216,9 @@ if [ "$DO_COPY" = true ]; then
   echo "[..] cp SOURCE DEST  →  cp \"$DEST\" \"$COPY_PATH\""
   if cp "$DEST" "$COPY_PATH"; then
     ok "Copied with cp to: $COPY_PATH"
+    rm -f "$DEST" || fail "rm failed: $DEST (copy exists at $COPY_PATH)"
+    ok "Removed root copy: $DEST_NAME"
+    DEST="$COPY_PATH"
   else
     fail "cp failed. Check permissions and that $COPY_DEST is a writable directory on this machine."
   fi
@@ -226,8 +231,8 @@ echo "========== SUCCESS =========="
 echo "  APK:     $DEST"
 echo "  version: $VN (code $VC)"
 if [ "$DO_COPY" = true ]; then
-  echo "  copy:    ${COPY_DEST%/}/$DEST_NAME"
+  echo "  copy:    ${COPY_DEST%/}/$DEST_NAME (root copy removed after cp)"
 else
-  echo "  copy:    (skipped)"
+  echo "  copy:    (skipped; APK left in repo root)"
 fi
 echo "=============================="

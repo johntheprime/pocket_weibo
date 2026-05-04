@@ -14,3 +14,6 @@ github-keystore-secrets.local.txt
 github-keystore-secrets.local.ANDROID_KEYSTORE_BASE64
 *.jks
 .DS_Store
+
+# Local release APKs produced in repo root (e.g. scripts/build-pocketweibo-release.sh)
+/*.apk
