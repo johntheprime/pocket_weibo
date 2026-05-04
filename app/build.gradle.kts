@@ -17,7 +17,7 @@ android {
         // versionName: semantic versioning (MAJOR.MINOR.PATCH). Bump when you ship user-facing changes.
         versionName = "3.22.1"
         // versionCode: must increase for every release APK that should upgrade in-place (same signing key).
-        versionCode = 131
+        versionCode = 132
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

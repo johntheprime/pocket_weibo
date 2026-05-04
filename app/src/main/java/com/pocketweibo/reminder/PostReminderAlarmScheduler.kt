@@ -21,7 +21,28 @@ object PostReminderAlarmScheduler {
         return h
     }
 
+    /** Pre-3.22.1 used reminder id only; cancel to avoid duplicate alarms after upgrade. */
+    private fun cancelLegacyPendingIntent(context: Context, reminderDbId: Long, postId: Long) {
+        val legacyCode = (reminderDbId xor (reminderDbId shl 20)).toInt()
+        val intent = Intent(context, PostReminderReceiver::class.java).apply {
+            action = ACTION_POST_REMINDER
+            putExtra(PostReminderReceiver.EXTRA_REMINDER_ID, reminderDbId)
+            putExtra(PostReminderReceiver.EXTRA_POST_ID, postId)
+        }
+        val pi = PendingIntent.getBroadcast(
+            context,
+            legacyCode,
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        ) ?: return
+        val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        am.cancel(pi)
+        pi.cancel()
+        DiagnosticLog.d(TAG, "cancel legacy PI reminderDbId=$reminderDbId postId=$postId")
+    }
+
     fun schedule(context: Context, reminderDbId: Long, postId: Long, fireAtMillis: Long) {
+        cancelLegacyPendingIntent(context, reminderDbId, postId)
         val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val intent = Intent(context, PostReminderReceiver::class.java).apply {
             action = ACTION_POST_REMINDER
@@ -81,6 +102,7 @@ object PostReminderAlarmScheduler {
     }
 
     fun cancel(context: Context, reminderDbId: Long, postId: Long) {
+        cancelLegacyPendingIntent(context, reminderDbId, postId)
         val intent = Intent(context, PostReminderReceiver::class.java).apply {
             action = ACTION_POST_REMINDER
             putExtra(PostReminderReceiver.EXTRA_REMINDER_ID, reminderDbId)
