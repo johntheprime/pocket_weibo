@@ -92,6 +92,8 @@ fun ComposeScreen(
     onDismiss: () -> Unit,
     initialShareText: String = "",
     onConsumeInitialShare: () -> Unit = {},
+    /** Called after a post is saved successfully, before [onDismiss] (e.g. scroll home feed to newest). */
+    onPostPublished: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -276,6 +278,7 @@ fun ComposeScreen(
                 )
                 app.repository.clearDraft()
                 preparedImageFiles = emptyList()
+                onPostPublished()
                 onDismiss()
             } finally {
                 isSending = false
@@ -376,7 +379,8 @@ fun ComposeScreen(
                                 name = selectedIdentity!!.name,
                                 color = Color(0xFF4A90D9),
                                 size = 32.dp,
-                                avatarResName = selectedIdentity!!.avatarResName
+                                avatarResName = selectedIdentity!!.avatarResName,
+                                customAvatarUri = selectedIdentity!!.customAvatarUri
                             )
                             Text(
                                 text = selectedIdentity!!.name,
