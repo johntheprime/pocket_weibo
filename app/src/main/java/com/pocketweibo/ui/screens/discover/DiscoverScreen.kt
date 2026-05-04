@@ -321,7 +321,8 @@ private fun TrendingPostItem(
                 name = post.identityName,
                 color = Color(0xFF4A90D9),
                 size = 40.dp,
-                avatarResName = post.identityAvatarResName
+                avatarResName = post.identityAvatarResName,
+                customAvatarUri = post.identityCustomAvatarUri
             )
             Column(
                 modifier = Modifier
@@ -471,7 +472,8 @@ private fun IdentitySearchItem(
                 name = identity.name,
                 color = Color(0xFF4A90D9),
                 size = 44.dp,
-                avatarResName = identity.avatarResName
+                avatarResName = identity.avatarResName,
+                customAvatarUri = identity.customAvatarUri
             )
             Column {
                 Text(
@@ -515,7 +517,8 @@ private fun PostSearchItem(
                 name = post.identityName,
                 color = Color(0xFF4A90D9),
                 size = 36.dp,
-                avatarResName = post.identityAvatarResName
+                avatarResName = post.identityAvatarResName,
+                customAvatarUri = post.identityCustomAvatarUri
             )
             Column(modifier = Modifier.weight(1f)) {
                 Row(

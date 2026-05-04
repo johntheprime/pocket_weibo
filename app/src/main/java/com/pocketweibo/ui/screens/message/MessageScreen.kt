@@ -234,7 +234,8 @@ private fun ReceivedMessageItem(
                 name = message.commentIdentityName,
                 color = Color(0xFF4A90D9),
                 size = 48.dp,
-                avatarResName = message.commentIdentityResName
+                avatarResName = message.commentIdentityResName,
+                customAvatarUri = message.commentIdentityCustomAvatarUri
             )
             
             Column(
@@ -320,7 +321,8 @@ private fun SentMessageItem(
                 name = message.commentIdentityName,
                 color = Color(0xFF4A90D9),
                 size = 48.dp,
-                avatarResName = message.commentIdentityResName
+                avatarResName = message.commentIdentityResName,
+                customAvatarUri = message.commentIdentityCustomAvatarUri
             )
 
             Column(

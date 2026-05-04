@@ -189,7 +189,8 @@ private fun CommentItem(
             name = comment.identityName,
             color = Color(0xFF4A90D9),
             size = 36.dp,
-            avatarResName = comment.identityAvatarResName
+            avatarResName = comment.identityAvatarResName,
+            customAvatarUri = comment.identityCustomAvatarUri
         )
         Column(
             modifier = Modifier

@@ -86,7 +86,8 @@ fun PostCard(
                     name = post.identityName,
                     color = Color(0xFF4A90D9),
                     size = 40.dp,
-                    avatarResName = post.identityAvatarResName
+                    avatarResName = post.identityAvatarResName,
+                    customAvatarUri = post.identityCustomAvatarUri
                 )
                 
                 Column(
