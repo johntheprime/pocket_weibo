@@ -15,7 +15,7 @@
 # After build: renames the APK to pocketweibo-v<versionName>-<versionCode>-local-<timestamp>.apk
 # in the repo root.
 #
-# Default: cp the APK to /storage/emulated/0/Downloads (override with --copy-dest). Skip with --no-copy.
+# Default: cp the APK to /storage/emulated/0/Download (override with --copy-dest). Skip with --no-copy.
 #
 # Usage:
 #   ./scripts/build-pocketweibo-release.sh
@@ -28,7 +28,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 DO_COPY=true
-COPY_DEST="/storage/emulated/0/Downloads"
+COPY_DEST="/storage/emulated/0/Download"
 
 SECRETS_FILE="${ROOT}/github-keystore-secrets.local.txt"
 KS_OUT="${ROOT}/ci-release.keystore"
