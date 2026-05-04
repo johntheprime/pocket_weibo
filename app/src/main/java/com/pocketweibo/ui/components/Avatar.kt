@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.components
 
+import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -17,17 +18,55 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import java.io.File
 
+/**
+ * @param customAvatarUri Stored app-private path relative to [android.content.Context.getFilesDir],
+ *   or a legacy `content:` / `file:` URI string.
+ */
 @Composable
 fun Avatar(
     name: String,
     color: Color,
     size: Dp = 40.dp,
     modifier: Modifier = Modifier,
-    avatarResName: String? = null
+    avatarResName: String? = null,
+    customAvatarUri: String? = null
 ) {
     val context = LocalContext.current
-    
+
+    if (!customAvatarUri.isNullOrBlank()) {
+        when {
+            !customAvatarUri.contains("://") -> {
+                val f = File(context.filesDir, customAvatarUri)
+                if (f.isFile) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context).data(f).crossfade(true).build(),
+                        contentDescription = name,
+                        modifier = modifier
+                            .size(size)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                    return
+                }
+            }
+            customAvatarUri.startsWith("content:") || customAvatarUri.startsWith("file:") -> {
+                AsyncImage(
+                    model = ImageRequest.Builder(context).data(Uri.parse(customAvatarUri)).crossfade(true).build(),
+                    contentDescription = name,
+                    modifier = modifier
+                        .size(size)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+                return
+            }
+        }
+    }
+
     if (avatarResName != null && avatarResName != "avatar_default") {
         val resourceId = context.resources.getIdentifier(avatarResName, "drawable", context.packageName)
         if (resourceId != 0) {
@@ -42,7 +81,7 @@ fun Avatar(
             return
         }
     }
-    
+
     Box(
         modifier = modifier
             .size(size)
