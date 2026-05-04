@@ -1,30 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Original kawaii-style preset avatar (project-authored vector, commercial use OK). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="96dp"
     android:height="96dp"
     android:viewportWidth="96"
     android:viewportHeight="96">
+    <!-- wild hair -->
     <path
-        android:fillColor="#F5DEB3"
-        android:pathData="M48,18 C62,18 74,30 74,44 C74,58 62,68 48,68 C34,68 22,58 22,44 C22,30 34,18 48,18"/>
+        android:fillColor="#CFD8DC"
+        android:pathData="M20,38 L16,22 L32,18 L48,12 L64,18 L80,22 L76,38 L82,52 L78,70 L70,78 L26,78 L18,70 L14,52 Z" />
     <path
-        android:fillColor="#C0C0C0"
-        android:pathData="M28,32 L40,24 L52,32 L52,40 L28,40 Z"/>
+        android:fillColor="#FFDFC4"
+        android:pathData="M48,28 C64,28 76,40 76,56 C76,72 64,82 48,82 C32,82 20,72 20,56 C20,40 32,28 48,28" />
     <path
-        android:fillColor="#4169E1"
-        android:pathData="M30,34 L40,28 L50,34 L50,38 L30,38 Z"/>
+        android:fillColor="#FFB8C9"
+        android:pathData="M28,58 m-4.5,0 a4.5,4.5 0 1,1 9,0 a4.5,4.5 0 1,1 -9,0" />
     <path
-        android:fillColor="#000000"
-        android:pathData="M38,44 A3,3 0 1,1 44,44 A3,3 0 1,1 38,44"/>
+        android:fillColor="#FFB8C9"
+        android:pathData="M68,58 m-4.5,0 a4.5,4.5 0 1,1 9,0 a4.5,4.5 0 1,1 -9,0" />
     <path
-        android:fillColor="#000000"
-        android:pathData="M52,44 A3,3 0 1,1 58,44 A3,3 0 1,1 52,44"/>
+        android:fillColor="#3E2723"
+        android:pathData="M36,50 m-5,0 a5,5.5 0 1,0 10,0 a5,5.5 0 1,0 -10,0" />
     <path
-        android:fillColor="#CD853F"
-        android:pathData="M40,56 Q48,60 56,56"
-        android:strokeWidth="2"
-        android:strokeColor="#8B4513"/>
+        android:fillColor="#FFFFFF"
+        android:pathData="M39,47 m-1.8,0 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0" />
     <path
-        android:fillColor="#C0C0C0"
-        android:pathData="M36,60 L60,60 L60,68 L36,68 Z"/>
+        android:fillColor="#3E2723"
+        android:pathData="M60,50 m-5,0 a5,5.5 0 1,0 10,0 a5,5.5 0 1,0 -10,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M63,47 m-1.8,0 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0" />
+    <path
+        android:pathData="M36,66 Q48,74 60,66"
+        android:strokeWidth="2.2"
+        android:strokeColor="#D88C73"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <!-- goggles on forehead -->
+    <path
+        android:pathData="M30,30 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0"
+        android:strokeWidth="2.5"
+        android:strokeColor="#546E7A"
+        android:fillColor="#B0BEC5" />
+    <path
+        android:pathData="M50,30 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0"
+        android:strokeWidth="2.5"
+        android:strokeColor="#546E7A"
+        android:fillColor="#B0BEC5" />
+    <path
+        android:pathData="M38,30 L58,30"
+        android:strokeWidth="2.5"
+        android:strokeColor="#546E7A"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M26,78 L70,78 L68,88 L28,88 Z" />
 </vector>

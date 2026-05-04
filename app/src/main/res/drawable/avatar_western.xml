@@ -1,27 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Original kawaii-style preset avatar (project-authored vector, commercial use OK). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="96dp"
     android:height="96dp"
     android:viewportWidth="96"
     android:viewportHeight="96">
+    <!-- wavy hair -->
     <path
-        android:fillColor="#DEB887"
-        android:pathData="M48,16 C64,16 76,28 76,44 C76,60 64,72 48,72 C32,72 20,60 20,44 C20,28 32,16 48,16"/>
+        android:fillColor="#A1887F"
+        android:pathData="M14,48 C14,28 28,12 48,12 C68,12 84,28 84,48 C84,58 80,68 74,74 L22,74 C16,68 14,58 14,48" />
     <path
-        android:fillColor="#8B0000"
-        android:pathData="M24,28 Q48,20 72,28 L72,50 Q48,58 24,50 Z"/>
+        android:fillColor="#8D6E63"
+        android:pathData="M18,40 Q32,22 48,20 Q64,22 78,40 Q70,32 48,30 Q26,32 18,40" />
     <path
-        android:fillColor="#FFD700"
-        android:pathData="M30,40 L66,40 L66,44 L30,44 Z"/>
+        android:fillColor="#FFE0BD"
+        android:pathData="M48,28 C64,28 76,40 76,56 C76,72 64,82 48,82 C32,82 20,72 20,56 C20,40 32,28 48,28" />
     <path
-        android:fillColor="#000000"
-        android:pathData="M36,44 A3,3 0 1,1 42,44 A3,3 0 1,1 36,44"/>
+        android:fillColor="#FFB8C9"
+        android:pathData="M28,58 m-4.5,0 a4.5,4.5 0 1,1 9,0 a4.5,4.5 0 1,1 -9,0" />
     <path
-        android:fillColor="#000000"
-        android:pathData="M54,44 A3,3 0 1,1 60,44 A3,3 0 1,1 54,44"/>
+        android:fillColor="#FFB8C9"
+        android:pathData="M68,58 m-4.5,0 a4.5,4.5 0 1,1 9,0 a4.5,4.5 0 1,1 -9,0" />
     <path
-        android:fillColor="#8B4513"
-        android:pathData="M40,56 Q48,60 56,56"
-        android:strokeWidth="2"
-        android:strokeColor="#8B4513"/>
+        android:fillColor="#3E2723"
+        android:pathData="M36,50 m-5,0 a5,5.5 0 1,0 10,0 a5,5.5 0 1,0 -10,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M39,47 m-1.8,0 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0" />
+    <path
+        android:fillColor="#3E2723"
+        android:pathData="M60,50 m-5,0 a5,5.5 0 1,0 10,0 a5,5.5 0 1,0 -10,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M63,47 m-1.8,0 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0" />
+    <path
+        android:pathData="M36,66 Q48,76 60,66"
+        android:strokeWidth="2.2"
+        android:strokeColor="#C4816B"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
 </vector>

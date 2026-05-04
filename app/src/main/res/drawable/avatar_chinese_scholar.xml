@@ -1,33 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Original kawaii-style preset avatar (project-authored vector, commercial use OK). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="96dp"
     android:height="96dp"
     android:viewportWidth="96"
     android:viewportHeight="96">
     <path
-        android:fillColor="#F5DEB3"
-        android:pathData="M48,20 C60,20 70,30 70,42 C70,54 60,62 48,62 C36,62 26,54 26,42 C26,30 36,20 48,20"/>
+        android:fillColor="#212121"
+        android:pathData="M48,10 C70,10 88,28 88,50 C88,62 82,72 74,76 L22,76 C14,72 8,62 8,50 C10,28 28,10 48,10" />
+    <!-- small top knot -->
     <path
-        android:fillColor="#000080"
-        android:pathData="M16,20 L80,20 L80,28 L16,28 Z"/>
+        android:fillColor="#212121"
+        android:pathData="M48,6 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0" />
     <path
-        android:fillColor="#000080"
-        android:pathData="M24,12 L72,12 L72,20 L24,20 Z"/>
+        android:fillColor="#FFDFC4"
+        android:pathData="M48,28 C64,28 76,40 76,56 C76,72 64,82 48,82 C32,82 20,72 20,56 C20,40 32,28 48,28" />
     <path
-        android:fillColor="#000080"
-        android:pathData="M48,4 L56,12 L40,12 Z"/>
+        android:fillColor="#FFB8C9"
+        android:pathData="M28,58 m-4.5,0 a4.5,4.5 0 1,1 9,0 a4.5,4.5 0 1,1 -9,0" />
     <path
-        android:fillColor="#000000"
-        android:pathData="M38,36 A3,3 0 1,1 44,36 A3,3 0 1,1 38,36"/>
+        android:fillColor="#FFB8C9"
+        android:pathData="M68,58 m-4.5,0 a4.5,4.5 0 1,1 9,0 a4.5,4.5 0 1,1 -9,0" />
     <path
-        android:fillColor="#000000"
-        android:pathData="M52,36 A3,3 0 1,1 58,36 A3,3 0 1,1 52,36"/>
+        android:fillColor="#3E2723"
+        android:pathData="M36,50 m-5,0 a5,5.5 0 1,0 10,0 a5,5.5 0 1,0 -10,0" />
     <path
-        android:fillColor="#CD853F"
-        android:pathData="M40,46 Q48,52 56,46"
-        android:strokeWidth="2"
-        android:strokeColor="#8B4513"/>
+        android:fillColor="#FFFFFF"
+        android:pathData="M39,47 m-1.8,0 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0" />
     <path
-        android:fillColor="#F5DEB3"
-        android:pathData="M32,54 L64,54 L64,62 L32,62 Z"/>
+        android:fillColor="#3E2723"
+        android:pathData="M60,50 m-5,0 a5,5.5 0 1,0 10,0 a5,5.5 0 1,0 -10,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M63,47 m-1.8,0 a1.8,1.8 0 1,0 3.6,0 a1.8,1.8 0 1,0 -3.6,0" />
+    <path
+        android:pathData="M36,66 Q48,76 60,66"
+        android:strokeWidth="2.2"
+        android:strokeColor="#D88C73"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <!-- scholar collar -->
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M28,78 L68,78 L64,88 L32,88 Z" />
+    <path
+        android:fillColor="#212121"
+        android:pathData="M24,34 Q48,24 72,34 L72,44 Q48,36 24,44 Z" />
 </vector>
