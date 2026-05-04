@@ -23,6 +23,8 @@
 # Repository settings: Actions → General → Workflow permissions → "Read and write permissions".
 #
 # To trigger: push to `apk-build`, or run manually (workflow_dispatch).
+#
+# Local same-signature release APK: scripts/build-pocketweibo-release.sh (uses keystore.properties).
 
 name: Build APK
 
