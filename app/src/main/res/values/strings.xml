@@ -172,12 +172,8 @@
     <string name="compose_preparing_images">正在处理图片…</string>
     <string name="compose_per_post_original_title">本帖原图（不压缩）</string>
     <string name="compose_per_post_original_subtitle">开启后，本条微博中新添加的图片保留相册原文件大小；关闭时大图会压缩以节省空间。已添加的缩略图不受影响，可删除后重新选择。</string>
-    <string name="compose_location_badge">位置：%1$s（点清除）</string>
-    <string name="compose_location_clear_cd">清除位置</string>
-    <string name="compose_location_failed">未能解析城市，请稍后再试或检查定位权限。</string>
     <string name="compose_mention_title">插入 \@ 提及</string>
     <string name="compose_mention_empty">暂无其他身份可选</string>
-    <string name="compose_label_location">位置</string>
     <string name="compose_label_mention">艾特</string>
     <string name="compose_no_identity_hint">请先在「我」页面添加身份</string>
     <string name="compose_shake_hint">摇一摇发送：输入停顿约 1 秒、已选身份且打开本页约 2 秒后可用，减少误发。</string>

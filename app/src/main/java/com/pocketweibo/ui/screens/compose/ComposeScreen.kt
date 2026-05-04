@@ -1,9 +1,7 @@
 package com.pocketweibo.ui.screens.compose
 
-import android.Manifest
 import android.net.Uri
 import android.os.SystemClock
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -24,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.AlternateEmail
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -74,8 +71,6 @@ import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.Surface
 import com.pocketweibo.ui.theme.WeiboOrange
-import com.pocketweibo.ui.util.hasLocationPermission
-import com.pocketweibo.ui.util.tryResolveApproxLocationLabel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -102,7 +97,6 @@ fun ComposeScreen(
     var isPreparingImages by remember { mutableStateOf(false) }
     var isSending by remember { mutableStateOf(false) }
     var useOriginalForThisPost by remember { mutableStateOf(false) }
-    var locationLabel by remember { mutableStateOf<String?>(null) }
     var showMentionDialog by remember { mutableStateOf(false) }
 
     var lastContentEditedAt by remember { mutableStateOf(SystemClock.elapsedRealtime()) }
@@ -113,27 +107,6 @@ fun ComposeScreen(
     DisposableEffect(Unit) {
         onDispose {
             preparedSnapshot.forEach { f -> if (f.exists()) f.delete() }
-        }
-    }
-
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { grants ->
-        val ok = grants[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (ok) {
-            scope.launch {
-                val label = tryResolveApproxLocationLabel(context.applicationContext)
-                if (label != null) {
-                    locationLabel = label
-                } else {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.compose_location_failed),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
         }
     }
 
@@ -215,8 +188,7 @@ fun ComposeScreen(
                 app.repository.insertPostWithPreparedGallery(
                     identityId = identityId,
                     content = text,
-                    preparedFiles = filesToSend,
-                    locationLabel = locationLabel
+                    preparedFiles = filesToSend
                 )
                 app.repository.clearDraft()
                 preparedImageFiles = emptyList()
@@ -525,50 +497,9 @@ fun ComposeScreen(
                     onClick = { imagePickerLauncher.launch("image/*") }
                 )
                 ActionButton(
-                    icon = Icons.Default.LocationOn,
-                    label = stringResource(R.string.compose_label_location),
-                    onClick = {
-                        if (hasLocationPermission(context)) {
-                            scope.launch {
-                                val label = tryResolveApproxLocationLabel(context.applicationContext)
-                                if (label != null) {
-                                    locationLabel = label
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.compose_location_failed),
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            }
-                        } else {
-                            locationPermissionLauncher.launch(
-                                arrayOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                )
-                            )
-                        }
-                    }
-                )
-                ActionButton(
                     icon = Icons.Default.AlternateEmail,
                     label = stringResource(R.string.compose_label_mention),
                     onClick = { showMentionDialog = true }
-                )
-            }
-
-            locationLabel?.let { loc ->
-                Text(
-                    text = stringResource(R.string.compose_location_badge, loc),
-                    fontSize = 12.sp,
-                    color = WeiboOrange,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp)
-                        .clickable {
-                            locationLabel = null
-                        }
                 )
             }
 
