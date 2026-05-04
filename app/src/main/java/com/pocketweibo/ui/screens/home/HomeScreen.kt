@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -84,6 +85,8 @@ fun HomeScreen(
     onNavigateToDiscover: () -> Unit = {},
     onOpenMyPosts: () -> Unit = {},
     listState: LazyListState,
+    /** Incremented when user double-taps the Home tab: clear search filter and replay refresh affordance. */
+    scrollToLatestSignal: Int = 0,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -141,6 +144,15 @@ fun HomeScreen(
             p.content.contains(searchQuery, ignoreCase = true) ||
                 p.identityName.contains(searchQuery, ignoreCase = true)
         }
+    }
+
+    LaunchedEffect(scrollToLatestSignal) {
+        if (scrollToLatestSignal <= 0) return@LaunchedEffect
+        searchQuery = ""
+        searchDraft = ""
+        isRefreshing = true
+        delay(450L)
+        isRefreshing = false
     }
 
     Box(modifier = modifier.fillMaxSize()) {

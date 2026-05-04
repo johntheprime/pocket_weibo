@@ -2,6 +2,7 @@ package com.pocketweibo
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -17,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.pocketweibo.ui.components.MainTab
@@ -35,6 +37,7 @@ import com.pocketweibo.ui.screens.message.MessageScreen
 import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.ui.ComposeIntentViewModel
 import com.pocketweibo.ui.theme.PocketWeiboTheme
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 class MainActivity : AppCompatActivity() {
@@ -90,6 +93,9 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     var identityDetailId by remember { mutableStateOf<Long?>(null) }
     var postDetailId by remember { mutableStateOf<Long?>(null) }
     var showMeSettings by remember { mutableStateOf(false) }
+    var homeScrollToLatestSignal by remember { mutableStateOf(0) }
+    var lastHomeTabTapUptime by remember { mutableStateOf(0L) }
+    val mainScope = rememberCoroutineScope()
 
     val pendingShareText by composeIntentViewModel.pendingShareText.collectAsState()
     val openPostId by composeIntentViewModel.openPostId.collectAsState()
@@ -127,6 +133,23 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                     onTabSelected = { tab ->
                         if (tab != MainTab.PLUS) {
                             selectedTab = tab
+                        }
+                    },
+                    onHomeTabClick = {
+                        val now = SystemClock.uptimeMillis()
+                        if (selectedTab == MainTab.HOME) {
+                            if (lastHomeTabTapUptime != 0L && now - lastHomeTabTapUptime < 400L) {
+                                mainScope.launch {
+                                    homeListState.scrollToItem(0)
+                                }
+                                homeScrollToLatestSignal++
+                                lastHomeTabTapUptime = 0L
+                            } else {
+                                lastHomeTabTapUptime = now
+                            }
+                        } else {
+                            selectedTab = MainTab.HOME
+                            lastHomeTabTapUptime = 0L
                         }
                     },
                     onPlusClick = { showCompose = true }
@@ -195,6 +218,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             onNavigateToDiscover = { selectedTab = MainTab.DISCOVER },
                             onOpenMyPosts = { showMyPosts = true },
                             listState = homeListState,
+                            scrollToLatestSignal = homeScrollToLatestSignal,
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.MESSAGE -> MessageScreen(modifier = Modifier.padding(paddingValues))

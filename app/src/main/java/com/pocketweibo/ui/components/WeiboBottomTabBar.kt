@@ -59,6 +59,8 @@ private fun MainTab.tabLabel(): String = stringResource(
 fun WeiboBottomTabBar(
     selectedTab: MainTab,
     onTabSelected: (MainTab) -> Unit,
+    /** Home tab only: use for double-tap-to-top handling; single-tap still selects Home. */
+    onHomeTabClick: () -> Unit,
     onPlusClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -73,7 +75,7 @@ fun WeiboBottomTabBar(
             selectedIcon = Icons.Filled.Home,
             unselectedIcon = Icons.Outlined.Home,
             isSelected = selectedTab == MainTab.HOME,
-            onClick = { onTabSelected(MainTab.HOME) }
+            onClick = onHomeTabClick
         )
         TabItem(
             title = MainTab.MESSAGE.tabLabel(),
