@@ -203,6 +203,10 @@
     <string name="reminder_in_under_minute">不到 1 分钟</string>
     <string name="reminder_in_mixed_future">%1$d 时 %2$d 分钟后</string>
     <string name="comments_header">评论</string>
+    <string name="comments_copy_all">复制全部</string>
+    <string name="comments_copy_all_cd">复制本条微博的全部评论到剪贴板</string>
+    <string name="clipboard_label_all_comments">全部评论</string>
+    <string name="toast_all_comments_copied">已全部复制评论</string>
     <string name="comments_empty">暂无评论，快来抢沙发吧</string>
 
     <string name="comment_sheet_title">评论</string>

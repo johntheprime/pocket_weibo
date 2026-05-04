@@ -72,6 +72,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -343,7 +345,7 @@ fun PostDetailScreen(
                     )
                 }
 
-                item { CommentsHeader(commentCount = comments.size) }
+                item { CommentsHeader(commentCount = comments.size, comments = comments) }
 
                 if (comments.isEmpty()) {
                     item {
@@ -810,8 +812,13 @@ private fun ActionButton(
 }
 
 @Composable
-private fun CommentsHeader(commentCount: Int) {
+private fun CommentsHeader(
+    commentCount: Int,
+    comments: List<CommentWithIdentity>
+) {
+    val context = LocalContext.current
     val header = stringResource(R.string.comments_header)
+    val copyAllCd = stringResource(R.string.comments_copy_all_cd)
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White
@@ -819,21 +826,53 @@ private fun CommentsHeader(commentCount: Int) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = header,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = GrayDark
-            )
-            if (commentCount > 0) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    text = " ($commentCount)",
+                    text = header,
                     fontSize = 15.sp,
-                    color = GrayMiddle
+                    fontWeight = FontWeight.Bold,
+                    color = GrayDark
                 )
+                if (commentCount > 0) {
+                    Text(
+                        text = " ($commentCount)",
+                        fontSize = 15.sp,
+                        color = GrayMiddle
+                    )
+                }
+            }
+            if (commentCount > 0) {
+                TextButton(
+                    onClick = {
+                        val text = comments.joinToString(separator = "\n\n") { c ->
+                            val timeStr = context.resources.formatRelativeTime(
+                                c.createdAt,
+                                RelativeTimePreset.PostDetail
+                            )
+                            "${c.identityName.trim()} · $timeStr\n${c.content.trim()}"
+                        }
+                        context.copyPlainToClipboard(
+                            label = context.getString(R.string.clipboard_label_all_comments),
+                            text = text,
+                            toast = context.getString(R.string.toast_all_comments_copied)
+                        )
+                    },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier.semantics { contentDescription = copyAllCd }
+                ) {
+                    Text(
+                        text = stringResource(R.string.comments_copy_all),
+                        color = WeiboOrange,
+                        fontSize = 13.sp,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }
