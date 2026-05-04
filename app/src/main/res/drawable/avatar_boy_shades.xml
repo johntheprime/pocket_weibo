@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Original kawaii-style preset avatar (project-authored vector, commercial use OK). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+    <path
+        android:fillColor="#3E2723"
+        android:pathData="M48,14 C68,14 84,30 84,50 C84,62 78,72 70,76 L26,76 C18,72 12,62 12,50 C14,30 30,14 48,14" />
+    <path
+        android:fillColor="#FFDFC4"
+        android:pathData="M48,28 C64,28 76,40 76,56 C76,72 64,82 48,82 C32,82 20,72 20,56 C20,40 32,28 48,28" />
+    <path
+        android:fillColor="#FFB8C9"
+        android:pathData="M28,58 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0" />
+    <path
+        android:fillColor="#FFB8C9"
+        android:pathData="M68,58 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0" />
+    <!-- shades -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M28,44 L44,44 L44,52 L28,52 Z" />
+    <path
+        android:fillColor="#212121"
+        android:pathData="M52,44 L68,44 L68,52 L52,52 Z" />
+    <path
+        android:pathData="M44,48 L52,48"
+        android:strokeWidth="2.5"
+        android:strokeColor="#212121"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M28,48 L22,46"
+        android:strokeWidth="2"
+        android:strokeColor="#212121"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M68,48 L74,46"
+        android:strokeWidth="2"
+        android:strokeColor="#212121"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:pathData="M38,66 Q48,74 58,66"
+        android:strokeWidth="2.2"
+        android:strokeColor="#D88C73"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <path
+        android:fillColor="#3E2723"
+        android:pathData="M24,34 Q48,24 72,34 L72,44 Q48,36 24,44 Z" />
+</vector>
