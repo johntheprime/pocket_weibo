@@ -4,10 +4,13 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 
 object PostReminderAlarmScheduler {
 
     const val ACTION_POST_REMINDER = "com.pocketweibo.ACTION_POST_REMINDER"
+
+    private const val TAG = "PW_Reminder"
 
     private fun requestCode(reminderDbId: Long): Int =
         (reminderDbId xor (reminderDbId shl 20)).toInt()
@@ -35,6 +38,10 @@ object PostReminderAlarmScheduler {
             showIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        Log.d(
+            TAG,
+            "schedule alarm reminderDbId=$reminderDbId postId=$postId fireAtMillis=$fireAtMillis deltaMs=${fireAtMillis - System.currentTimeMillis()}"
+        )
         am.setAlarmClock(AlarmManager.AlarmClockInfo(fireAtMillis, showPi), pi)
     }
 
@@ -53,5 +60,6 @@ object PostReminderAlarmScheduler {
         val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         am.cancel(pi)
         pi.cancel()
+        Log.d(TAG, "cancel alarm reminderDbId=$reminderDbId postId=$postId")
     }
 }

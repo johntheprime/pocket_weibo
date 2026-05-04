@@ -510,6 +510,18 @@ private fun PostDetailCard(
                             TextButton(
                                 onClick = {
                                     showRemindPicker = false
+                                    onRemindAfterMinutes(3L)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.post_detail_remind_3m),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            TextButton(
+                                onClick = {
+                                    showRemindPicker = false
                                     onRemindAfterMinutes(15L)
                                 },
                                 modifier = Modifier.fillMaxWidth()

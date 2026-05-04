@@ -32,6 +32,10 @@
     <string name="me_no_identity">未选择身份</string>
     <string name="me_identity_count">%1$d 个身份</string>
     <string name="me_avatar_placeholder">?</string>
+    <string name="me_reminders_title">待处理提醒</string>
+    <string name="me_reminders_empty">暂无定时提醒。在任意微博详情 ⋮ 中可设置。</string>
+    <string name="me_reminders_subtitle">%1$s · %2$s</string>
+    <string name="me_reminders_cancel_cd">取消此提醒</string>
     <string name="label_nationality">国籍</string>
     <string name="label_occupation">职业</string>
     <string name="label_famous_work">代表作</string>
@@ -139,15 +143,20 @@
     <string name="post_detail_delete_confirm_title">删除这条微博？</string>
     <string name="post_detail_delete_confirm_body">删除后无法恢复（评论与配图一并删除）。</string>
     <string name="post_detail_remind_title">多久后提醒</string>
+    <string name="post_detail_remind_3m">3 分钟后（验证用）</string>
     <string name="post_detail_remind_15m">15 分钟后</string>
-    <string name="post_detail_remind_steps_hint">含 15 分钟快捷项；其余每档 30 分钟，最长 24 小时（需允许通知权限才会弹出提醒）。</string>
+    <string name="post_detail_remind_steps_hint">含 3 分钟验证项与 15 分钟快捷项；其余每档 30 分钟，最长 24 小时。验证请在 logcat 过滤 PW_Reminder。需允许通知权限。</string>
     <string name="post_detail_remind_mixed">%1$d 小时 %2$d 分钟</string>
     <string name="reminder_permission_denied_toast">未授予通知权限，无法显示到时提醒</string>
     <string name="reminder_scheduled_toast">已设置本地提醒</string>
     <string name="reminder_channel_name">微博提醒</string>
-    <string name="reminder_channel_desc">单条微博一次性本地提醒</string>
+    <string name="reminder_channel_desc">单条微博本地提醒；点按通知可进入微博，通知需手动划掉才消失。</string>
     <string name="reminder_notification_title">微博提醒</string>
     <string name="reminder_notification_body_fallback">你设置的提醒时间到了</string>
+    <string name="reminder_fire_at_pattern">M月d日 HH:mm</string>
+    <string name="reminder_due_soon">即将响铃</string>
+    <string name="reminder_in_under_minute">不到 1 分钟</string>
+    <string name="reminder_in_mixed_future">%1$d 小时 %2$d 分钟后</string>
     <string name="comments_header">评论</string>
     <string name="comments_empty">暂无评论，快来抢沙发吧</string>
 

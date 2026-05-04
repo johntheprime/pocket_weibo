@@ -195,6 +195,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             onNavigateToIdentities = { showIdentityList = true },
                             onNavigateToSettings = { showMeSettings = true },
                             onEditActiveIdentity = { id -> identityDetailId = id },
+                            onOpenPost = { postId -> postDetailId = postId },
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.PLUS -> {}

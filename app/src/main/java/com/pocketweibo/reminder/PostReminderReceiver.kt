@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.pocketweibo.MainActivity
 import com.pocketweibo.PocketWeiboApp
@@ -17,10 +18,17 @@ import kotlinx.coroutines.launch
 class PostReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent?) {
-        if (intent?.action != PostReminderAlarmScheduler.ACTION_POST_REMINDER) return
+        if (intent?.action != PostReminderAlarmScheduler.ACTION_POST_REMINDER) {
+            Log.d(TAG, "onReceive ignored action=${intent?.action}")
+            return
+        }
         val reminderId = intent.getLongExtra(EXTRA_REMINDER_ID, -1L)
         val postId = intent.getLongExtra(EXTRA_POST_ID, -1L)
-        if (reminderId <= 0L || postId <= 0L) return
+        Log.d(TAG, "onReceive extras reminderId=$reminderId postId=$postId")
+        if (reminderId <= 0L || postId <= 0L) {
+            Log.w(TAG, "onReceive bail: invalid extras")
+            return
+        }
 
         val pendingResult = goAsync()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -28,7 +36,11 @@ class PostReminderReceiver : BroadcastReceiver() {
             try {
                 val app = context.applicationContext as PocketWeiboApp
                 val dao = app.database.postReminderDao()
-                val row = dao.getById(reminderId) ?: return@launch
+                val row = dao.getById(reminderId)
+                if (row == null) {
+                    Log.w(TAG, "no DB row for reminderId=$reminderId (already fired or cancelled?)")
+                    return@launch
+                }
                 val post = app.database.postDao().getPostEntityById(row.postId)
                 val title = context.getString(R.string.reminder_notification_title)
                 val text = post?.content?.trim()?.take(80)?.ifBlank { context.getString(R.string.reminder_notification_body_fallback) }
@@ -53,20 +65,32 @@ class PostReminderReceiver : BroadcastReceiver() {
                     .setContentIntent(openPi)
                     .setCategory(NotificationCompat.CATEGORY_REMINDER)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                    .setAutoCancel(true)
+                    .setAutoCancel(false)
+                    .setOnlyAlertOnce(true)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .build()
 
                 val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val nid = PostReminderNotificationIds.notifyId(postId, reminderId)
+                var posted = false
                 try {
-                    nm.notify((postId xor reminderId).toInt(), notification)
-                } catch (_: SecurityException) {
-                    // POST_NOTIFICATIONS denied on API 33+
-                } catch (_: Exception) {
-                    // Invalid icon/channel on some OEM builds — avoid crashing the receiver
+                    nm.notify(nid, notification)
+                    posted = true
+                    Log.d(TAG, "notify ok notificationId=$nid")
+                } catch (e: SecurityException) {
+                    Log.e(TAG, "notify SecurityException (POST_NOTIFICATIONS?)", e)
+                } catch (e: Exception) {
+                    Log.e(TAG, "notify failed", e)
                 }
 
-                dao.deleteById(reminderId)
+                if (posted) {
+                    dao.deleteById(reminderId)
+                    Log.d(TAG, "deleted reminder row id=$reminderId after successful notify")
+                } else {
+                    Log.w(TAG, "keeping reminder row id=$reminderId for retry / debugging")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "receiver pipeline error", e)
             } finally {
                 pendingResult.finish()
             }
@@ -74,6 +98,7 @@ class PostReminderReceiver : BroadcastReceiver() {
     }
 
     companion object {
+        private const val TAG = "PW_Reminder"
         const val EXTRA_REMINDER_ID = "extra_reminder_id"
         const val EXTRA_POST_ID = "extra_post_id"
     }

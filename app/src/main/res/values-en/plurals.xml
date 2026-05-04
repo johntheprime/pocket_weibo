@@ -8,4 +8,12 @@
         <item quantity="one">%d hour</item>
         <item quantity="other">%d hours</item>
     </plurals>
+    <plurals name="reminder_in_minutes_future">
+        <item quantity="one">In %d minute</item>
+        <item quantity="other">In %d minutes</item>
+    </plurals>
+    <plurals name="reminder_in_hours_future">
+        <item quantity="one">In %d hour</item>
+        <item quantity="other">In %d hours</item>
+    </plurals>
 </resources>

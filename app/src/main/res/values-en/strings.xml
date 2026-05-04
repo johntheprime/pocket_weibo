@@ -32,6 +32,10 @@
     <string name="me_no_identity">No identity selected</string>
     <string name="me_identity_count">%1$d identities</string>
     <string name="me_avatar_placeholder">?</string>
+    <string name="me_reminders_title">Pending reminders</string>
+    <string name="me_reminders_empty">No scheduled reminders. Set one from any post’s ⋮ menu.</string>
+    <string name="me_reminders_subtitle">%1$s · %2$s</string>
+    <string name="me_reminders_cancel_cd">Cancel this reminder</string>
     <string name="label_nationality">Nationality</string>
     <string name="label_occupation">Occupation</string>
     <string name="label_famous_work">Notable work</string>
@@ -139,15 +143,20 @@
     <string name="post_detail_delete_confirm_title">Delete this post?</string>
     <string name="post_detail_delete_confirm_body">This cannot be undone. Comments and images for this post are removed too.</string>
     <string name="post_detail_remind_title">Remind me in</string>
+    <string name="post_detail_remind_3m">In 3 minutes (test)</string>
     <string name="post_detail_remind_15m">In 15 minutes</string>
-    <string name="post_detail_remind_steps_hint">Includes a quick 15-minute option; then 30 minutes per step, up to 24 hours. Notification permission is required for alerts.</string>
+    <string name="post_detail_remind_steps_hint">Includes a 3-minute test option and 15-minute shortcut; then 30 minutes per step, up to 24 hours. Filter logcat for PW_Reminder. Notification permission required.</string>
     <string name="post_detail_remind_mixed">%1$d h %2$d min</string>
     <string name="reminder_permission_denied_toast">Notification permission is off — reminders cannot appear</string>
     <string name="reminder_scheduled_toast">Local reminder set</string>
     <string name="reminder_channel_name">Post reminders</string>
-    <string name="reminder_channel_desc">One-time local reminders for a post</string>
+    <string name="reminder_channel_desc">Local post reminders; tap opens the post — swipe away to dismiss.</string>
     <string name="reminder_notification_title">Post reminder</string>
     <string name="reminder_notification_body_fallback">Your reminder time is up</string>
+    <string name="reminder_fire_at_pattern">MMM d, HH:mm</string>
+    <string name="reminder_due_soon">Due now</string>
+    <string name="reminder_in_under_minute">Under 1 minute</string>
+    <string name="reminder_in_mixed_future">%1$dh %2$dm left</string>
     <string name="comments_header">Comments</string>
     <string name="comments_empty">No comments yet</string>
 

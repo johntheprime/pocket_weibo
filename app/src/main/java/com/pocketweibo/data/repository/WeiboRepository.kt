@@ -2,6 +2,7 @@ package com.pocketweibo.data.repository
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -11,6 +12,7 @@ import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.data.local.dao.IdentityDao
 import com.pocketweibo.data.local.dao.PostDao
 import com.pocketweibo.data.local.dao.PostReminderDao
+import com.pocketweibo.data.local.dao.PostReminderWithPreview
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.local.entity.Gender
@@ -37,6 +39,8 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 private val Context.draftDataStore by preferencesDataStore(name = "draft")
+
+private const val REMINDER_LOG_TAG = "PW_Reminder"
 
 class WeiboRepository(
     private val identityDao: IdentityDao,
@@ -127,6 +131,10 @@ class WeiboRepository(
             val rowId = postReminderDao.insert(
                 PostReminderEntity(postId = postId, fireAtMillis = fireAtMillis)
             )
+            Log.d(
+                REMINDER_LOG_TAG,
+                "DB insert reminder rowId=$rowId postId=$postId fireAtMillis=$fireAtMillis"
+            )
             PostReminderAlarmScheduler.schedule(context, rowId, postId, fireAtMillis)
         }
     }
@@ -137,6 +145,17 @@ class WeiboRepository(
             PostReminderAlarmScheduler.cancel(context, r.id, r.postId)
         }
         postReminderDao.deleteByPostId(postId)
+    }
+
+    fun observePendingRemindersWithPreview(): Flow<List<PostReminderWithPreview>> =
+        postReminderDao.observePendingRemindersWithPreview()
+
+    suspend fun cancelReminderById(reminderId: Long) {
+        withContext(Dispatchers.IO) {
+            val row = postReminderDao.getById(reminderId) ?: return@withContext
+            PostReminderAlarmScheduler.cancel(context, row.id, row.postId)
+            postReminderDao.deleteById(reminderId)
+        }
     }
 
     suspend fun togglePostLike(postId: Long) = postDao.toggleLike(postId)
