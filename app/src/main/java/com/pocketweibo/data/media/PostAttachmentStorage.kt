@@ -23,8 +23,9 @@ import java.nio.file.StandardCopyOption
  * ["post_attachments/12/0.jpg","post_attachments/12/1.png"].
  *
  * Images larger than [COMPRESS_THRESHOLD_BYTES] are re-encoded with [Compressor] unless
- * [storeOriginalQuality] is true: first pass uses high JPEG quality with a resolution cap; a second
- * pass with a soft size cap runs only when the first output still exceeds [COMPRESS_TARGET_MAX_BYTES].
+ * [storeOriginalQuality] is true: a high-quality pass (resolution cap + high JPEG quality) runs first;
+ * a second pass runs only when the first output still exceeds [COMPRESS_TARGET_MAX_BYTES], using a
+ * higher quality floor and a looser byte ceiling than before so detail is preserved when possible.
  */
 object PostAttachmentStorage {
 
@@ -32,13 +33,17 @@ object PostAttachmentStorage {
 
     private const val COMPOSE_PREP_SUBDIR = "compose_prepare"
 
-    /** Only compress when the decoded copy from the picker exceeds this size. */
-    private const val COMPRESS_THRESHOLD_BYTES = 1_048_576L
+    /** Only compress when the copy from the picker exceeds this size (keeps modest photos untouched). */
+    private const val COMPRESS_THRESHOLD_BYTES = 1_572_864L // 1.5 MiB
 
-    /** Target upper bound for compressed output ([Compressor] `size` constraint, bytes). */
-    private const val COMPRESS_TARGET_MAX_BYTES = 1_048_576L
+    /** Prefer keeping the first pass when at or under this size; second pass targets this cap. */
+    private const val COMPRESS_TARGET_MAX_BYTES = 2_097_152L // 2 MiB
 
     private const val COMPRESS_MAX_EDGE_PX = 2048
+
+    private const val PASS1_JPEG_QUALITY = 96
+
+    private const val PASS2_JPEG_QUALITY = 92
 
     fun rootDir(context: Context): File = File(context.filesDir, REL_ROOT)
 
@@ -167,7 +172,7 @@ object PostAttachmentStorage {
             dest.parentFile?.mkdirs()
             Compressor.compress(context, source, Dispatchers.IO) {
                 resolution(COMPRESS_MAX_EDGE_PX, COMPRESS_MAX_EDGE_PX)
-                quality(92)
+                quality(PASS1_JPEG_QUALITY)
                 format(Bitmap.CompressFormat.JPEG)
                 destination(pass1)
             }
@@ -182,9 +187,14 @@ object PostAttachmentStorage {
                     val p2 = File(workDir, "pw_cmp2_${System.nanoTime()}.jpg").also { pass2 = it }
                     Compressor.compress(context, pass1, Dispatchers.IO) {
                         resolution(COMPRESS_MAX_EDGE_PX, COMPRESS_MAX_EDGE_PX)
-                        quality(86)
+                        quality(PASS2_JPEG_QUALITY)
                         format(Bitmap.CompressFormat.JPEG)
-                        size(maxFileSize = COMPRESS_TARGET_MAX_BYTES, stepSize = 3, maxIteration = 22)
+                        // Looser cap + smaller steps than before: nudge quality/size gently instead of crushing detail.
+                        size(
+                            maxFileSize = COMPRESS_TARGET_MAX_BYTES,
+                            stepSize = 2,
+                            maxIteration = 28
+                        )
                         destination(p2)
                     }
                     val pass2Ok = p2.isFile && p2.length() > 0L
