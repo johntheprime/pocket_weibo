@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,6 +43,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -64,6 +67,7 @@ fun HomeScreen(
     onPostClick: (Long) -> Unit = {},
     onOpenSettings: () -> Unit = {},
     onNavigateToDiscover: () -> Unit = {},
+    onOpenMyPosts: () -> Unit = {},
     listState: LazyListState,
     modifier: Modifier = Modifier
 ) {
@@ -118,6 +122,17 @@ fun HomeScreen(
                 title = stringResource(R.string.title_home),
                 showDropdown = true,
                 onTitleClick = { showTitleMenu = true },
+                centerBelowTitle = {
+                    Text(
+                        text = stringResource(R.string.home_my_posts_link),
+                        color = WeiboOrange,
+                        fontSize = 13.sp,
+                        modifier = Modifier
+                            .semantics { contentDescription = context.getString(R.string.home_my_posts_cd) }
+                            .clickable(onClick = onOpenMyPosts)
+                            .padding(top = 2.dp, bottom = 2.dp)
+                    )
+                },
                 leftIcon = {
                     IconButton(onClick = {
                         searchDraft = searchQuery

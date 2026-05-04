@@ -180,6 +180,10 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                 showMeSettings -> {
                     MeSettingsScreen(
                         onBack = { showMeSettings = false },
+                        onOpenIdentities = {
+                            showMeSettings = false
+                            showIdentityList = true
+                        },
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
@@ -189,6 +193,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             onPostClick = { postId -> postDetailId = postId },
                             onOpenSettings = { showMeSettings = true },
                             onNavigateToDiscover = { selectedTab = MainTab.DISCOVER },
+                            onOpenMyPosts = { showMyPosts = true },
                             listState = homeListState,
                             modifier = Modifier.padding(paddingValues)
                         )
@@ -200,8 +205,6 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.ME -> MeScreen(
-                            onNavigateToMyPosts = { showMyPosts = true },
-                            onNavigateToIdentities = { showIdentityList = true },
                             onNavigateToSettings = { showMeSettings = true },
                             onEditActiveIdentity = { id -> identityDetailId = id },
                             onOpenPost = { postId -> postDetailId = postId },

@@ -7,12 +7,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Divider
@@ -31,13 +32,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import com.pocketweibo.R
+import androidx.compose.ui.unit.coerceAtLeast
+import androidx.compose.ui.unit.coerceAtMost
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.ui.components.Avatar
@@ -52,11 +56,8 @@ import com.pocketweibo.ui.util.formatReminderFireAt
 import com.pocketweibo.ui.util.formatTimeUntilFire
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
 @Composable
 fun MeScreen(
-    onNavigateToMyPosts: () -> Unit = {},
-    onNavigateToIdentities: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onEditActiveIdentity: (Long) -> Unit = {},
     onOpenPost: (Long) -> Unit = {},
@@ -65,6 +66,7 @@ fun MeScreen(
     val context = LocalContext.current
     val app = context.applicationContext as PocketWeiboApp
     val scope = rememberCoroutineScope()
+    val configuration = LocalConfiguration.current
     val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
     val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
     val pendingReminders by app.repository.observePendingRemindersWithPreview()
@@ -76,6 +78,10 @@ fun MeScreen(
             nowMillis = System.currentTimeMillis()
         }
     }
+
+    val reminderListMaxHeight = (configuration.screenHeightDp * 0.36f).dp
+        .coerceAtMost(300.dp)
+        .coerceAtLeast(168.dp)
 
     Column(
         modifier = modifier
@@ -96,7 +102,9 @@ fun MeScreen(
         )
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
         ) {
             item {
                 Surface(
@@ -168,136 +176,8 @@ fun MeScreen(
                 }
             }
 
-            item {
-                Divider()
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = SurfaceColor
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = stringResource(R.string.me_reminders_title),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = GrayDark,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (pendingReminders.isNotEmpty()) {
-                                Text(
-                                    text = "(${pendingReminders.size})",
-                                    fontSize = 14.sp,
-                                    color = GrayMiddle
-                                )
-                            }
-                        }
-                        if (pendingReminders.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.me_reminders_empty),
-                                fontSize = 13.sp,
-                                color = GrayMiddle,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        } else {
-                            val res = context.resources
-                            pendingReminders.forEach { row ->
-                                val fireStr = res.formatReminderFireAt(row.fireAtMillis)
-                                val untilStr = res.formatTimeUntilFire(row.fireAtMillis, nowMillis)
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 10.dp)
-                                        .clickable { onOpenPost(row.postId) },
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = row.content.trim().ifBlank { "—" }.take(120),
-                                            fontSize = 14.sp,
-                                            color = GrayDark,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        Text(
-                                            text = row.identityName,
-                                            fontSize = 12.sp,
-                                            color = GrayMiddle,
-                                            modifier = Modifier.padding(top = 2.dp),
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                        val repeatShort = when (row.repeatRule) {
-                                            ReminderRepeatRule.DAILY ->
-                                                stringResource(R.string.reminder_repeat_short_daily)
-                                            ReminderRepeatRule.WEEKLY ->
-                                                stringResource(R.string.reminder_repeat_short_weekly)
-                                            ReminderRepeatRule.MONTHLY ->
-                                                stringResource(R.string.reminder_repeat_short_monthly)
-                                            else -> null
-                                        }
-                                        Text(
-                                            text = if (repeatShort != null) {
-                                                stringResource(
-                                                    R.string.me_reminders_subtitle_repeat,
-                                                    fireStr,
-                                                    untilStr,
-                                                    repeatShort
-                                                )
-                                            } else {
-                                                stringResource(
-                                                    R.string.me_reminders_subtitle,
-                                                    fireStr,
-                                                    untilStr
-                                                )
-                                            },
-                                            fontSize = 12.sp,
-                                            color = WeiboOrange,
-                                            modifier = Modifier.padding(top = 4.dp)
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = {
-                                            scope.launch {
-                                                app.repository.cancelReminderById(row.reminderId)
-                                            }
-                                        }
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Close,
-                                            contentDescription = stringResource(R.string.me_reminders_cancel_cd),
-                                            tint = GrayMiddle
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            item {
-                Divider()
-                MenuItem(
-                    title = stringResource(R.string.me_identity_title),
-                    subtitle = stringResource(R.string.me_identity_subtitle),
-                    onClick = onNavigateToIdentities
-                )
-            }
-
-            item {
-                Divider()
-                MenuItem(
-                    title = stringResource(R.string.me_posts_title),
-                    subtitle = stringResource(R.string.me_posts_subtitle),
-                    onClick = onNavigateToMyPosts
-                )
-            }
-
             activeIdentity?.let { identity ->
-                if (identity.nationality.isNotEmpty() || identity.occupation.isNotEmpty()) {
+                if (identity.nationality.isNotEmpty() || identity.occupation.isNotEmpty() || identity.famousWork.isNotEmpty()) {
                     item {
                         Divider()
                         Surface(
@@ -308,10 +188,16 @@ fun MeScreen(
                                 modifier = Modifier.padding(16.dp)
                             ) {
                                 if (identity.nationality.isNotEmpty()) {
-                                    InfoRow(label = stringResource(R.string.label_nationality), value = identity.nationality)
+                                    InfoRow(
+                                        label = stringResource(R.string.label_nationality),
+                                        value = identity.nationality
+                                    )
                                 }
                                 if (identity.occupation.isNotEmpty()) {
-                                    InfoRow(label = stringResource(R.string.label_occupation), value = identity.occupation)
+                                    InfoRow(
+                                        label = stringResource(R.string.label_occupation),
+                                        value = identity.occupation
+                                    )
                                 }
                                 if (identity.famousWork.isNotEmpty()) {
                                     InfoRow(
@@ -325,46 +211,130 @@ fun MeScreen(
                 }
             }
         }
-    }
-}
 
-@Composable
-private fun MenuItem(
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        color = Color.White
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Divider(thickness = 0.5.dp)
+
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = SurfaceColor,
+            tonalElevation = 1.dp
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = GrayDark
-                )
-                Text(
-                    text = subtitle,
-                    fontSize = 13.sp,
-                    color = GrayMiddle,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.me_reminders_title),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GrayDark,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (pendingReminders.isNotEmpty()) {
+                        Text(
+                            text = "(${pendingReminders.size})",
+                            fontSize = 14.sp,
+                            color = GrayMiddle
+                        )
+                    }
+                }
+                if (pendingReminders.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.me_reminders_empty),
+                        fontSize = 13.sp,
+                        color = GrayMiddle,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.me_reminders_bottom_hint),
+                        fontSize = 12.sp,
+                        color = GrayMiddle,
+                        modifier = Modifier.padding(top = 6.dp, bottom = 4.dp)
+                    )
+                    val res = context.resources
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = reminderListMaxHeight)
+                    ) {
+                        items(pendingReminders, key = { it.reminderId }) { row ->
+                            val fireStr = res.formatReminderFireAt(row.fireAtMillis)
+                            val untilStr = res.formatTimeUntilFire(row.fireAtMillis, nowMillis)
+                            val repeatShort = when (row.repeatRule) {
+                                ReminderRepeatRule.DAILY ->
+                                    stringResource(R.string.reminder_repeat_short_daily)
+                                ReminderRepeatRule.WEEKLY ->
+                                    stringResource(R.string.reminder_repeat_short_weekly)
+                                ReminderRepeatRule.MONTHLY ->
+                                    stringResource(R.string.reminder_repeat_short_monthly)
+                                else -> null
+                            }
+                            val subtitleText = if (ReminderRepeatRule.isRepeating(row.repeatRule) && repeatShort != null) {
+                                stringResource(
+                                    R.string.me_reminders_subtitle_next_repeat,
+                                    untilStr,
+                                    repeatShort
+                                )
+                            } else {
+                                stringResource(
+                                    R.string.me_reminders_subtitle,
+                                    fireStr,
+                                    untilStr
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onOpenPost(row.postId) }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = row.content.trim().ifBlank { "—" }.take(120),
+                                        fontSize = 14.sp,
+                                        color = GrayDark,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = row.identityName,
+                                        fontSize = 12.sp,
+                                        color = GrayMiddle,
+                                        modifier = Modifier.padding(top = 2.dp),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = subtitleText,
+                                        fontSize = 12.sp,
+                                        color = WeiboOrange,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            app.repository.cancelReminderById(row.reminderId)
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = stringResource(R.string.me_reminders_cancel_cd),
+                                        tint = GrayMiddle
+                                    )
+                                }
+                            }
+                            Divider(thickness = 0.5.dp, color = GrayLight.copy(alpha = 0.4f))
+                        }
+                    }
+                }
             }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = GrayLight
-            )
         }
     }
 }

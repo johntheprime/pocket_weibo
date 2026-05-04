@@ -10,6 +10,8 @@
     <string name="tab_compose_cd">New post</string>
 
     <string name="title_home">Home</string>
+    <string name="home_my_posts_link">My posts</string>
+    <string name="home_my_posts_cd">My posts</string>
     <string name="title_message">Messages</string>
     <string name="title_discover">Discover</string>
     <string name="title_me">Me</string>
@@ -36,6 +38,8 @@
     <string name="me_reminders_empty">No scheduled reminders. Set one from any post’s ⋮ menu.</string>
     <string name="me_reminders_subtitle">%1$s · %2$s</string>
     <string name="me_reminders_subtitle_repeat">%1$s · %2$s · %3$s</string>
+    <string name="me_reminders_subtitle_next_repeat">Next %1$s · %2$s</string>
+    <string name="me_reminders_bottom_hint">Scroll the list below. Repeating reminders show only the next ring time.</string>
     <string name="me_reminders_cancel_cd">Cancel this reminder</string>
     <string name="label_nationality">Nationality</string>
     <string name="label_occupation">Occupation</string>

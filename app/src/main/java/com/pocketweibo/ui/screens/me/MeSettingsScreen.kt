@@ -70,6 +70,7 @@ private const val RepoUrl = "https://github.com/johntheprime/pocket_weibo"
 @Composable
 fun MeSettingsScreen(
     onBack: () -> Unit,
+    onOpenIdentities: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -102,6 +103,14 @@ fun MeSettingsScreen(
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             item {
+                MenuItem(
+                    title = stringResource(R.string.me_identity_title),
+                    subtitle = stringResource(R.string.me_identity_subtitle),
+                    onClick = onOpenIdentities
+                )
+            }
+            item {
+                Divider()
                 MenuItem(
                     title = stringResource(R.string.settings_export_title),
                     subtitle = stringResource(R.string.settings_export_subtitle),

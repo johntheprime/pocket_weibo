@@ -54,6 +54,8 @@ fun PostCard(
     onCommentClick: () -> Unit,
     onShareClick: () -> Unit,
     onPostClick: () -> Unit,
+    /** List feeds are text-first; images remain visible in post detail. */
+    showPostImages: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     var showSelectableCopy by remember { mutableStateOf(false) }
@@ -118,7 +120,7 @@ fun PostCard(
                 modifier = Modifier.padding(top = 8.dp)
             )
 
-            if (PostAttachmentStorage.parseStoredPaths(post.imageUris).isNotEmpty()) {
+            if (showPostImages && PostAttachmentStorage.parseStoredPaths(post.imageUris).isNotEmpty()) {
                 PostImageGallery(
                     imageUris = post.imageUris,
                     maxHeight = 88.dp,

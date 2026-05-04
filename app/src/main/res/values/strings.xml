@@ -10,6 +10,8 @@
     <string name="tab_compose_cd">发微博</string>
 
     <string name="title_home">首页</string>
+    <string name="home_my_posts_link">我的发布</string>
+    <string name="home_my_posts_cd">我的发布</string>
     <string name="title_message">消息</string>
     <string name="title_discover">发现</string>
     <string name="title_me">我</string>
@@ -36,6 +38,8 @@
     <string name="me_reminders_empty">暂无定时提醒。在任意帖子详情 ⋮ 中可设置。</string>
     <string name="me_reminders_subtitle">%1$s · %2$s</string>
     <string name="me_reminders_subtitle_repeat">%1$s · %2$s · %3$s</string>
+    <string name="me_reminders_subtitle_next_repeat">下次 %1$s · %2$s</string>
+    <string name="me_reminders_bottom_hint">下方列表可滚动；重复提醒仅显示下一次响铃时间。</string>
     <string name="me_reminders_cancel_cd">取消此提醒</string>
     <string name="label_nationality">国籍</string>
     <string name="label_occupation">职业</string>
