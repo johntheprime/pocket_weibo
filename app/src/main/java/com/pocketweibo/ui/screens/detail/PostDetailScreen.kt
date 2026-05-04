@@ -95,6 +95,8 @@ import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.reminder.ReminderRepeatRule
+import androidx.compose.material3.FilterChip
 import java.util.Calendar
 
 private fun millisTomorrowAt(hour: Int, minute: Int): Long {
@@ -150,14 +152,14 @@ fun PostDetailScreen(
     val app = context.applicationContext as PocketWeiboApp
     val viewModel: PostDetailViewModel = viewModel(factory = PostDetailViewModel.Factory(app.repository))
 
-    var pendingScheduleFireAt by remember { mutableStateOf<Long?>(null) }
+    var pendingSchedule by remember { mutableStateOf<Pair<Long, String>?>(null) }
     val notifyPermLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
-        val pending = pendingScheduleFireAt
-        pendingScheduleFireAt = null
+        val pending = pendingSchedule
+        pendingSchedule = null
         if (granted && pending != null) {
-            viewModel.scheduleReminderAt(pending)
+            viewModel.scheduleReminderAt(pending.first, pending.second)
             Toast.makeText(
                 context,
                 context.getString(R.string.reminder_scheduled_toast),
@@ -172,7 +174,7 @@ fun PostDetailScreen(
         }
     }
 
-    val scheduleReminderAt: (Long) -> Unit = { fireAt ->
+    val scheduleReminderAt: (Long, String) -> Unit = { fireAt, repeatRule ->
         if (fireAt <= System.currentTimeMillis() + 5000L) {
             Toast.makeText(
                 context,
@@ -186,10 +188,10 @@ fun PostDetailScreen(
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            pendingScheduleFireAt = fireAt
+            pendingSchedule = fireAt to repeatRule
             notifyPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
-            viewModel.scheduleReminderAt(fireAt)
+            viewModel.scheduleReminderAt(fireAt, repeatRule)
             Toast.makeText(
                 context,
                 context.getString(R.string.reminder_scheduled_toast),
@@ -366,6 +368,7 @@ fun PostDetailScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PostDetailCard(
     post: com.pocketweibo.data.local.dao.PostWithIdentity,
@@ -374,7 +377,7 @@ private fun PostDetailCard(
     onPostImageClick: (Int) -> Unit,
     onCopyPost: () -> Unit,
     onDeletePost: () -> Unit,
-    onScheduleReminderAt: (Long) -> Unit,
+    onScheduleReminderAt: (Long, String) -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
     onOpenAppDetailsSettings: () -> Unit
 ) {
@@ -389,6 +392,10 @@ private fun PostDetailCard(
     var moreExpanded by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showRemindPicker by remember { mutableStateOf(false) }
+    var repeatRule by remember { mutableStateOf(ReminderRepeatRule.NONE) }
+    LaunchedEffect(showRemindPicker) {
+        if (showRemindPicker) repeatRule = ReminderRepeatRule.NONE
+    }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White
@@ -607,6 +614,46 @@ private fun PostDetailCard(
                                     )
                                 }
                             }
+                            Text(
+                                text = stringResource(R.string.post_detail_remind_repeat_label),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = GrayDark,
+                                modifier = Modifier.padding(top = 12.dp)
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 6.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                FilterChip(
+                                    selected = repeatRule == ReminderRepeatRule.NONE,
+                                    onClick = { repeatRule = ReminderRepeatRule.NONE },
+                                    label = { Text(stringResource(R.string.reminder_repeat_once)) }
+                                )
+                                FilterChip(
+                                    selected = repeatRule == ReminderRepeatRule.DAILY,
+                                    onClick = { repeatRule = ReminderRepeatRule.DAILY },
+                                    label = { Text(stringResource(R.string.reminder_repeat_daily)) }
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                FilterChip(
+                                    selected = repeatRule == ReminderRepeatRule.WEEKLY,
+                                    onClick = { repeatRule = ReminderRepeatRule.WEEKLY },
+                                    label = { Text(stringResource(R.string.reminder_repeat_weekly)) }
+                                )
+                                FilterChip(
+                                    selected = repeatRule == ReminderRepeatRule.MONTHLY,
+                                    onClick = { repeatRule = ReminderRepeatRule.MONTHLY },
+                                    label = { Text(stringResource(R.string.reminder_repeat_monthly)) }
+                                )
+                            }
                             Spacer(modifier = Modifier.padding(top = 8.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -616,7 +663,10 @@ private fun PostDetailCard(
                                     modifier = Modifier.weight(1f),
                                     onClick = {
                                         showRemindPicker = false
-                                        onScheduleReminderAt(System.currentTimeMillis() + 15 * 60_000L)
+                                        onScheduleReminderAt(
+                                            System.currentTimeMillis() + 15 * 60_000L,
+                                            repeatRule
+                                        )
                                     }
                                 ) {
                                     Text(
@@ -629,7 +679,10 @@ private fun PostDetailCard(
                                     modifier = Modifier.weight(1f),
                                     onClick = {
                                         showRemindPicker = false
-                                        onScheduleReminderAt(System.currentTimeMillis() + 30 * 60_000L)
+                                        onScheduleReminderAt(
+                                            System.currentTimeMillis() + 30 * 60_000L,
+                                            repeatRule
+                                        )
                                     }
                                 ) {
                                     Text(
@@ -642,7 +695,10 @@ private fun PostDetailCard(
                                     modifier = Modifier.weight(1f),
                                     onClick = {
                                         showRemindPicker = false
-                                        onScheduleReminderAt(System.currentTimeMillis() + 60 * 60_000L)
+                                        onScheduleReminderAt(
+                                            System.currentTimeMillis() + 60 * 60_000L,
+                                            repeatRule
+                                        )
                                     }
                                 ) {
                                     Text(
@@ -662,7 +718,10 @@ private fun PostDetailCard(
                                     modifier = Modifier.weight(1f),
                                     onClick = {
                                         showRemindPicker = false
-                                        onScheduleReminderAt(System.currentTimeMillis() + 3 * 60 * 60_000L)
+                                        onScheduleReminderAt(
+                                            System.currentTimeMillis() + 3 * 60 * 60_000L,
+                                            repeatRule
+                                        )
                                     }
                                 ) {
                                     Text(
@@ -675,7 +734,10 @@ private fun PostDetailCard(
                                     modifier = Modifier.weight(1f),
                                     onClick = {
                                         showRemindPicker = false
-                                        onScheduleReminderAt(System.currentTimeMillis() + 6 * 60 * 60_000L)
+                                        onScheduleReminderAt(
+                                            System.currentTimeMillis() + 6 * 60 * 60_000L,
+                                            repeatRule
+                                        )
                                     }
                                 ) {
                                     Text(
@@ -688,7 +750,7 @@ private fun PostDetailCard(
                                     modifier = Modifier.weight(1f),
                                     onClick = {
                                         showRemindPicker = false
-                                        onScheduleReminderAt(millisTomorrowAt(9, 0))
+                                        onScheduleReminderAt(millisTomorrowAt(9, 0), repeatRule)
                                     }
                                 ) {
                                     Text(
@@ -702,7 +764,7 @@ private fun PostDetailCard(
                                 onClick = {
                                     showRemindPicker = false
                                     showReminderDateTimePicker(context) { ms ->
-                                        onScheduleReminderAt(ms)
+                                        onScheduleReminderAt(ms, repeatRule)
                                     }
                                 },
                                 modifier = Modifier

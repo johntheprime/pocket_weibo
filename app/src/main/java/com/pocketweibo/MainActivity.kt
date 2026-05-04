@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -78,6 +79,10 @@ class MainActivity : AppCompatActivity() {
 
 @Composable
 fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
+    val homeListState = rememberLazyListState()
+    val discoverTrendingListState = rememberLazyListState()
+    val discoverSearchListState = rememberLazyListState()
+    val myPostsListState = rememberLazyListState()
     var selectedTab by remember { mutableStateOf(MainTab.HOME) }
     var showCompose by remember { mutableStateOf(false) }
     var showMyPosts by remember { mutableStateOf(false) }
@@ -168,6 +173,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                     MyPostsScreen(
                         onBack = { showMyPosts = false },
                         onPostClick = { postId -> postDetailId = postId },
+                        listState = myPostsListState,
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
@@ -183,11 +189,14 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             onPostClick = { postId -> postDetailId = postId },
                             onOpenSettings = { showMeSettings = true },
                             onNavigateToDiscover = { selectedTab = MainTab.DISCOVER },
+                            listState = homeListState,
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.MESSAGE -> MessageScreen(modifier = Modifier.padding(paddingValues))
                         MainTab.DISCOVER -> DiscoverScreen(
                             onPostClick = { postId -> postDetailId = postId },
+                            trendingListState = discoverTrendingListState,
+                            searchListState = discoverSearchListState,
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.ME -> MeScreen(

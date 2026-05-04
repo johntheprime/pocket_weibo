@@ -11,6 +11,7 @@ data class PostReminderWithPreview(
     val reminderId: Long,
     val postId: Long,
     val fireAtMillis: Long,
+    val repeatRule: String,
     val content: String,
     val identityName: String
 )
@@ -33,6 +34,7 @@ interface PostReminderDao {
     @Query(
         """
         SELECT r.id AS reminderId, r.postId AS postId, r.fireAtMillis AS fireAtMillis,
+               r.repeatRule AS repeatRule,
                p.content AS content, i.name AS identityName
         FROM post_reminders r
         INNER JOIN posts p ON r.postId = p.id
@@ -47,4 +49,7 @@ interface PostReminderDao {
 
     @Query("DELETE FROM post_reminders WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("UPDATE post_reminders SET fireAtMillis = :nextFireAtMillis WHERE id = :id")
+    suspend fun updateFireAt(id: Long, nextFireAtMillis: Long)
 }

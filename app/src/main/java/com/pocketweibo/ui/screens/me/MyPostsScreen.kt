@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -61,6 +62,7 @@ import com.pocketweibo.ui.theme.WeiboOrange
 fun MyPostsScreen(
     onBack: () -> Unit,
     onPostClick: (Long) -> Unit = {},
+    listState: LazyListState,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -132,6 +134,7 @@ fun MyPostsScreen(
             }
         } else {
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)

@@ -9,6 +9,7 @@ import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.repository.WeiboRepository
 import com.pocketweibo.diagnostic.DiagnosticLog
+import com.pocketweibo.reminder.ReminderRepeatRule
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -80,14 +81,14 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
         }
     }
 
-    fun scheduleReminderAt(fireAtMillis: Long) {
+    fun scheduleReminderAt(fireAtMillis: Long, repeatRule: String = ReminderRepeatRule.NONE) {
         val p = _post.value ?: return
         viewModelScope.launch {
             DiagnosticLog.d(
                 "PW_Reminder",
-                "UI schedule postId=${p.id} fireAtMillis=$fireAtMillis"
+                "UI schedule postId=${p.id} fireAtMillis=$fireAtMillis repeat=$repeatRule"
             )
-            repository.schedulePostReminder(p.id, fireAtMillis)
+            repository.schedulePostReminder(p.id, fireAtMillis, repeatRule)
         }
     }
 

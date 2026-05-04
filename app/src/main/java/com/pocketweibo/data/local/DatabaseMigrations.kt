@@ -38,4 +38,12 @@ object DatabaseMigrations {
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_post_reminders_postId` ON `post_reminders` (`postId`)")
         }
     }
+
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE post_reminders ADD COLUMN repeatRule TEXT NOT NULL DEFAULT 'NONE'"
+            )
+        }
+    }
 }

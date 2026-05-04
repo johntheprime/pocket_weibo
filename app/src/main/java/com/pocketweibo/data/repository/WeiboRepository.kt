@@ -21,6 +21,7 @@ import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.local.entity.PostReminderEntity
 import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.reminder.PostReminderAlarmScheduler
+import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -125,15 +126,23 @@ class WeiboRepository(
         postDao.delete(post)
     }
 
-    suspend fun schedulePostReminder(postId: Long, fireAtMillis: Long) {
+    suspend fun schedulePostReminder(
+        postId: Long,
+        fireAtMillis: Long,
+        repeatRule: String = ReminderRepeatRule.NONE
+    ) {
         withContext(Dispatchers.IO) {
             cancelPostRemindersInternal(postId)
             val rowId = postReminderDao.insert(
-                PostReminderEntity(postId = postId, fireAtMillis = fireAtMillis)
+                PostReminderEntity(
+                    postId = postId,
+                    fireAtMillis = fireAtMillis,
+                    repeatRule = repeatRule
+                )
             )
             DiagnosticLog.d(
                 REMINDER_LOG_TAG,
-                "DB insert reminder rowId=$rowId postId=$postId fireAtMillis=$fireAtMillis"
+                "DB insert reminder rowId=$rowId postId=$postId fireAtMillis=$fireAtMillis repeat=$repeatRule"
             )
             PostReminderAlarmScheduler.schedule(context, rowId, postId, fireAtMillis)
         }

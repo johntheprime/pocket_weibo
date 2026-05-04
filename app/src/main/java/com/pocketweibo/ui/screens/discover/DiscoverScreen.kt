@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,6 +65,8 @@ import com.pocketweibo.ui.theme.WeiboOrange
 @Composable
 fun DiscoverScreen(
     onPostClick: (Long) -> Unit = {},
+    trendingListState: LazyListState,
+    searchListState: LazyListState,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -120,6 +123,7 @@ fun DiscoverScreen(
             TrendingContent(
                 trendingIdentities = trendingIdentities,
                 trendingPosts = trendingPosts,
+                listState = trendingListState,
                 onIdentityClick = { identity ->
                     viewModel.updateSearchQuery(identity.name)
                 },
@@ -128,6 +132,7 @@ fun DiscoverScreen(
         } else {
             SearchResultsContent(
                 results = searchResults,
+                listState = searchListState,
                 onIdentityClick = { identity ->
                     viewModel.updateSearchQuery(identity.name)
                 },
@@ -141,10 +146,12 @@ fun DiscoverScreen(
 private fun TrendingContent(
     trendingIdentities: List<IdentityEntity>,
     trendingPosts: List<com.pocketweibo.data.local.dao.PostWithIdentity>,
+    listState: LazyListState,
     onIdentityClick: (IdentityEntity) -> Unit,
     onPostClick: (Long) -> Unit
 ) {
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize()
     ) {
         item {
@@ -373,6 +380,7 @@ private fun TrendingPostItem(
 @Composable
 private fun SearchResultsContent(
     results: List<SearchResult>,
+    listState: LazyListState,
     onIdentityClick: (IdentityEntity) -> Unit,
     onPostClick: (Long) -> Unit
 ) {
@@ -400,6 +408,7 @@ private fun SearchResultsContent(
         }
     } else {
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize()
         ) {
             val identityResults = results.filterIsInstance<SearchResult.IdentityResult>()

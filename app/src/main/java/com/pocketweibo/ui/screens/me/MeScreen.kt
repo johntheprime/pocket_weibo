@@ -39,6 +39,7 @@ import com.pocketweibo.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pocketweibo.PocketWeiboApp
+import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.Background
@@ -228,12 +229,30 @@ fun MeScreen(
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
+                                        val repeatShort = when (row.repeatRule) {
+                                            ReminderRepeatRule.DAILY ->
+                                                stringResource(R.string.reminder_repeat_short_daily)
+                                            ReminderRepeatRule.WEEKLY ->
+                                                stringResource(R.string.reminder_repeat_short_weekly)
+                                            ReminderRepeatRule.MONTHLY ->
+                                                stringResource(R.string.reminder_repeat_short_monthly)
+                                            else -> null
+                                        }
                                         Text(
-                                            text = stringResource(
-                                                R.string.me_reminders_subtitle,
-                                                fireStr,
-                                                untilStr
-                                            ),
+                                            text = if (repeatShort != null) {
+                                                stringResource(
+                                                    R.string.me_reminders_subtitle_repeat,
+                                                    fireStr,
+                                                    untilStr,
+                                                    repeatShort
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    R.string.me_reminders_subtitle,
+                                                    fireStr,
+                                                    untilStr
+                                                )
+                                            },
                                             fontSize = 12.sp,
                                             color = WeiboOrange,
                                             modifier = Modifier.padding(top = 4.dp)

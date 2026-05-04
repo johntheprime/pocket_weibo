@@ -50,6 +50,8 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-022 | **配图压缩质量优先**：大图用 **BitmapFactory** 采样解码 + 必要时缩放，输出 **JPEG 质量 92**、最长边 **2560**；若输出体积 **不小于** 原文件则放弃重编码、保留原拷贝；**小于约 1.5 MB** 或 **GIF** 不转码。 | Done |
 | F-023 | **移除发微博「位置」**：去掉写微博区 **位置** 图标与条、**定位权限**声明与请求；新帖不再写入 `extrasJson.location`（`extrasJson` 列仍保留作其它扩展）；**@** 与配图等不变。 | Done |
 | F-024 | **设置 · 诊断日志导出**：设置中可开启 **内存诊断捕获**（提醒等 `DiagnosticLog` 写入环形缓冲），**导出** 为文本经系统分享保存；**清空** 或关闭开关即停止累积（缓冲不跨进程持久化）。 | Done |
+| F-025 | **提醒 · 重复**：详情 **设置提醒** 可选 **一次 / 每天 / 每周 / 每月**（`post_reminders.repeatRule`）；到时通知后 **更新 `fireAtMillis` 并重挂** 下一响，取消仍删行。 | Done |
+| F-026 | **列表返回保持滚动位置**：`MainScreen` 为 **首页 / 发现（热门与搜索各一）/ 我的发布** 持有 `LazyListState`，从帖子详情返回时 **不丢列表滚动位置**。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 
@@ -102,7 +104,7 @@ _Add new rows for upcoming work; keep IDs incrementing._
 
 ### F-019 闹钟
 
-- 明确最小 MVP：**一次性** 提醒 + 通知点击打开对应微博；后续再扩展重复提醒、日历集成等。
+- **一次性** 提醒 + 通知点击打开对应帖子；系统 `setAlarmClock` + DB 重挂；自选日期时间；精确闹钟 / 电池说明入口。
 
 ### F-020 详情 ⋮ 菜单
 

@@ -35,6 +35,7 @@
     <string name="me_reminders_title">Pending reminders</string>
     <string name="me_reminders_empty">No scheduled reminders. Set one from any post’s ⋮ menu.</string>
     <string name="me_reminders_subtitle">%1$s · %2$s</string>
+    <string name="me_reminders_subtitle_repeat">%1$s · %2$s · %3$s</string>
     <string name="me_reminders_cancel_cd">Cancel this reminder</string>
     <string name="label_nationality">Nationality</string>
     <string name="label_occupation">Occupation</string>
@@ -160,6 +161,14 @@
     <string name="post_detail_remind_chip_3h">3 hours</string>
     <string name="post_detail_remind_chip_6h">6 hours</string>
     <string name="post_detail_remind_chip_tomorrow_9">Tomorrow 9:00</string>
+    <string name="post_detail_remind_repeat_label">Repeat</string>
+    <string name="reminder_repeat_once">Once</string>
+    <string name="reminder_repeat_daily">Daily</string>
+    <string name="reminder_repeat_weekly">Weekly</string>
+    <string name="reminder_repeat_monthly">Monthly</string>
+    <string name="reminder_repeat_short_daily">daily</string>
+    <string name="reminder_repeat_short_weekly">weekly</string>
+    <string name="reminder_repeat_short_monthly">monthly</string>
     <string name="post_detail_remind_pick_datetime">Pick date &amp; time…</string>
     <string name="post_detail_remind_time_past">Choose a time at least about a minute from now</string>
     <string name="post_detail_remind_open_exact_alarm">Alarms &amp; reminders (exact alarms)</string>

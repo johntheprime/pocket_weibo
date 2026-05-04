@@ -84,8 +84,25 @@ class PostReminderReceiver : BroadcastReceiver() {
                 }
 
                 if (posted) {
-                    dao.deleteById(reminderId)
-                    DiagnosticLog.d(TAG, "deleted reminder row id=$reminderId after successful notify")
+                    if (ReminderRepeatRule.isRepeating(row.repeatRule)) {
+                        val now = System.currentTimeMillis()
+                        val next = ReminderRepeatRule.nextAfterSuccessfulFire(
+                            row.fireAtMillis,
+                            row.repeatRule,
+                            now
+                        )
+                        if (next == null || next <= now) {
+                            DiagnosticLog.w(TAG, "recurring: could not compute next fire, deleting id=$reminderId")
+                            dao.deleteById(reminderId)
+                        } else {
+                            dao.updateFireAt(reminderId, next)
+                            PostReminderAlarmScheduler.schedule(context, reminderId, postId, next)
+                            DiagnosticLog.d(TAG, "recurring next fireAt=$next id=$reminderId")
+                        }
+                    } else {
+                        dao.deleteById(reminderId)
+                        DiagnosticLog.d(TAG, "deleted one-shot reminder id=$reminderId after successful notify")
+                    }
                 } else {
                     DiagnosticLog.w(TAG, "keeping reminder row id=$reminderId for retry / debugging")
                 }
