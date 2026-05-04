@@ -5,7 +5,6 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.pocketweibo.MainActivity
 import com.pocketweibo.PocketWeiboApp
@@ -47,12 +46,15 @@ class PostReminderReceiver : BroadcastReceiver() {
                 )
 
                 val notification = NotificationCompat.Builder(context, PocketWeiboApp.REMINDER_CHANNEL_ID)
-                    .setSmallIcon(com.pocketweibo.R.mipmap.ic_launcher)
+                    .setSmallIcon(R.drawable.ic_stat_reminder)
                     .setContentTitle(title)
                     .setContentText(text)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(post?.content ?: text))
                     .setContentIntent(openPi)
+                    .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setAutoCancel(true)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .build()
 
                 val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -60,6 +62,8 @@ class PostReminderReceiver : BroadcastReceiver() {
                     nm.notify((postId xor reminderId).toInt(), notification)
                 } catch (_: SecurityException) {
                     // POST_NOTIFICATIONS denied on API 33+
+                } catch (_: Exception) {
+                    // Invalid icon/channel on some OEM builds — avoid crashing the receiver
                 }
 
                 dao.deleteById(reminderId)

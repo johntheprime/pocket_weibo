@@ -1,10 +1,15 @@
 package com.pocketweibo.ui.screens.detail
 
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -37,6 +43,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -54,11 +61,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
@@ -77,6 +86,21 @@ import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+
+private const val REMINDER_STEP_MINUTES = 30
+private const val REMINDER_MAX_STEPS = 48
+
+@Composable
+private fun remindDelayLabel(totalMinutes: Int): String {
+    val h = totalMinutes / 60
+    val m = totalMinutes % 60
+    return when {
+        h == 0 -> pluralStringResource(R.plurals.post_detail_remind_minutes, m, m)
+        m == 0 -> pluralStringResource(R.plurals.post_detail_remind_hours, h, h)
+        else -> stringResource(R.string.post_detail_remind_mixed, h, m)
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostDetailScreen(
@@ -88,6 +112,53 @@ fun PostDetailScreen(
     val context = LocalContext.current
     val app = context.applicationContext as PocketWeiboApp
     val viewModel: PostDetailViewModel = viewModel(factory = PostDetailViewModel.Factory(app.repository))
+
+    var pendingRemindMinutes by remember { mutableStateOf<Long?>(null) }
+    val notifyPermLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val pending = pendingRemindMinutes
+        pendingRemindMinutes = null
+        if (granted && pending != null) {
+            viewModel.scheduleReminderAfterMinutes(pending)
+            Toast.makeText(
+                context,
+                context.getString(R.string.reminder_scheduled_toast),
+                Toast.LENGTH_SHORT
+            ).show()
+        } else if (!granted && pending != null) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.reminder_permission_denied_toast),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    val scheduleReminder: (Long) -> Unit = { minutes ->
+        if (Build.VERSION.SDK_INT >= 33) {
+            val ok = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+            if (!ok) {
+                pendingRemindMinutes = minutes
+                notifyPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                viewModel.scheduleReminderAfterMinutes(minutes)
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.reminder_scheduled_toast),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        } else {
+            viewModel.scheduleReminderAfterMinutes(minutes)
+            Toast.makeText(
+                context,
+                context.getString(R.string.reminder_scheduled_toast),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
 
     LaunchedEffect(postId) { viewModel.loadPost(postId) }
 
@@ -198,14 +269,7 @@ fun PostDetailScreen(
                             )
                         },
                         onDeletePost = { viewModel.deletePost(onBack) },
-                        onRemindAfterMinutes = { minutes ->
-                            viewModel.scheduleReminderAfterMinutes(minutes)
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.reminder_scheduled_toast),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        onRemindAfterMinutes = scheduleReminder
                     )
                 }
 
@@ -437,18 +501,43 @@ private fun PostDetailCard(
                     title = { Text(stringResource(R.string.post_detail_remind_title)) },
                     text = {
                         Column {
-                            TextButton(onClick = {
-                                showRemindPicker = false
-                                onRemindAfterMinutes(15)
-                            }) { Text(stringResource(R.string.post_detail_remind_15m)) }
-                            TextButton(onClick = {
-                                showRemindPicker = false
-                                onRemindAfterMinutes(60)
-                            }) { Text(stringResource(R.string.post_detail_remind_1h)) }
-                            TextButton(onClick = {
-                                showRemindPicker = false
-                                onRemindAfterMinutes(180)
-                            }) { Text(stringResource(R.string.post_detail_remind_3h)) }
+                            Text(
+                                text = stringResource(R.string.post_detail_remind_steps_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = GrayMiddle,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            TextButton(
+                                onClick = {
+                                    showRemindPicker = false
+                                    onRemindAfterMinutes(15L)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.post_detail_remind_15m),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            LazyColumn(
+                                modifier = Modifier.heightIn(max = 320.dp)
+                            ) {
+                                items(REMINDER_MAX_STEPS) { idx ->
+                                    val mins = (idx + 1) * REMINDER_STEP_MINUTES
+                                    TextButton(
+                                        onClick = {
+                                            showRemindPicker = false
+                                            onRemindAfterMinutes(mins.toLong())
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = remindDelayLabel(mins),
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                }
+                            }
                         }
                     },
                     confirmButton = {

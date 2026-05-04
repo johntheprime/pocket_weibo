@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="post_detail_remind_minutes">
+        <item quantity="other">%d 分钟</item>
+    </plurals>
+    <plurals name="post_detail_remind_hours">
+        <item quantity="other">%d 小时</item>
+    </plurals>
+</resources>

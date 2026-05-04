@@ -43,15 +43,21 @@ class PocketWeiboApp : Application() {
     private fun ensureReminderChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val nm = getSystemService(NotificationManager::class.java) ?: return
+        // Older builds used IMPORTANCE_DEFAULT; Android does not raise importance on update — replace channel.
+        nm.deleteNotificationChannel(LEGACY_REMINDER_CHANNEL_ID)
         val ch = NotificationChannel(
             REMINDER_CHANNEL_ID,
             getString(R.string.reminder_channel_name),
-            NotificationManager.IMPORTANCE_DEFAULT
-        ).apply { description = getString(R.string.reminder_channel_desc) }
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = getString(R.string.reminder_channel_desc)
+            enableVibration(true)
+        }
         nm.createNotificationChannel(ch)
     }
 
     companion object {
-        const val REMINDER_CHANNEL_ID = "post_reminders"
+        const val REMINDER_CHANNEL_ID = "post_reminders_high"
+        private const val LEGACY_REMINDER_CHANNEL_ID = "post_reminders"
     }
 }
