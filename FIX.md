@@ -8,6 +8,7 @@ This file records **resolved requirements** and the **standard process** for eve
 
 | Date (UTC) | Requirement | Resolution | Verified |
 |-------------|---------------|------------|----------|
+| 2026-05-04 | **MainActivity** 调用 **`ComposeScreen(onPostPublished = …)`** 但 **ComposeScreen** 未声明该参数，**工程无法编译** | 为 **ComposeScreen** 增加 **`onPostPublished`**（默认空实现），发帖成功后 **`onPostPublished()`** 再 **`onDismiss()`**。版本 **3.37.2 (154)**（与 **F-039** 同批）。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-04 | 保存 **身份**（含头像）后 **该身份下微博全部消失** | **根因**：`IdentityDao.insert` 曾用 **`OnConflictStrategy.REPLACE`**；SQLite 先 **DELETE** 旧行再 INSERT，触发 `posts.identityId` 的 **ON DELETE CASCADE**，帖子被级联清空。`saveIdentityWithAvatarOptions` 第二次写入也曾 **`insert`**。**修复**：`insert` 改为普通 INSERT；已有 id 走 **`update`**；合并导入里自定义头像收尾改为 **`update`**。版本 **3.36.1 (151)**。**已丢数据** 需依赖用户此前 **导出备份** 重新导入，应用内无法从空库恢复。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-04 | 身份 **萌系男卡通** 预设未在编辑页突出；**相册自定义头像** 未接入保存（仍调用 `insertIdentity`，无选图入口） | `IdentityDetailScreen`：`PickVisualMedia` 选图、**自定义 / 男卡通 / 更多预设** 分区、`saveIdentityWithAvatarOptions` + 移除照片；头图与 **`Avatar`** 一致。**`IdentityListScreen`** 行内改用 **`Avatar`**（含 `customAvatarUri`）。`FEATURE.md` **F-037**。版本 **3.36.0 (150)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-04 | **我** 页 **待处理提醒** 不应压在 **身份简介**（国籍/职业/代表作）之上；**固定资料在上、可变列表在下** | `MeScreen` `LazyColumn` 将 **简介 `InfoRow` 区块** 移到 **待处理提醒** `item` **之前**（顺序：身份卡片 → 简介 → 提醒）。版本 **3.35.3 (149)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
