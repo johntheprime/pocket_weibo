@@ -7,10 +7,16 @@
 # same names/values as GitHub Actions secrets (see FIX.md and the workflow file).
 #
 # File format (one KEY=value per line, # comments and blank lines allowed):
-#   ANDROID_KEYSTORE_BASE64=<base64 -w0 of your .keystore / .p12 / .jks>
 #   KEYSTORE_PASSWORD=...
 #   KEY_PASSWORD=...          # optional; defaults to KEYSTORE_PASSWORD
 #   KEY_ALIAS=...             # optional; defaults to pocketweibo
+#   ANDROID_KEYSTORE_BASE64_FILE=path   # optional; path to raw base64 (relative to repo root if not absolute)
+#
+# Keystore base64 (same as GitHub secret ANDROID_KEYSTORE_BASE64), in order of precedence:
+#   1) ANDROID_KEYSTORE_BASE64_FILE=... in the secrets file
+#   2) Companion file: same path as the secrets file but suffix .ANDROID_KEYSTORE_BASE64
+#      e.g. github-keystore-secrets.local.txt → github-keystore-secrets.local.ANDROID_KEYSTORE_BASE64
+#   3) ANDROID_KEYSTORE_BASE64=... inline in the secrets file (single line)
 #
 # After build: renames the APK to pocketweibo-v<versionName>-<versionCode>-local-<timestamp>.apk
 # in the repo root.
@@ -46,8 +52,8 @@ Options:
   --secrets-file F    Path to secrets file (default: ${SECRETS_FILE}).
   -h, --help          Show this help.
 
-Requires: ${SECRETS_FILE} with ANDROID_KEYSTORE_BASE64 + KEYSTORE_PASSWORD; JDK 17; Android SDK.
-Copy step uses plain cp (destination must exist or be creatable with mkdir -p).
+Requires: ${SECRETS_FILE} with KEYSTORE_PASSWORD and keystore base64 via companion file, ANDROID_KEYSTORE_BASE64_FILE, or inline ANDROID_KEYSTORE_BASE64; JDK 17; Android SDK.
+Copy: POSIX order cp SOURCE DEST (APK first, destination path second).
 See: .github/workflows/build-apk.yml, FIX.md
 EOF
 }
@@ -83,10 +89,11 @@ ok() { echo "[OK] $*"; }
 fail() { echo "[FAIL] $*" >&2; exit 1; }
 
 # Parse KEY=value secrets file (first '=' separates key from value; value may contain '=').
-# Sets: ANDROID_KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS (last wins if duplicated).
+# Sets: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_BASE64_FILE, KEYSTORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS.
 load_github_secrets() {
   local f="$1"
   ANDROID_KEYSTORE_BASE64=""
+  ANDROID_KEYSTORE_BASE64_FILE=""
   KEYSTORE_PASSWORD=""
   KEY_PASSWORD=""
   KEY_ALIAS=""
@@ -103,11 +110,30 @@ load_github_secrets() {
     key="${key%"${key##*[![:space:]]}"}"
     case "$key" in
       ANDROID_KEYSTORE_BASE64) ANDROID_KEYSTORE_BASE64="$val" ;;
+      ANDROID_KEYSTORE_BASE64_FILE) ANDROID_KEYSTORE_BASE64_FILE="$val" ;;
       KEYSTORE_PASSWORD) KEYSTORE_PASSWORD="$val" ;;
       KEY_PASSWORD) KEY_PASSWORD="$val" ;;
       KEY_ALIAS) KEY_ALIAS="$val" ;;
     esac
   done < "$f"
+}
+
+# Fill ANDROID_KEYSTORE_BASE64 from ANDROID_KEYSTORE_BASE64_FILE, companion file, or leave inline value.
+resolve_keystore_base64() {
+  local secrets="$1"
+  local stem="$secrets"
+  [[ "$stem" == *.txt ]] && stem="${stem%.txt}"
+  local sibling="${stem}.ANDROID_KEYSTORE_BASE64"
+  if [ -n "${ANDROID_KEYSTORE_BASE64_FILE:-}" ]; then
+    local p="$ANDROID_KEYSTORE_BASE64_FILE"
+    [[ "$p" != /* ]] && p="$ROOT/$p"
+    [ -f "$p" ] || fail "ANDROID_KEYSTORE_BASE64_FILE not found: $p"
+    ANDROID_KEYSTORE_BASE64=$(tr -d '\n\r' <"$p")
+    ok "Loaded keystore base64 from ANDROID_KEYSTORE_BASE64_FILE: $p"
+  elif [ -f "$sibling" ]; then
+    ANDROID_KEYSTORE_BASE64=$(tr -d '\n\r' <"$sibling")
+    ok "Loaded keystore base64 from companion file: $sibling"
+  fi
 }
 
 # --- 1) Version from Gradle (same sed as CI) ---
@@ -120,8 +146,11 @@ ok "App version from Gradle: versionName=$VN versionCode=$VC"
 
 # --- 2) Signing from github-keystore-secrets.local.txt (same as CI) ---
 load_github_secrets "$SECRETS_FILE"
+resolve_keystore_base64 "$SECRETS_FILE"
 if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
-  fail "Missing ANDROID_KEYSTORE_BASE64 in $SECRETS_FILE (same as GitHub secret; see FIX.md)"
+  _stem="$SECRETS_FILE"
+  [[ "$_stem" == *.txt ]] && _stem="${_stem%.txt}"
+  fail "No keystore base64: set ANDROID_KEYSTORE_BASE64 in $SECRETS_FILE, or ANDROID_KEYSTORE_BASE64_FILE=..., or create companion ${_stem}.ANDROID_KEYSTORE_BASE64 (see FIX.md)"
 fi
 if [ -z "$KEYSTORE_PASSWORD" ]; then
   fail "Missing KEYSTORE_PASSWORD in $SECRETS_FILE"
@@ -178,11 +207,11 @@ DEST="$ROOT/$DEST_NAME"
 mv "$SRC" "$DEST"
 ok "Renamed to $DEST"
 
-# --- 6) Optional local copy (cp only; no adb) ---
+# --- 6) Optional local copy (cp only; no adb). POSIX: cp SOURCE DEST — source first, destination second.
 if [ "$DO_COPY" = true ]; then
   mkdir -p "$COPY_DEST" || fail "mkdir -p failed: $COPY_DEST"
   COPY_PATH="${COPY_DEST%/}/$DEST_NAME"
-  echo "[..] cp \"$DEST\" \"$COPY_PATH\""
+  echo "[..] cp SOURCE DEST  →  cp \"$DEST\" \"$COPY_PATH\""
   if cp "$DEST" "$COPY_PATH"; then
     ok "Copied with cp to: $COPY_PATH"
   else

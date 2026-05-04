@@ -11,5 +11,6 @@ ci-release.keystore
 pocket-weibo-github-release.keystore
 ANDROID_KEYSTORE_BASE64.local.txt
 github-keystore-secrets.local.txt
+github-keystore-secrets.local.ANDROID_KEYSTORE_BASE64
 *.jks
 .DS_Store

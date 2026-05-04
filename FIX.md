@@ -72,8 +72,8 @@ base64 -w0 pocket-weibo-release.keystore   # paste value into ANDROID_KEYSTORE_B
 
 ### Local signed APK (same inputs as CI)
 
-Create **`github-keystore-secrets.local.txt`** at the repo root (gitignored) with the same keys as the table above (`ANDROID_KEYSTORE_BASE64` as a **single line**, `KEYSTORE_PASSWORD`, optional `KEY_PASSWORD` / `KEY_ALIAS`). See **`github-keystore-secrets.local.txt.example`**.
+Create **`github-keystore-secrets.local.txt`** at the repo root (gitignored) with at least **`KEYSTORE_PASSWORD`** (and optional `KEY_PASSWORD` / `KEY_ALIAS`). For **`ANDROID_KEYSTORE_BASE64`**, use any one of: a **companion file** `github-keystore-secrets.local.ANDROID_KEYSTORE_BASE64` (same prefix as the `.txt`, gitignored), or **`ANDROID_KEYSTORE_BASE64_FILE=path`** to a base64-only file under the repo, or an inline **`ANDROID_KEYSTORE_BASE64=`** single line. See **`github-keystore-secrets.local.txt.example`**.
 
-Then run **`scripts/build-pocketweibo-release.sh`**: it decodes the keystore to `ci-release.keystore`, writes `keystore.properties`, runs `./gradlew assembleRelease`, renames the APK under the repo root, and optionally **`cp`** copies it (default directory `/storage/emulated/0/Download`; use `--no-copy` to skip).
+Then run **`scripts/build-pocketweibo-release.sh`**: it decodes the keystore to `ci-release.keystore`, writes `keystore.properties`, runs `./gradlew assembleRelease`, renames the APK under the repo root, and optionally runs **`cp SOURCE DEST`** (APK path first, destination second) into `/storage/emulated/0/Download` by default (`--no-copy` to skip).
 
 - If a change is **reverted** or **superseded**, add a short note in the ledger row or a new row pointing to the follow-up fix.
