@@ -50,6 +50,16 @@
     <string name="settings_language_zh">简体中文</string>
     <string name="settings_language_en">English</string>
 
+    <string name="settings_diagnostic_section">诊断日志</string>
+    <string name="settings_diagnostic_subtitle">开启后将提醒等相关日志写入内存；可随时导出为文本文件分析。关闭或清空后不再累积；进程重启后缓冲清空。</string>
+    <string name="settings_diagnostic_capture_label">记录到内存</string>
+    <string name="settings_diagnostic_export">导出日志</string>
+    <string name="settings_diagnostic_clear">清空缓冲</string>
+    <string name="settings_diagnostic_share_title">分享诊断日志</string>
+    <string name="settings_diagnostic_buffer_empty">（尚无已记录行：请先开启「记录到内存」并复现问题后再导出。）</string>
+    <string name="settings_diagnostic_toast_exported">已生成日志文件</string>
+    <string name="settings_diagnostic_toast_cleared">已清空诊断缓冲</string>
+
     <string name="about_title">关于本软件</string>
     <string name="about_app_line">PocketWeibo（口袋微博）</string>
     <string name="about_version_unknown">版本未知</string>

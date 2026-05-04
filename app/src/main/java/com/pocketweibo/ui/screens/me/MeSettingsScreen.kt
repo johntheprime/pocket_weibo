@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,6 +51,8 @@ import androidx.core.content.FileProvider
 import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.prefs.UiPreferences
+import com.pocketweibo.diagnostic.DiagnosticLog
+import com.pocketweibo.diagnostic.DiagnosticLogBuffer
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
@@ -118,6 +121,10 @@ fun MeSettingsScreen(
                 LanguagePreferenceSection(
                     onApplied = { context.findActivity()?.recreate() }
                 )
+            }
+            item {
+                Divider()
+                DiagnosticLogSection()
             }
             item {
                 Divider()
@@ -224,6 +231,163 @@ fun MeSettingsScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun DiagnosticLogSection() {
+    val context = LocalContext.current
+    val appCtx = context.applicationContext
+    val scope = rememberCoroutineScope()
+    var captureOn by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        captureOn = UiPreferences.isDiagnosticLogCaptureEnabled(appCtx)
+        DiagnosticLogBuffer.captureEnabled = captureOn
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.settings_diagnostic_section),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = GrayDark
+            )
+            Text(
+                text = stringResource(R.string.settings_diagnostic_subtitle),
+                fontSize = 13.sp,
+                color = GrayMiddle,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_diagnostic_capture_label),
+                    fontSize = 15.sp,
+                    color = GrayDark,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = captureOn,
+                    onCheckedChange = { v ->
+                        scope.launch {
+                            UiPreferences.setDiagnosticLogCaptureEnabled(appCtx, v)
+                            DiagnosticLogBuffer.captureEnabled = v
+                            captureOn = v
+                            if (v) {
+                                DiagnosticLog.i("PW_Reminder", "Diagnostic in-memory capture enabled (settings)")
+                            }
+                        }
+                    }
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            val file = withContext(Dispatchers.IO) {
+                                val header = buildDiagnosticLogHeader(context)
+                                val lines = DiagnosticLogBuffer.dumpLines()
+                                val body = if (lines.isEmpty()) {
+                                    context.getString(R.string.settings_diagnostic_buffer_empty)
+                                } else {
+                                    lines.joinToString("\n")
+                                }
+                                val f = File(
+                                    context.cacheDir,
+                                    "pocket_weibo_diag_${System.currentTimeMillis()}.txt"
+                                )
+                                f.writeText(header + body + "\n")
+                                f
+                            }
+                            val uri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.provider",
+                                file
+                            )
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(
+                                Intent.createChooser(
+                                    shareIntent,
+                                    context.getString(R.string.settings_diagnostic_share_title)
+                                )
+                            )
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.settings_diagnostic_toast_exported),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                ) {
+                    Text(
+                        stringResource(R.string.settings_diagnostic_export),
+                        color = WeiboOrange
+                    )
+                }
+                TextButton(
+                    onClick = {
+                        DiagnosticLogBuffer.clear()
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.settings_diagnostic_toast_cleared),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                ) {
+                    Text(
+                        stringResource(R.string.settings_diagnostic_clear),
+                        color = GrayMiddle
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun buildDiagnosticLogHeader(context: android.content.Context): String {
+    val versionLine = runCatching {
+        @Suppress("DEPRECATION")
+        val pinfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        val name = pinfo.versionName ?: ""
+        val code = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            pinfo.longVersionCode.toString()
+        } else {
+            @Suppress("DEPRECATION")
+            pinfo.versionCode.toString()
+        }
+        context.getString(R.string.about_version_format, name, code)
+    }.getOrElse { context.getString(R.string.about_version_unknown) }
+    val device =
+        "${Build.MANUFACTURER.orEmpty()} ${Build.MODEL} (Android ${Build.VERSION.SDK_INT})".trim()
+    return buildString {
+        appendLine("PocketWeibo diagnostic log")
+        appendLine(versionLine)
+        appendLine(device)
+        appendLine("bufferLines=${DiagnosticLogBuffer.lineCount()}")
+        appendLine("---")
+        appendLine()
     }
 }
 

@@ -4,7 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.util.Log
+import com.pocketweibo.diagnostic.DiagnosticLog
 
 object PostReminderAlarmScheduler {
 
@@ -38,7 +38,7 @@ object PostReminderAlarmScheduler {
             showIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        Log.d(
+        DiagnosticLog.d(
             TAG,
             "schedule alarm reminderDbId=$reminderDbId postId=$postId fireAtMillis=$fireAtMillis deltaMs=${fireAtMillis - System.currentTimeMillis()}"
         )
@@ -60,6 +60,6 @@ object PostReminderAlarmScheduler {
         val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         am.cancel(pi)
         pi.cancel()
-        Log.d(TAG, "cancel alarm reminderDbId=$reminderDbId postId=$postId")
+        DiagnosticLog.d(TAG, "cancel alarm reminderDbId=$reminderDbId postId=$postId")
     }
 }

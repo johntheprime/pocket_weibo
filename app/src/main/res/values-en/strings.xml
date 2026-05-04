@@ -50,6 +50,16 @@
     <string name="settings_language_zh">简体中文</string>
     <string name="settings_language_en">English</string>
 
+    <string name="settings_diagnostic_section">Diagnostic log</string>
+    <string name="settings_diagnostic_subtitle">When enabled, reminder-related diagnostics are kept in memory; export as a text file anytime. Turning off or clearing stops accumulation; the buffer is empty after a process restart.</string>
+    <string name="settings_diagnostic_capture_label">Capture to memory</string>
+    <string name="settings_diagnostic_export">Export log</string>
+    <string name="settings_diagnostic_clear">Clear buffer</string>
+    <string name="settings_diagnostic_share_title">Share diagnostic log</string>
+    <string name="settings_diagnostic_buffer_empty">(No lines yet — turn on “Capture to memory”, reproduce the issue, then export.)</string>
+    <string name="settings_diagnostic_toast_exported">Log file ready</string>
+    <string name="settings_diagnostic_toast_cleared">Diagnostic buffer cleared</string>
+
     <string name="about_title">About</string>
     <string name="about_app_line">PocketWeibo</string>
     <string name="about_version_unknown">Version unknown</string>

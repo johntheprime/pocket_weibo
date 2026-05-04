@@ -8,6 +8,7 @@ import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.repository.WeiboRepository
+import com.pocketweibo.diagnostic.DiagnosticLog
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -82,7 +83,12 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
     fun scheduleReminderAfterMinutes(minutes: Long) {
         val p = _post.value ?: return
         viewModelScope.launch {
-            repository.schedulePostReminder(p.id, System.currentTimeMillis() + minutes * 60_000L)
+            val fireAt = System.currentTimeMillis() + minutes * 60_000L
+            DiagnosticLog.d(
+                "PW_Reminder",
+                "UI schedule postId=${p.id} minutes=$minutes fireAtMillis=$fireAt"
+            )
+            repository.schedulePostReminder(p.id, fireAt)
         }
     }
 

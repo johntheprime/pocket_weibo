@@ -7,9 +7,18 @@ import android.os.Build
 import com.pocketweibo.R
 import com.pocketweibo.data.DataSeeder
 import com.pocketweibo.data.local.AppDatabase
+import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.data.repository.WeiboRepository
+import com.pocketweibo.diagnostic.DiagnosticLog
+import com.pocketweibo.diagnostic.DiagnosticLogBuffer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class PocketWeiboApp : Application() {
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     val database by lazy { AppDatabase.getDatabase(this) }
     val repository by lazy {
         WeiboRepository(
@@ -37,6 +46,13 @@ class PocketWeiboApp : Application() {
     override fun onCreate() {
         super.onCreate()
         ensureReminderChannel()
+        applicationScope.launch {
+            val on = UiPreferences.isDiagnosticLogCaptureEnabled(this@PocketWeiboApp)
+            DiagnosticLogBuffer.captureEnabled = on
+            if (on) {
+                DiagnosticLog.i("PW_Reminder", "Diagnostic capture restored on app start (buffer was empty until new events)")
+            }
+        }
         DataSeeder.seedIfEmpty(repository)
     }
 

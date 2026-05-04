@@ -2,7 +2,7 @@ package com.pocketweibo.data.repository
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
+import com.pocketweibo.diagnostic.DiagnosticLog
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -131,7 +131,7 @@ class WeiboRepository(
             val rowId = postReminderDao.insert(
                 PostReminderEntity(postId = postId, fireAtMillis = fireAtMillis)
             )
-            Log.d(
+            DiagnosticLog.d(
                 REMINDER_LOG_TAG,
                 "DB insert reminder rowId=$rowId postId=$postId fireAtMillis=$fireAtMillis"
             )
