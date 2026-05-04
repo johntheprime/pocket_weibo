@@ -27,9 +27,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -140,6 +143,8 @@ private fun ZoomableImagePage(
     val context = LocalContext.current
     var scale by remember(resetKey) { mutableFloatStateOf(1f) }
     var offset by remember(resetKey) { mutableStateOf(Offset.Zero) }
+    var layoutSize by remember(resetKey) { mutableStateOf(IntSize.Zero) }
+    var transformOrigin by remember(resetKey) { mutableStateOf(TransformOrigin.Center) }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -154,7 +159,9 @@ private fun ZoomableImagePage(
             contentScale = ContentScale.Fit,
             modifier = Modifier
                 .fillMaxSize()
+                .onSizeChanged { layoutSize = it }
                 .graphicsLayer(
+                    transformOrigin = transformOrigin,
                     scaleX = scale,
                     scaleY = scale,
                     translationX = offset.x,
@@ -162,18 +169,34 @@ private fun ZoomableImagePage(
                 )
                 .pointerInput(resetKey) {
                     detectTransformGestures { _, pan, zoom, _ ->
+                        val prev = scale
                         scale = (scale * zoom).coerceIn(1f, 5f)
+                        if (prev > 1.05f && scale <= 1.05f) {
+                            transformOrigin = TransformOrigin.Center
+                        }
                         offset += pan
                     }
                 }
-                .pointerInput(resetKey) {
+                .pointerInput(resetKey, layoutSize) {
                     detectTapGestures(
                         onTap = { onDismiss() },
-                        onDoubleTap = {
+                        onDoubleTap = { tapOffset ->
                             if (scale > 1.05f) {
                                 scale = 1f
                                 offset = Offset.Zero
+                                transformOrigin = TransformOrigin.Center
                             } else {
+                                transformOrigin =
+                                    if (layoutSize.width > 0 && layoutSize.height > 0) {
+                                        TransformOrigin(
+                                            pivotFractionX = (tapOffset.x / layoutSize.width)
+                                                .coerceIn(0.0001f, 0.9999f),
+                                            pivotFractionY = (tapOffset.y / layoutSize.height)
+                                                .coerceIn(0.0001f, 0.9999f)
+                                        )
+                                    } else {
+                                        TransformOrigin.Center
+                                    }
                                 scale = DoubleTapZoomScale
                                 offset = Offset.Zero
                             }
