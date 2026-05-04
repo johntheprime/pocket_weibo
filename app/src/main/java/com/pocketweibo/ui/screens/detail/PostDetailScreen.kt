@@ -21,9 +21,11 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -393,8 +395,12 @@ private fun PostDetailCard(
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showRemindPicker by remember { mutableStateOf(false) }
     var repeatRule by remember { mutableStateOf(ReminderRepeatRule.NONE) }
+    var showRepeatOptions by remember { mutableStateOf(false) }
     LaunchedEffect(showRemindPicker) {
-        if (showRemindPicker) repeatRule = ReminderRepeatRule.NONE
+        if (showRemindPicker) {
+            repeatRule = ReminderRepeatRule.NONE
+            showRepeatOptions = false
+        }
     }
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -579,6 +585,8 @@ private fun PostDetailCard(
                         Column(
                             modifier = Modifier.verticalScroll(rememberScrollState())
                         ) {
+                            val effectiveRepeat =
+                                if (showRepeatOptions) repeatRule else ReminderRepeatRule.NONE
                             Text(
                                 text = stringResource(R.string.post_detail_remind_hint_system),
                                 style = MaterialTheme.typography.bodySmall,
@@ -614,143 +622,161 @@ private fun PostDetailCard(
                                     )
                                 }
                             }
-                            Text(
-                                text = stringResource(R.string.post_detail_remind_repeat_label),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = GrayDark,
-                                modifier = Modifier.padding(top = 12.dp)
-                            )
+                            TextButton(
+                                onClick = { showRepeatOptions = !showRepeatOptions },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(
+                                        if (showRepeatOptions) {
+                                            R.string.post_detail_remind_repeat_hide
+                                        } else {
+                                            R.string.post_detail_remind_repeat_show
+                                        }
+                                    ),
+                                    color = WeiboOrange
+                                )
+                            }
+                            if (showRepeatOptions) {
+                                Text(
+                                    text = stringResource(R.string.post_detail_remind_repeat_label),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = GrayDark,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 6.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    FilterChip(
+                                        selected = repeatRule == ReminderRepeatRule.NONE,
+                                        onClick = { repeatRule = ReminderRepeatRule.NONE },
+                                        label = { Text(stringResource(R.string.reminder_repeat_once)) }
+                                    )
+                                    FilterChip(
+                                        selected = repeatRule == ReminderRepeatRule.DAILY,
+                                        onClick = { repeatRule = ReminderRepeatRule.DAILY },
+                                        label = { Text(stringResource(R.string.reminder_repeat_daily)) }
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    FilterChip(
+                                        selected = repeatRule == ReminderRepeatRule.WEEKLY,
+                                        onClick = { repeatRule = ReminderRepeatRule.WEEKLY },
+                                        label = { Text(stringResource(R.string.reminder_repeat_weekly)) }
+                                    )
+                                    FilterChip(
+                                        selected = repeatRule == ReminderRepeatRule.MONTHLY,
+                                        onClick = { repeatRule = ReminderRepeatRule.MONTHLY },
+                                        label = { Text(stringResource(R.string.reminder_repeat_monthly)) }
+                                    )
+                                }
+                            }
+                            val presetScroll = rememberScrollState()
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 6.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                FilterChip(
-                                    selected = repeatRule == ReminderRepeatRule.NONE,
-                                    onClick = { repeatRule = ReminderRepeatRule.NONE },
-                                    label = { Text(stringResource(R.string.reminder_repeat_once)) }
-                                )
-                                FilterChip(
-                                    selected = repeatRule == ReminderRepeatRule.DAILY,
-                                    onClick = { repeatRule = ReminderRepeatRule.DAILY },
-                                    label = { Text(stringResource(R.string.reminder_repeat_daily)) }
-                                )
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 4.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                FilterChip(
-                                    selected = repeatRule == ReminderRepeatRule.WEEKLY,
-                                    onClick = { repeatRule = ReminderRepeatRule.WEEKLY },
-                                    label = { Text(stringResource(R.string.reminder_repeat_weekly)) }
-                                )
-                                FilterChip(
-                                    selected = repeatRule == ReminderRepeatRule.MONTHLY,
-                                    onClick = { repeatRule = ReminderRepeatRule.MONTHLY },
-                                    label = { Text(stringResource(R.string.reminder_repeat_monthly)) }
-                                )
-                            }
-                            Spacer(modifier = Modifier.padding(top = 8.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                    .padding(top = 10.dp)
+                                    .horizontalScroll(presetScroll),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 OutlinedButton(
-                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                                     onClick = {
                                         showRemindPicker = false
                                         onScheduleReminderAt(
                                             System.currentTimeMillis() + 15 * 60_000L,
-                                            repeatRule
+                                            effectiveRepeat
                                         )
                                     }
                                 ) {
                                     Text(
                                         stringResource(R.string.post_detail_remind_chip_15m),
-                                        fontSize = 13.sp,
+                                        fontSize = 12.sp,
                                         maxLines = 1
                                     )
                                 }
                                 OutlinedButton(
-                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                                     onClick = {
                                         showRemindPicker = false
                                         onScheduleReminderAt(
                                             System.currentTimeMillis() + 30 * 60_000L,
-                                            repeatRule
+                                            effectiveRepeat
                                         )
                                     }
                                 ) {
                                     Text(
                                         stringResource(R.string.post_detail_remind_chip_30m),
-                                        fontSize = 13.sp,
+                                        fontSize = 12.sp,
                                         maxLines = 1
                                     )
                                 }
                                 OutlinedButton(
-                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                                     onClick = {
                                         showRemindPicker = false
                                         onScheduleReminderAt(
                                             System.currentTimeMillis() + 60 * 60_000L,
-                                            repeatRule
+                                            effectiveRepeat
                                         )
                                     }
                                 ) {
                                     Text(
                                         stringResource(R.string.post_detail_remind_chip_1h),
-                                        fontSize = 13.sp,
+                                        fontSize = 12.sp,
                                         maxLines = 1
                                     )
                                 }
-                            }
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
                                 OutlinedButton(
-                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                                     onClick = {
                                         showRemindPicker = false
                                         onScheduleReminderAt(
                                             System.currentTimeMillis() + 3 * 60 * 60_000L,
-                                            repeatRule
+                                            effectiveRepeat
                                         )
                                     }
                                 ) {
                                     Text(
                                         stringResource(R.string.post_detail_remind_chip_3h),
-                                        fontSize = 13.sp,
+                                        fontSize = 12.sp,
                                         maxLines = 1
                                     )
                                 }
                                 OutlinedButton(
-                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                                     onClick = {
                                         showRemindPicker = false
                                         onScheduleReminderAt(
                                             System.currentTimeMillis() + 6 * 60 * 60_000L,
-                                            repeatRule
+                                            effectiveRepeat
                                         )
                                     }
                                 ) {
                                     Text(
                                         stringResource(R.string.post_detail_remind_chip_6h),
-                                        fontSize = 13.sp,
+                                        fontSize = 12.sp,
                                         maxLines = 1
                                     )
                                 }
                                 OutlinedButton(
-                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                                     onClick = {
                                         showRemindPicker = false
-                                        onScheduleReminderAt(millisTomorrowAt(9, 0), repeatRule)
+                                        onScheduleReminderAt(
+                                            millisTomorrowAt(9, 0),
+                                            effectiveRepeat
+                                        )
                                     }
                                 ) {
                                     Text(
@@ -764,7 +790,7 @@ private fun PostDetailCard(
                                 onClick = {
                                     showRemindPicker = false
                                     showReminderDateTimePicker(context) { ms ->
-                                        onScheduleReminderAt(ms, repeatRule)
+                                        onScheduleReminderAt(ms, effectiveRepeat)
                                     }
                                 },
                                 modifier = Modifier

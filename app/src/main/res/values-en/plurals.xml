@@ -5,15 +5,15 @@
         <item quantity="other">%d minutes</item>
     </plurals>
     <plurals name="post_detail_remind_hours">
-        <item quantity="one">%d hour</item>
-        <item quantity="other">%d hours</item>
+        <item quantity="one">%dh</item>
+        <item quantity="other">%dh</item>
     </plurals>
     <plurals name="reminder_in_minutes_future">
         <item quantity="one">In %d minute</item>
         <item quantity="other">In %d minutes</item>
     </plurals>
     <plurals name="reminder_in_hours_future">
-        <item quantity="one">In %d hour</item>
-        <item quantity="other">In %d hours</item>
+        <item quantity="one">In %dh</item>
+        <item quantity="other">In %dh</item>
     </plurals>
 </resources>

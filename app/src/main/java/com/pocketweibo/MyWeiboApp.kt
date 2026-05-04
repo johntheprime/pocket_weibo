@@ -47,19 +47,19 @@ class PocketWeiboApp : Application() {
     override fun onCreate() {
         super.onCreate()
         ensureReminderChannel()
-        // DataStore is async; scheduling can run on IO right after start — restore capture synchronously
-        // so DiagnosticLog lines are not dropped while the user believes capture is on.
+        // Restore diagnostic flag and alarm registrations on IO before any BroadcastReceiver runs
+        // (avoids racing overdue recovery with an in-flight alarm delivery).
         runBlocking(Dispatchers.IO) {
             DiagnosticLogBuffer.captureEnabled =
                 UiPreferences.isDiagnosticLogCaptureEnabled(this@PocketWeiboApp)
+            repository.rescheduleAllPostRemindersFromDb()
         }
         if (DiagnosticLogBuffer.captureEnabled) {
             DiagnosticLog.i("PW_Reminder", "Diagnostic capture on at process start")
         }
         applicationScope.launch(Dispatchers.IO) {
-            repository.rescheduleAllPostRemindersFromDb()
+            DataSeeder.seedIfEmpty(repository)
         }
-        DataSeeder.seedIfEmpty(repository)
     }
 
     private fun ensureReminderChannel() {

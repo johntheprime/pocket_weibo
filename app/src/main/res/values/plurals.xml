@@ -4,12 +4,12 @@
         <item quantity="other">%d 分钟</item>
     </plurals>
     <plurals name="post_detail_remind_hours">
-        <item quantity="other">%d 小时</item>
+        <item quantity="other">%d 时</item>
     </plurals>
     <plurals name="reminder_in_minutes_future">
         <item quantity="other">%d 分钟后</item>
     </plurals>
     <plurals name="reminder_in_hours_future">
-        <item quantity="other">%d 小时后</item>
+        <item quantity="other">%d 时后</item>
     </plurals>
 </resources>
