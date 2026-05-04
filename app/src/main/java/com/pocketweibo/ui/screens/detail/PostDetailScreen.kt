@@ -4,9 +4,16 @@ import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.app.AlarmManager
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
+import android.text.format.DateFormat
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,12 +28,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +53,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -61,7 +70,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -80,25 +88,54 @@ import com.pocketweibo.ui.components.SelectablePostBody
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
+import com.pocketweibo.ui.util.findActivity
 import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import java.util.Calendar
 
-private const val REMINDER_STEP_MINUTES = 30
-private const val REMINDER_MAX_STEPS = 48
+private fun millisTomorrowAt(hour: Int, minute: Int): Long {
+    val cal = Calendar.getInstance()
+    cal.add(Calendar.DAY_OF_MONTH, 1)
+    cal.set(Calendar.HOUR_OF_DAY, hour)
+    cal.set(Calendar.MINUTE, minute)
+    cal.set(Calendar.SECOND, 0)
+    cal.set(Calendar.MILLISECOND, 0)
+    return cal.timeInMillis
+}
 
-@Composable
-private fun remindDelayLabel(totalMinutes: Int): String {
-    val h = totalMinutes / 60
-    val m = totalMinutes % 60
-    return when {
-        h == 0 -> pluralStringResource(R.plurals.post_detail_remind_minutes, m, m)
-        m == 0 -> pluralStringResource(R.plurals.post_detail_remind_hours, h, h)
-        else -> stringResource(R.string.post_detail_remind_mixed, h, m)
-    }
+private fun showReminderDateTimePicker(context: Context, onChosen: (Long) -> Unit) {
+    val activity = context.findActivity() ?: return
+    val now = Calendar.getInstance()
+    DatePickerDialog(
+        activity,
+        { _, year, month, dayOfMonth ->
+            TimePickerDialog(
+                activity,
+                { _, hourOfDay, minute ->
+                    val cal = Calendar.getInstance().apply {
+                        set(Calendar.YEAR, year)
+                        set(Calendar.MONTH, month)
+                        set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                        set(Calendar.HOUR_OF_DAY, hourOfDay)
+                        set(Calendar.MINUTE, minute)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    onChosen(cal.timeInMillis)
+                },
+                now.get(Calendar.HOUR_OF_DAY),
+                now.get(Calendar.MINUTE),
+                DateFormat.is24HourFormat(activity)
+            ).show()
+        },
+        now.get(Calendar.YEAR),
+        now.get(Calendar.MONTH),
+        now.get(Calendar.DAY_OF_MONTH)
+    ).show()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -113,14 +150,14 @@ fun PostDetailScreen(
     val app = context.applicationContext as PocketWeiboApp
     val viewModel: PostDetailViewModel = viewModel(factory = PostDetailViewModel.Factory(app.repository))
 
-    var pendingRemindMinutes by remember { mutableStateOf<Long?>(null) }
+    var pendingScheduleFireAt by remember { mutableStateOf<Long?>(null) }
     val notifyPermLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
-        val pending = pendingRemindMinutes
-        pendingRemindMinutes = null
+        val pending = pendingScheduleFireAt
+        pendingScheduleFireAt = null
         if (granted && pending != null) {
-            viewModel.scheduleReminderAfterMinutes(pending)
+            viewModel.scheduleReminderAt(pending)
             Toast.makeText(
                 context,
                 context.getString(R.string.reminder_scheduled_toast),
@@ -135,29 +172,51 @@ fun PostDetailScreen(
         }
     }
 
-    val scheduleReminder: (Long) -> Unit = { minutes ->
-        if (Build.VERSION.SDK_INT >= 33) {
-            val ok = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED
-            if (!ok) {
-                pendingRemindMinutes = minutes
-                notifyPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            } else {
-                viewModel.scheduleReminderAfterMinutes(minutes)
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.reminder_scheduled_toast),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+    val scheduleReminderAt: (Long) -> Unit = { fireAt ->
+        if (fireAt <= System.currentTimeMillis() + 5000L) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.post_detail_remind_time_past),
+                Toast.LENGTH_SHORT
+            ).show()
+        } else if (
+            Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingScheduleFireAt = fireAt
+            notifyPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
-            viewModel.scheduleReminderAfterMinutes(minutes)
+            viewModel.scheduleReminderAt(fireAt)
             Toast.makeText(
                 context,
                 context.getString(R.string.reminder_scheduled_toast),
                 Toast.LENGTH_SHORT
             ).show()
         }
+    }
+
+    val openExactAlarmSettings: () -> Unit = {
+        if (Build.VERSION.SDK_INT >= 31) {
+            runCatching {
+                context.startActivity(
+                    Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                )
+            }
+        }
+    }
+    val openAppDetailsSettings: () -> Unit = {
+        context.startActivity(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
     }
 
     LaunchedEffect(postId) { viewModel.loadPost(postId) }
@@ -269,7 +328,9 @@ fun PostDetailScreen(
                             )
                         },
                         onDeletePost = { viewModel.deletePost(onBack) },
-                        onRemindAfterMinutes = scheduleReminder
+                        onScheduleReminderAt = scheduleReminderAt,
+                        onOpenExactAlarmSettings = openExactAlarmSettings,
+                        onOpenAppDetailsSettings = openAppDetailsSettings
                     )
                 }
 
@@ -313,7 +374,9 @@ private fun PostDetailCard(
     onPostImageClick: (Int) -> Unit,
     onCopyPost: () -> Unit,
     onDeletePost: () -> Unit,
-    onRemindAfterMinutes: (Long) -> Unit
+    onScheduleReminderAt: (Long) -> Unit,
+    onOpenExactAlarmSettings: () -> Unit,
+    onOpenAppDetailsSettings: () -> Unit
 ) {
     val context = LocalContext.current
     val resources = context.resources
@@ -496,59 +559,157 @@ private fun PostDetailCard(
                 )
             }
             if (showRemindPicker) {
+                val canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+                    (context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager)
+                        ?.canScheduleExactAlarms() == true
+                val ignoringBattery = Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+                    (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)
+                        ?.isIgnoringBatteryOptimizations(context.packageName) == true
                 AlertDialog(
                     onDismissRequest = { showRemindPicker = false },
                     title = { Text(stringResource(R.string.post_detail_remind_title)) },
                     text = {
-                        Column {
+                        Column(
+                            modifier = Modifier.verticalScroll(rememberScrollState())
+                        ) {
                             Text(
-                                text = stringResource(R.string.post_detail_remind_steps_hint),
+                                text = stringResource(R.string.post_detail_remind_hint_system),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = GrayMiddle,
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                color = GrayMiddle
                             )
-                            TextButton(
-                                onClick = {
-                                    showRemindPicker = false
-                                    onRemindAfterMinutes(3L)
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.post_detail_remind_3m),
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                            TextButton(
-                                onClick = {
-                                    showRemindPicker = false
-                                    onRemindAfterMinutes(15L)
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.post_detail_remind_15m),
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
-                            LazyColumn(
-                                modifier = Modifier.heightIn(max = 320.dp)
-                            ) {
-                                items(REMINDER_MAX_STEPS) { idx ->
-                                    val mins = (idx + 1) * REMINDER_STEP_MINUTES
-                                    TextButton(
-                                        onClick = {
-                                            showRemindPicker = false
-                                            onRemindAfterMinutes(mins.toLong())
-                                        },
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = remindDelayLabel(mins),
-                                            modifier = Modifier.fillMaxWidth()
-                                        )
-                                    }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !canExact) {
+                                TextButton(
+                                    onClick = onOpenExactAlarmSettings,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.post_detail_remind_open_exact_alarm),
+                                        color = WeiboOrange
+                                    )
                                 }
+                            }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !ignoringBattery) {
+                                Text(
+                                    text = stringResource(R.string.post_detail_remind_battery_hint),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = GrayMiddle,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                                TextButton(
+                                    onClick = onOpenAppDetailsSettings,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.post_detail_remind_open_app_settings),
+                                        color = WeiboOrange
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.padding(top = 8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        showRemindPicker = false
+                                        onScheduleReminderAt(System.currentTimeMillis() + 15 * 60_000L)
+                                    }
+                                ) {
+                                    Text(
+                                        stringResource(R.string.post_detail_remind_chip_15m),
+                                        fontSize = 13.sp,
+                                        maxLines = 1
+                                    )
+                                }
+                                OutlinedButton(
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        showRemindPicker = false
+                                        onScheduleReminderAt(System.currentTimeMillis() + 30 * 60_000L)
+                                    }
+                                ) {
+                                    Text(
+                                        stringResource(R.string.post_detail_remind_chip_30m),
+                                        fontSize = 13.sp,
+                                        maxLines = 1
+                                    )
+                                }
+                                OutlinedButton(
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        showRemindPicker = false
+                                        onScheduleReminderAt(System.currentTimeMillis() + 60 * 60_000L)
+                                    }
+                                ) {
+                                    Text(
+                                        stringResource(R.string.post_detail_remind_chip_1h),
+                                        fontSize = 13.sp,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        showRemindPicker = false
+                                        onScheduleReminderAt(System.currentTimeMillis() + 3 * 60 * 60_000L)
+                                    }
+                                ) {
+                                    Text(
+                                        stringResource(R.string.post_detail_remind_chip_3h),
+                                        fontSize = 13.sp,
+                                        maxLines = 1
+                                    )
+                                }
+                                OutlinedButton(
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        showRemindPicker = false
+                                        onScheduleReminderAt(System.currentTimeMillis() + 6 * 60 * 60_000L)
+                                    }
+                                ) {
+                                    Text(
+                                        stringResource(R.string.post_detail_remind_chip_6h),
+                                        fontSize = 13.sp,
+                                        maxLines = 1
+                                    )
+                                }
+                                OutlinedButton(
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        showRemindPicker = false
+                                        onScheduleReminderAt(millisTomorrowAt(9, 0))
+                                    }
+                                ) {
+                                    Text(
+                                        stringResource(R.string.post_detail_remind_chip_tomorrow_9),
+                                        fontSize = 12.sp,
+                                        maxLines = 2
+                                    )
+                                }
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    showRemindPicker = false
+                                    showReminderDateTimePicker(context) { ms ->
+                                        onScheduleReminderAt(ms)
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 10.dp)
+                            ) {
+                                Text(stringResource(R.string.post_detail_remind_pick_datetime))
                             }
                         }
                     },

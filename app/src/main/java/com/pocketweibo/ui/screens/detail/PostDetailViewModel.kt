@@ -80,15 +80,14 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
         }
     }
 
-    fun scheduleReminderAfterMinutes(minutes: Long) {
+    fun scheduleReminderAt(fireAtMillis: Long) {
         val p = _post.value ?: return
         viewModelScope.launch {
-            val fireAt = System.currentTimeMillis() + minutes * 60_000L
             DiagnosticLog.d(
                 "PW_Reminder",
-                "UI schedule postId=${p.id} minutes=$minutes fireAtMillis=$fireAt"
+                "UI schedule postId=${p.id} fireAtMillis=$fireAtMillis"
             )
-            repository.schedulePostReminder(p.id, fireAt)
+            repository.schedulePostReminder(p.id, fireAtMillis)
         }
     }
 
