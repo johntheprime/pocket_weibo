@@ -102,14 +102,24 @@ fun PostCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    
-                    Text(
-                        text = resources.formatRelativeTime(post.createdAt, RelativeTimePreset.FeedCard),
-                        fontSize = 11.sp,
-                        color = GrayMiddle,
-                        maxLines = 1,
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 2.dp)
-                    )
+                    ) {
+                        Text(
+                            text = resources.formatRelativeTime(post.createdAt, RelativeTimePreset.FeedCard),
+                            fontSize = 11.sp,
+                            color = GrayMiddle,
+                            maxLines = 1
+                        )
+                        if (!showPostImages && hasStoredImages) {
+                            ListPostImageIndicator(
+                                imageUris = post.imageUris,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -122,13 +132,6 @@ fun PostCard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 8.dp)
             )
-
-            if (!showPostImages && hasStoredImages) {
-                ListPostImageIndicator(
-                    imageUris = post.imageUris,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
-            }
 
             if (showPostImages && hasStoredImages) {
                 PostImageGallery(

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -341,12 +342,9 @@ private fun TrendingPostItem(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 4.dp)
                 )
-                ListPostImageIndicator(
-                    imageUris = post.imageUris,
-                    modifier = Modifier.padding(top = 6.dp)
-                )
                 Row(
                     modifier = Modifier.padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
@@ -359,6 +357,8 @@ private fun TrendingPostItem(
                         fontSize = 12.sp,
                         color = GrayMiddle
                     )
+                    Spacer(modifier = Modifier.weight(1f))
+                    ListPostImageIndicator(imageUris = post.imageUris)
                 }
             }
         }
@@ -518,12 +518,21 @@ private fun PostSearchItem(
                 avatarResName = post.identityAvatarResName
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = post.identityName,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = GrayDark
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = post.identityName,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GrayDark,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    ListPostImageIndicator(imageUris = post.imageUris)
+                }
                 Text(
                     text = post.content,
                     fontSize = 13.sp,
@@ -531,10 +540,6 @@ private fun PostSearchItem(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 4.dp)
-                )
-                ListPostImageIndicator(
-                    imageUris = post.imageUris,
-                    modifier = Modifier.padding(top = 6.dp)
                 )
             }
         }
