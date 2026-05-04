@@ -4,6 +4,25 @@ These rules apply whenever you ship a **new feature** or a **fix**. Keep the app
 
 ---
 
+## 0. Workflow for every request (fix, feature, or both)
+
+Treat **each** user request as one delivery unit. **Always** follow this sequence end to end; do not skip verification or logging.
+
+| Step | What to do |
+|------|------------|
+| **1. Plan** | Restate the goal, scope (files/areas), and risks. For multi-step work, use a **todo list** in the editor and keep it updated. |
+| **2. Implement** | Make the smallest change that satisfies the request; match existing patterns (`RULES.md`, nearby code). |
+| **3. Verify** | Run **`./gradlew test assembleDebug`** (and `assembleRelease` when signing/release behavior changes). **Fix failures before you commit.** A passing build is required to treat the request as done. |
+| **4. Record** | Update **`FEATURE.md`** for user-facing product changes and **`FIX.md`** for notable fixes, per the tables/workflows in those files. Bump **`versionName` / `versionCode`** in `app/build.gradle.kts` when shipping (see §2). |
+| **5. Commit** | Create **one git commit per user request** (one fix, one feature, or one combined fix+feature if the user asked for both together). Do **not** mix unrelated requests into the same commit. The commit should reflect a **green** verify step. |
+| **6. Todos** | Mark planning/todo items **completed** (or cancelled if dropped) before ending the session so the next session sees an accurate state. |
+
+**Mixed fix + feature:** If a single request includes both, one commit covering that request is correct. If the user sends **separate** requests, use **separate** commits (each passing tests).
+
+See also the checklist in **`FIX.md`** (“Workflow for every request”) for the human-facing ledger style.
+
+---
+
 ## 1. Bilingual app (required)
 
 PocketWeibo is a **bilingual** UI: default locale strings live in `app/src/main/res/values/strings.xml`; English in `app/src/main/res/values-en/strings.xml`. Per-app language is controlled in settings (`UiPreferences` / `AppCompatDelegate.setApplicationLocales`).
@@ -36,10 +55,13 @@ Update only `app/build.gradle.kts` (`versionName` / `versionCode`) unless anothe
 
 ## 3. Before you finish (checklist)
 
+Aligns with **§0**; use this as a quick pass before commit:
+
 1. Strings: **zh + en** parity for all new/changed UI.
 2. Version: bump **minor** or **patch** (and **versionCode**) per section 2.
-3. Build: `./gradlew test assembleDebug` (and `assembleRelease` when touching release/signing behavior).
-4. Product log: add or update a row in `FEATURE.md` for notable features; use `FIX.md` for notable fixes if that is the project convention.
+3. Build: **`./gradlew test assembleDebug`** green (and `assembleRelease` when touching release/signing behavior).
+4. Product log: **`FEATURE.md`** and/or **`FIX.md`** updated when the change is user-visible or notable.
+5. **Git:** one commit per request, after tests pass.
 
 ---
 
