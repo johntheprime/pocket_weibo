@@ -85,8 +85,11 @@ fun HomeScreen(
     onNavigateToDiscover: () -> Unit = {},
     onOpenMyPosts: () -> Unit = {},
     listState: LazyListState,
-    /** Incremented when user double-taps the Home tab: clear search filter and replay refresh affordance. */
+    /** Incremented when user double-taps the Home tab or publishes a post: clear search filter and replay refresh affordance. */
     scrollToLatestSignal: Int = 0,
+    /** Last `scrollToLatestSignal` already applied (lives in `MainScreen` so remounting this composable does not replay the affordance). */
+    scrollToLatestConsumedSignal: Int = 0,
+    onScrollToLatestConsumed: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -146,13 +149,14 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(scrollToLatestSignal) {
-        if (scrollToLatestSignal <= 0) return@LaunchedEffect
+    LaunchedEffect(scrollToLatestSignal, scrollToLatestConsumedSignal) {
+        if (scrollToLatestSignal <= scrollToLatestConsumedSignal) return@LaunchedEffect
         searchQuery = ""
         searchDraft = ""
         isRefreshing = true
         delay(450L)
         isRefreshing = false
+        onScrollToLatestConsumed()
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -428,7 +432,8 @@ private fun HomeTitleQuickAccessSheet(
                         name = identity.name,
                         color = Color(0xFF4A90D9),
                         size = 36.dp,
-                        avatarResName = identity.avatarResName
+                        avatarResName = identity.avatarResName,
+                        customAvatarUri = identity.customAvatarUri
                     )
                     Row(
                         modifier = Modifier

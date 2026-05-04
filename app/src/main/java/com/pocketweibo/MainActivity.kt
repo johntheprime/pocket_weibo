@@ -94,6 +94,8 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     var postDetailId by remember { mutableStateOf<Long?>(null) }
     var showMeSettings by remember { mutableStateOf(false) }
     var homeScrollToLatestSignal by remember { mutableStateOf(0) }
+    /** Last `homeScrollToLatestSignal` value for which HomeScreen already ran the refresh affordance. */
+    var homeScrollToLatestConsumed by remember { mutableStateOf(0) }
     var lastHomeTabTapUptime by remember { mutableStateOf(0L) }
     val mainScope = rememberCoroutineScope()
 
@@ -189,6 +191,13 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                         onDismiss = { showCompose = false },
                         initialShareText = pendingShareText.orEmpty(),
                         onConsumeInitialShare = { composeIntentViewModel.consumeShareText() },
+                        onPostPublished = {
+                            selectedTab = MainTab.HOME
+                            mainScope.launch {
+                                homeListState.scrollToItem(0)
+                            }
+                            homeScrollToLatestSignal++
+                        },
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
@@ -212,13 +221,17 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                 }
                 else -> {
                     when (selectedTab) {
-                        MainTab.HOME -> HomeScreen(
+                        MainTab.HOME ->                         HomeScreen(
                             onPostClick = { postId -> postDetailId = postId },
                             onOpenSettings = { showMeSettings = true },
                             onNavigateToDiscover = { selectedTab = MainTab.DISCOVER },
                             onOpenMyPosts = { showMyPosts = true },
                             listState = homeListState,
                             scrollToLatestSignal = homeScrollToLatestSignal,
+                            scrollToLatestConsumedSignal = homeScrollToLatestConsumed,
+                            onScrollToLatestConsumed = {
+                                homeScrollToLatestConsumed = homeScrollToLatestSignal
+                            },
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.MESSAGE -> MessageScreen(modifier = Modifier.padding(paddingValues))
