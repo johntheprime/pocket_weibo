@@ -102,6 +102,9 @@
     <string name="action_comment">评论</string>
     <string name="action_like">点赞</string>
 
+    <string name="post_list_image_badge">附图</string>
+    <string name="post_list_image_cd">包含图片，可在详情中查看</string>
+
     <string name="discover_search_identity_title">搜索身份</string>
     <string name="discover_search_identity_desc">输入身份名称，如：苏轼、莎士比亚</string>
     <string name="discover_search_content_title">搜索内容</string>

@@ -102,6 +102,9 @@
     <string name="action_comment">Comments</string>
     <string name="action_like">Like</string>
 
+    <string name="post_list_image_badge">Photo</string>
+    <string name="post_list_image_cd">Contains images; open the post to view</string>
+
     <string name="discover_search_identity_title">Search identities</string>
     <string name="discover_search_identity_desc">Type a name, e.g. Su Shi, Shakespeare</string>
     <string name="discover_search_content_title">Search posts</string>

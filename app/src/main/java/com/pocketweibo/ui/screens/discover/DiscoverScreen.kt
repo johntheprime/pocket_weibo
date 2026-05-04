@@ -52,6 +52,7 @@ import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.ui.components.Avatar
+import com.pocketweibo.ui.components.ListPostImageIndicator
 import com.pocketweibo.ui.components.SelectableCopyDialog
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.Background
@@ -340,6 +341,10 @@ private fun TrendingPostItem(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 4.dp)
                 )
+                ListPostImageIndicator(
+                    imageUris = post.imageUris,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
                 Row(
                     modifier = Modifier.padding(top = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -526,6 +531,10 @@ private fun PostSearchItem(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(top = 4.dp)
+                )
+                ListPostImageIndicator(
+                    imageUris = post.imageUris,
+                    modifier = Modifier.padding(top = 6.dp)
                 )
             }
         }

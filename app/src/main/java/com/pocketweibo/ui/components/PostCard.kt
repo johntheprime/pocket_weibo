@@ -60,6 +60,9 @@ fun PostCard(
 ) {
     var showSelectableCopy by remember { mutableStateOf(false) }
     val resources = LocalContext.current.resources
+    val hasStoredImages = remember(post.id, post.imageUris) {
+        PostAttachmentStorage.parseStoredPaths(post.imageUris).isNotEmpty()
+    }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -120,7 +123,14 @@ fun PostCard(
                 modifier = Modifier.padding(top = 8.dp)
             )
 
-            if (showPostImages && PostAttachmentStorage.parseStoredPaths(post.imageUris).isNotEmpty()) {
+            if (!showPostImages && hasStoredImages) {
+                ListPostImageIndicator(
+                    imageUris = post.imageUris,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
+
+            if (showPostImages && hasStoredImages) {
                 PostImageGallery(
                     imageUris = post.imageUris,
                     maxHeight = 88.dp,
