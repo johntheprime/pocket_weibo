@@ -1,5 +1,7 @@
 package com.pocketweibo.ui.screens.compose
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,8 +23,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.AlternateEmail
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -54,6 +57,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -89,6 +94,9 @@ fun ComposeScreen(
     val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
     val scope = rememberCoroutineScope()
     val prepMutex = remember { Mutex() }
+
+    var pendingCameraFile by remember { mutableStateOf<File?>(null) }
+    var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
 
     var selectedIdentity by remember { mutableStateOf<IdentityEntity?>(null) }
     var content by remember { mutableStateOf("") }
@@ -136,6 +144,71 @@ fun ComposeScreen(
                 }
             }
         }
+    }
+
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        val uri = pendingCameraUri
+        val cap = pendingCameraFile
+        pendingCameraUri = null
+        pendingCameraFile = null
+        if (!success) {
+            cap?.delete()
+            return@rememberLauncherForActivityResult
+        }
+        if (uri == null) {
+            cap?.delete()
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch {
+            prepMutex.withLock {
+                isPreparingImages = true
+                try {
+                    val merged = preparedImageFiles.toMutableList()
+                    val slotsLeft = (9 - merged.size).coerceAtLeast(0)
+                    if (slotsLeft == 0) {
+                        cap?.delete()
+                        return@withLock
+                    }
+                    try {
+                        val f = PostAttachmentStorage.prepareOneGalleryImage(
+                            context,
+                            uri,
+                            useOriginalForThisPost
+                        )
+                        if (f != null) {
+                            merged.add(f)
+                            preparedImageFiles = merged.take(9)
+                        }
+                    } finally {
+                        cap?.delete()
+                    }
+                } finally {
+                    isPreparingImages = false
+                }
+            }
+        }
+    }
+
+    fun startComposeCameraCapture() {
+        val slotsLeft = (9 - preparedImageFiles.size).coerceAtLeast(0)
+        if (slotsLeft == 0 || isPreparingImages) return
+        val file = File(context.cacheDir, "compose_capture_${System.currentTimeMillis()}.jpg")
+        val u = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.provider",
+            file
+        )
+        pendingCameraFile = file
+        pendingCameraUri = u
+        takePictureLauncher.launch(u)
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) startComposeCameraCapture()
     }
 
     LaunchedEffect(Unit) {
@@ -478,6 +551,19 @@ fun ComposeScreen(
                     icon = Icons.Default.Image,
                     label = stringResource(R.string.compose_label_image),
                     onClick = { imagePickerLauncher.launch("image/*") }
+                )
+                ActionButton(
+                    icon = Icons.Default.PhotoCamera,
+                    label = stringResource(R.string.compose_label_camera),
+                    onClick = {
+                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) ==
+                            PackageManager.PERMISSION_GRANTED
+                        ) {
+                            startComposeCameraCapture()
+                        } else {
+                            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                    }
                 )
                 ActionButton(
                     icon = Icons.Default.AlternateEmail,

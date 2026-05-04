@@ -15,9 +15,9 @@ android {
         minSdk = 26
         targetSdk = 34
         // versionName: semantic versioning (MAJOR.MINOR.PATCH). Bump when you ship user-facing changes.
-        versionName = "3.18.2"
+        versionName = "3.19.0"
         // versionCode: must increase for every release APK that should upgrade in-place (same signing key).
-        versionCode = 125
+        versionCode = 126
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -74,6 +74,13 @@ android {
     }
 }
 
+configurations.configureEach {
+    resolutionStrategy {
+        // Keep graph on core 1.12: some transitive deps request 1.17 (compileSdk 36 + AGP 8.9+).
+        force("androidx.core:core-ktx:1.12.0", "androidx.core:core:1.12.0")
+    }
+}
+
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2023.10.01")
     implementation(composeBom)
@@ -102,8 +109,6 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
 
     implementation("androidx.datastore:datastore-preferences:1.0.0")
-
-    implementation("id.zelory:compressor:3.0.1")
 
     testImplementation("junit:junit:4.13.2")
 

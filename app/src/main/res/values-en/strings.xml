@@ -162,6 +162,7 @@
     <string name="compose_image_cd">Image</string>
     <string name="compose_remove_image_cd">Remove</string>
     <string name="compose_label_image">Image</string>
+    <string name="compose_label_camera">Camera</string>
     <string name="post_image_cd">Post image</string>
     <string name="post_image_detail_cd">Post image, single tap for fullscreen preview</string>
     <string name="post_image_viewer_cd">Preview: double-tap to zoom in or out at the tap point, single tap to close</string>
