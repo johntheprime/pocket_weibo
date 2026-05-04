@@ -8,6 +8,7 @@ This file records **resolved requirements** and the **standard process** for eve
 
 | Date (UTC) | Requirement | Resolution | Verified |
 |-------------|---------------|------------|----------|
+| 2026-05-04 | **我** 页 **待处理提醒** 不应压在 **身份简介**（国籍/职业/代表作）之上；**固定资料在上、可变列表在下** | `MeScreen` `LazyColumn` 将 **简介 `InfoRow` 区块** 移到 **待处理提醒** `item` **之前**（顺序：身份卡片 → 简介 → 提醒）。版本 **3.35.3 (149)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-04 | 从 **微博详情** 返回或 **切换 Tab** 再回首页时，不应再出现 **下拉刷新动效**（仅应在 **双击首页 Tab** / **发帖成功回顶** 时播放） | `HomeScreen` 的 `LaunchedEffect(scrollToLatestSignal)` 在离开再进入组合时会 **带着旧的正数 signal 重跑**；在 `MainScreen` 增加 **`homeScrollToLatestConsumed`**，仅在 **`scrollToLatestSignal > scrollToLatestConsumedSignal`** 时播放动效并在结束后 **`onScrollToLatestConsumed`**。版本 **3.35.2 (148)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-04 | 发博成功后 **首页列表不“刷新”**（新帖在顶部，列表仍停在旧滚动位置） | `ComposeScreen` 增加 **`onPostPublished`**；`MainActivity` 在发帖成功回调里 **`selectedTab = HOME`**、**`homeListState.scrollToItem(0)`** 并递增 **`homeScrollToLatestSignal`**（与首页双击 Tab 一致的下拉动效 + 清筛选）。版本 **3.35.1 (147)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-04 | 提醒 **点按通知进详情后通知消失**；**我** 页需集中查看 **待处理** | **通知**：`PostReminderReceiver` 使用 **`setAutoCancel(false)`**（可选 **`setOnlyAlertOnce(true)`**），点按打开帖子后 **仍留在通知栏** 直至用户划掉。**我**：`observePendingRemindersWithPreview` + 列表（与资料区同 **LazyColumn** 滚动、限高 **verticalScroll**）、**取消** / **点行进详情**、约 **30s** 刷新剩余时间文案。`FEATURE.md` F-019 同步。版本 **3.35.0 (146)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
