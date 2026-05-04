@@ -139,6 +139,27 @@ class WeiboRepository(
         }
     }
 
+    /**
+     * Re-register [AlarmManager] from DB (source of truth). Call on process start and after reboot.
+     * Overdue rows are delivered immediately so notifications are not silently lost.
+     */
+    suspend fun rescheduleAllPostRemindersFromDb() = withContext(Dispatchers.IO) {
+        val rows = postReminderDao.listAll()
+        val now = System.currentTimeMillis()
+        DiagnosticLog.d(REMINDER_LOG_TAG, "rescheduleAllFromDb count=${rows.size} now=$now")
+        for (r in rows) {
+            if (r.fireAtMillis <= now) {
+                DiagnosticLog.w(
+                    REMINDER_LOG_TAG,
+                    "stale reminder id=${r.id} postId=${r.postId} fireAt=${r.fireAtMillis} — immediate recovery"
+                )
+                PostReminderAlarmScheduler.deliverImmediately(context, r.id, r.postId)
+            } else {
+                PostReminderAlarmScheduler.schedule(context, r.id, r.postId, r.fireAtMillis)
+            }
+        }
+    }
+
     private suspend fun cancelPostRemindersInternal(postId: Long) {
         val rows = postReminderDao.listForPost(postId)
         for (r in rows) {

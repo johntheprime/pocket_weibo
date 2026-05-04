@@ -27,6 +27,9 @@ interface PostReminderDao {
     @Query("SELECT * FROM post_reminders WHERE postId = :postId")
     suspend fun listForPost(postId: Long): List<PostReminderEntity>
 
+    @Query("SELECT * FROM post_reminders ORDER BY fireAtMillis ASC")
+    suspend fun listAll(): List<PostReminderEntity>
+
     @Query(
         """
         SELECT r.id AS reminderId, r.postId AS postId, r.fireAtMillis AS fireAtMillis,

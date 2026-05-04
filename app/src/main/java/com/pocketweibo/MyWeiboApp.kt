@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class PocketWeiboApp : Application() {
 
@@ -46,12 +47,17 @@ class PocketWeiboApp : Application() {
     override fun onCreate() {
         super.onCreate()
         ensureReminderChannel()
-        applicationScope.launch {
-            val on = UiPreferences.isDiagnosticLogCaptureEnabled(this@PocketWeiboApp)
-            DiagnosticLogBuffer.captureEnabled = on
-            if (on) {
-                DiagnosticLog.i("PW_Reminder", "Diagnostic capture restored on app start (buffer was empty until new events)")
-            }
+        // DataStore is async; scheduling can run on IO right after start — restore capture synchronously
+        // so DiagnosticLog lines are not dropped while the user believes capture is on.
+        runBlocking(Dispatchers.IO) {
+            DiagnosticLogBuffer.captureEnabled =
+                UiPreferences.isDiagnosticLogCaptureEnabled(this@PocketWeiboApp)
+        }
+        if (DiagnosticLogBuffer.captureEnabled) {
+            DiagnosticLog.i("PW_Reminder", "Diagnostic capture on at process start")
+        }
+        applicationScope.launch(Dispatchers.IO) {
+            repository.rescheduleAllPostRemindersFromDb()
         }
         DataSeeder.seedIfEmpty(repository)
     }
