@@ -15,7 +15,8 @@ interface IdentityDao {
     @Query("SELECT * FROM identities WHERE id = :id")
     suspend fun getIdentityById(id: Long): IdentityEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    /** New row only ([IdentityEntity.id] = 0 for auto id). Never use REPLACE on this table: SQLite deletes the old row first and CASCADE-wipes posts for that identity. */
+    @Insert
     suspend fun insert(identity: IdentityEntity): Long
 
     @Update

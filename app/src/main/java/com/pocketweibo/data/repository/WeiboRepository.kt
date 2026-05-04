@@ -19,6 +19,7 @@ import com.pocketweibo.data.local.entity.Gender
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.local.entity.PostReminderEntity
+import com.pocketweibo.data.media.IdentityAvatarStorage
 import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.reminder.PostReminderAlarmScheduler
 import com.pocketweibo.reminder.ReminderRepeatRule
@@ -56,13 +57,76 @@ class WeiboRepository(
 
     suspend fun getIdentityById(id: Long): IdentityEntity? = identityDao.getIdentityById(id)
 
-    suspend fun insertIdentity(identity: IdentityEntity): Long = identityDao.insert(identity)
+    suspend fun insertIdentity(identity: IdentityEntity): Long = withContext(Dispatchers.IO) {
+        if (identity.id == 0L) {
+            identityDao.insert(identity)
+        } else {
+            identityDao.update(identity)
+            identity.id
+        }
+    }
 
     suspend fun updateIdentity(identity: IdentityEntity) = identityDao.update(identity)
 
     suspend fun clearCustomAvatar(identityId: Long) = identityDao.clearCustomAvatar(identityId)
 
-    suspend fun deleteIdentity(identity: IdentityEntity) = identityDao.delete(identity)
+    /**
+     * Inserts or replaces [identity], then optionally writes a gallery [pickedAvatarUri] into
+     * [IdentityAvatarStorage] or removes stored custom art when [deleteCustomAvatar] is true.
+     */
+    suspend fun saveIdentityWithAvatarOptions(
+        identity: IdentityEntity,
+        pickedAvatarUri: Uri?,
+        deleteCustomAvatar: Boolean
+    ): Long = withContext(Dispatchers.IO) {
+        val customForRow = when {
+            pickedAvatarUri != null -> null
+            deleteCustomAvatar -> null
+            else -> identity.customAvatarUri
+        }
+        val toSave = identity.copy(customAvatarUri = customForRow)
+        val rowId = if (toSave.id == 0L) {
+            identityDao.insert(toSave)
+        } else {
+            identityDao.update(toSave)
+            toSave.id
+        }
+
+        if (pickedAvatarUri != null) {
+            if (writePickerToIdentityAvatar(rowId, pickedAvatarUri)) {
+                val rel = IdentityAvatarStorage.relativePath(rowId)
+                val cur = identityDao.getIdentityById(rowId) ?: return@withContext rowId
+                identityDao.update(cur.copy(customAvatarUri = rel))
+            }
+        } else if (deleteCustomAvatar) {
+            IdentityAvatarStorage.deleteForIdentity(context, rowId)
+        }
+        rowId
+    }
+
+    private suspend fun writePickerToIdentityAvatar(identityId: Long, source: Uri): Boolean =
+        withContext(Dispatchers.IO) {
+            val prepared = PostAttachmentStorage.prepareOneGalleryImage(
+                context,
+                source,
+                storeOriginalQuality = false
+            ) ?: return@withContext false
+            try {
+                val rel = IdentityAvatarStorage.relativePath(identityId)
+                val dest = IdentityAvatarStorage.fileForRelativePath(context, rel)
+                dest.parentFile?.mkdirs()
+                if (dest.exists()) dest.delete()
+                prepared.copyTo(dest, overwrite = true)
+                dest.isFile && dest.length() > 0L
+            } finally {
+                if (prepared.exists()) prepared.delete()
+            }
+        }
+
+    suspend fun deleteIdentity(identity: IdentityEntity) = withContext(Dispatchers.IO) {
+        IdentityAvatarStorage.deleteForIdentity(context, identity.id)
+        identityDao.delete(identity)
+    }
 
     suspend fun setActiveIdentity(id: Long) {
         identityDao.deactivateAll()
@@ -259,6 +323,7 @@ class WeiboRepository(
                 put("id", identity.id)
                 put("name", identity.name)
                 put("avatarResName", identity.avatarResName)
+                identity.customAvatarUri?.takeIf { it.isNotBlank() }?.let { put("customAvatarUri", it) }
                 put("nationality", identity.nationality)
                 put("gender", identity.gender)
                 put("birthYear", identity.birthYear)
@@ -331,6 +396,17 @@ class WeiboRepository(
                         f.inputStream().use { input -> input.copyTo(zos) }
                         zos.closeEntry()
                     }
+                }
+            }
+            val identitiesZip = identityDao.getAllIdentities().first()
+            for (ident in identitiesZip) {
+                val rel = ident.customAvatarUri?.trim()?.takeIf { it.isNotEmpty() && !it.contains("://") }
+                    ?: continue
+                val f = IdentityAvatarStorage.fileForRelativePath(context, rel)
+                if (f.isFile) {
+                    zos.putNextEntry(ZipEntry(rel.replace(File.separatorChar, '/')))
+                    f.inputStream().use { input -> input.copyTo(zos) }
+                    zos.closeEntry()
                 }
             }
         }
@@ -433,6 +509,11 @@ class WeiboRepository(
                         name == "data.json" -> Unit
                         name.startsWith("${PostAttachmentStorage.REL_ROOT}/") -> {
                             val out = PostAttachmentStorage.fileForRelativePath(context, name)
+                            out.parentFile?.mkdirs()
+                            out.writeBytes(content)
+                        }
+                        name.startsWith("${IdentityAvatarStorage.REL_ROOT}/") -> {
+                            val out = File(context.filesDir, name)
                             out.parentFile?.mkdirs()
                             out.writeBytes(content)
                         }
@@ -554,8 +635,25 @@ class WeiboRepository(
                     for (i in 0 until identitiesArray.length()) {
                         val identityJson = identitiesArray.getJSONObject(i)
                         val oldId = identityJson.getLong("id")
-                        val newId = identityDao.insert(identityFromJson(identityJson, 0L))
+                        val parsed = identityFromJson(identityJson, 0L)
+                        val toInsert = if (mergeAttachmentStaging != null) {
+                            parsed.copy(customAvatarUri = null)
+                        } else {
+                            parsed
+                        }
+                        val newId = identityDao.insert(toInsert)
                         identityOldToNew[oldId] = newId
+                        if (mergeAttachmentStaging != null) {
+                            val oldPath = identityJson.optString("customAvatarUri", "").takeIf { it.isNotBlank() }
+                            if (!oldPath.isNullOrBlank() &&
+                                mergeStagingIdentityAvatar(mergeAttachmentStaging, oldPath, newId)
+                            ) {
+                                val cur = identityDao.getIdentityById(newId)!!
+                                identityDao.update(
+                                    cur.copy(customAvatarUri = IdentityAvatarStorage.relativePath(newId))
+                                )
+                            }
+                        }
                     }
                 }
                 val postOldToNew = mutableMapOf<Long, Long>()
@@ -623,6 +721,7 @@ class WeiboRepository(
             id = id,
             name = identityJson.getString("name"),
             avatarResName = identityJson.optString("avatarResName", "avatar_default"),
+            customAvatarUri = identityJson.optString("customAvatarUri", "").takeIf { it.isNotBlank() },
             nationality = identityJson.optString("nationality", ""),
             gender = when (identityJson.optString("gender", "").uppercase(Locale.US)) {
                 "MALE" -> Gender.MALE
@@ -709,5 +808,27 @@ class WeiboRepository(
         postDao.deleteAll()
         identityDao.deleteAll()
         PostAttachmentStorage.deleteEntireAttachmentTree(context)
+        IdentityAvatarStorage.deleteEntireTree(context)
+    }
+
+    private fun mergeStagingIdentityAvatar(
+        stagingRoot: File,
+        oldRelative: String,
+        newIdentityId: Long
+    ): Boolean {
+        val norm = oldRelative.replace('\\', '/').trimStart('/')
+        val src = File(stagingRoot, norm)
+        if (!src.isFile) return false
+        val dest = IdentityAvatarStorage.fileForRelativePath(
+            context,
+            IdentityAvatarStorage.relativePath(newIdentityId)
+        )
+        dest.parentFile?.mkdirs()
+        return try {
+            src.copyTo(dest, overwrite = true)
+            dest.isFile && dest.length() > 0L
+        } catch (_: Exception) {
+            false
+        }
     }
 }
