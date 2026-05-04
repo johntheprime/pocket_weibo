@@ -267,6 +267,8 @@ fun MeScreen(
                             val repeatShort = when (row.repeatRule) {
                                 ReminderRepeatRule.DAILY ->
                                     stringResource(R.string.reminder_repeat_short_daily)
+                                ReminderRepeatRule.WORKDAYS ->
+                                    stringResource(R.string.reminder_repeat_short_workdays)
                                 ReminderRepeatRule.WEEKLY ->
                                     stringResource(R.string.reminder_repeat_short_weekly)
                                 ReminderRepeatRule.MONTHLY ->

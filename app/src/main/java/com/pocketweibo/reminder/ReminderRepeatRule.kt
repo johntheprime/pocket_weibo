@@ -1,5 +1,6 @@
 package com.pocketweibo.reminder
 
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -12,8 +13,11 @@ object ReminderRepeatRule {
     const val DAILY = "DAILY"
     const val WEEKLY = "WEEKLY"
     const val MONTHLY = "MONTHLY"
+    /** Next fire on the next calendar weekday (Mon–Fri) at the same local time. */
+    const val WORKDAYS = "WORKDAYS"
 
-    fun isRepeating(rule: String): Boolean = rule != NONE && rule in setOf(DAILY, WEEKLY, MONTHLY)
+    fun isRepeating(rule: String): Boolean =
+        rule != NONE && rule in setOf(DAILY, WEEKLY, MONTHLY, WORKDAYS)
 
     /** Next occurrence in local timezone after [lastFireAtMillis] (exclusive step from that instant). */
     fun computeNextFireAfter(lastFireAtMillis: Long, rule: String): Long? {
@@ -24,6 +28,13 @@ object ReminderRepeatRule {
             DAILY -> zdt.plusDays(1)
             WEEKLY -> zdt.plusWeeks(1)
             MONTHLY -> zdt.plusMonths(1)
+            WORKDAYS -> {
+                var n = zdt.plusDays(1)
+                while (n.dayOfWeek == DayOfWeek.SATURDAY || n.dayOfWeek == DayOfWeek.SUNDAY) {
+                    n = n.plusDays(1)
+                }
+                n
+            }
             else -> return null
         }
         return next.toInstant().toEpochMilli()

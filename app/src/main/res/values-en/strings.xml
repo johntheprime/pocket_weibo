@@ -179,9 +179,11 @@
     <string name="post_detail_remind_repeat_label">Repeat</string>
     <string name="reminder_repeat_once">Once</string>
     <string name="reminder_repeat_daily">Daily</string>
+    <string name="reminder_repeat_workdays">Weekdays</string>
     <string name="reminder_repeat_weekly">Weekly</string>
     <string name="reminder_repeat_monthly">Monthly</string>
     <string name="reminder_repeat_short_daily">daily</string>
+    <string name="reminder_repeat_short_workdays">weekdays</string>
     <string name="reminder_repeat_short_weekly">weekly</string>
     <string name="reminder_repeat_short_monthly">monthly</string>
     <string name="post_detail_remind_pick_datetime">Pick date &amp; time…</string>

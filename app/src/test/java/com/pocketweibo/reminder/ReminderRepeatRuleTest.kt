@@ -5,7 +5,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.DayOfWeek
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 
@@ -15,6 +17,7 @@ class ReminderRepeatRuleTest {
     fun isRepeating_noneFalse() {
         assertFalse(ReminderRepeatRule.isRepeating(ReminderRepeatRule.NONE))
         assertTrue(ReminderRepeatRule.isRepeating(ReminderRepeatRule.DAILY))
+        assertTrue(ReminderRepeatRule.isRepeating(ReminderRepeatRule.WORKDAYS))
     }
 
     @Test
@@ -50,6 +53,26 @@ class ReminderRepeatRuleTest {
         val z0 = ZonedDateTime.ofInstant(Instant.ofEpochMilli(base), zone)
         val z1 = ZonedDateTime.ofInstant(Instant.ofEpochMilli(next), zone)
         assertEquals(z0.toLocalDate().plusMonths(1), z1.toLocalDate())
+    }
+
+    @Test
+    fun workdays_advancesToNextWeekday() {
+        val zone = ZoneId.of("Asia/Shanghai")
+        val base = ZonedDateTime.of(2026, 1, 14, 10, 0, 0, 0, zone).toInstant().toEpochMilli()
+        val next = ReminderRepeatRule.computeNextFireAfter(base, ReminderRepeatRule.WORKDAYS)!!
+        val z1 = ZonedDateTime.ofInstant(Instant.ofEpochMilli(next), zone)
+        assertEquals(DayOfWeek.THURSDAY, z1.dayOfWeek)
+        assertEquals(LocalDate.of(2026, 1, 15), z1.toLocalDate())
+    }
+
+    @Test
+    fun workdays_skipsWeekendFromFriday() {
+        val zone = ZoneId.of("Asia/Shanghai")
+        val base = ZonedDateTime.of(2026, 1, 16, 9, 0, 0, 0, zone).toInstant().toEpochMilli()
+        val next = ReminderRepeatRule.computeNextFireAfter(base, ReminderRepeatRule.WORKDAYS)!!
+        val z1 = ZonedDateTime.ofInstant(Instant.ofEpochMilli(next), zone)
+        assertEquals(DayOfWeek.MONDAY, z1.dayOfWeek)
+        assertEquals(LocalDate.of(2026, 1, 19), z1.toLocalDate())
     }
 
     @Test

@@ -67,6 +67,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -97,6 +98,10 @@ import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import com.pocketweibo.data.prefs.ReminderQuickPresetId
+import com.pocketweibo.data.prefs.ReminderQuickPresetStats
 import com.pocketweibo.reminder.ReminderRepeatRule
 import androidx.compose.material3.FilterChip
 import java.util.Calendar
@@ -384,6 +389,11 @@ private fun PostDetailCard(
     onOpenAppDetailsSettings: () -> Unit
 ) {
     val context = LocalContext.current
+    val appContext = context.applicationContext
+    val scope = rememberCoroutineScope()
+    val quickBar by ReminderQuickPresetStats.barStateFlow(appContext).collectAsState(
+        initial = ReminderQuickPresetStats.defaultBarState()
+    )
     val resources = context.resources
     val shareLabel = stringResource(R.string.post_detail_action_share)
     val likeCd = stringResource(R.string.post_detail_like_cd)
@@ -662,6 +672,11 @@ private fun PostDetailCard(
                                         onClick = { repeatRule = ReminderRepeatRule.DAILY },
                                         label = { Text(stringResource(R.string.reminder_repeat_daily)) }
                                     )
+                                    FilterChip(
+                                        selected = repeatRule == ReminderRepeatRule.WORKDAYS,
+                                        onClick = { repeatRule = ReminderRepeatRule.WORKDAYS },
+                                        label = { Text(stringResource(R.string.reminder_repeat_workdays)) }
+                                    )
                                 }
                                 Row(
                                     modifier = Modifier
@@ -689,85 +704,34 @@ private fun PostDetailCard(
                                     .horizontalScroll(presetScroll),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                OutlinedButton(
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                                    onClick = {
-                                        showRemindPicker = false
-                                        onScheduleReminderAt(
-                                            System.currentTimeMillis() + 15 * 60_000L,
-                                            effectiveRepeat
-                                        )
+                                fun labelForPreset(id: ReminderQuickPresetId): Int = when (id) {
+                                    ReminderQuickPresetId.M15 -> R.string.post_detail_remind_chip_15m
+                                    ReminderQuickPresetId.M30 -> R.string.post_detail_remind_chip_30m
+                                    ReminderQuickPresetId.H1 -> R.string.post_detail_remind_chip_1h
+                                    ReminderQuickPresetId.H3 -> R.string.post_detail_remind_chip_3h
+                                    ReminderQuickPresetId.H6 -> R.string.post_detail_remind_chip_6h
+                                }
+                                fun schedulePreset(id: ReminderQuickPresetId) {
+                                    scope.launch(Dispatchers.IO) {
+                                        ReminderQuickPresetStats.recordUse(appContext, id)
                                     }
-                                ) {
-                                    Text(
-                                        stringResource(R.string.post_detail_remind_chip_15m),
-                                        fontSize = 12.sp,
-                                        maxLines = 1
+                                    showRemindPicker = false
+                                    onScheduleReminderAt(
+                                        ReminderQuickPresetStats.millisOffsetMillis(id),
+                                        effectiveRepeat
                                     )
                                 }
-                                OutlinedButton(
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                                    onClick = {
-                                        showRemindPicker = false
-                                        onScheduleReminderAt(
-                                            System.currentTimeMillis() + 30 * 60_000L,
-                                            effectiveRepeat
+                                quickBar.topThree.forEach { id ->
+                                    OutlinedButton(
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                        onClick = { schedulePreset(id) }
+                                    ) {
+                                        Text(
+                                            stringResource(labelForPreset(id)),
+                                            fontSize = 12.sp,
+                                            maxLines = 1
                                         )
                                     }
-                                ) {
-                                    Text(
-                                        stringResource(R.string.post_detail_remind_chip_30m),
-                                        fontSize = 12.sp,
-                                        maxLines = 1
-                                    )
-                                }
-                                OutlinedButton(
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                                    onClick = {
-                                        showRemindPicker = false
-                                        onScheduleReminderAt(
-                                            System.currentTimeMillis() + 60 * 60_000L,
-                                            effectiveRepeat
-                                        )
-                                    }
-                                ) {
-                                    Text(
-                                        stringResource(R.string.post_detail_remind_chip_1h),
-                                        fontSize = 12.sp,
-                                        maxLines = 1
-                                    )
-                                }
-                                OutlinedButton(
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                                    onClick = {
-                                        showRemindPicker = false
-                                        onScheduleReminderAt(
-                                            System.currentTimeMillis() + 3 * 60 * 60_000L,
-                                            effectiveRepeat
-                                        )
-                                    }
-                                ) {
-                                    Text(
-                                        stringResource(R.string.post_detail_remind_chip_3h),
-                                        fontSize = 12.sp,
-                                        maxLines = 1
-                                    )
-                                }
-                                OutlinedButton(
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                                    onClick = {
-                                        showRemindPicker = false
-                                        onScheduleReminderAt(
-                                            System.currentTimeMillis() + 6 * 60 * 60_000L,
-                                            effectiveRepeat
-                                        )
-                                    }
-                                ) {
-                                    Text(
-                                        stringResource(R.string.post_detail_remind_chip_6h),
-                                        fontSize = 12.sp,
-                                        maxLines = 1
-                                    )
                                 }
                                 OutlinedButton(
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
@@ -784,6 +748,18 @@ private fun PostDetailCard(
                                         fontSize = 12.sp,
                                         maxLines = 2
                                     )
+                                }
+                                quickBar.remainder.forEach { id ->
+                                    OutlinedButton(
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                        onClick = { schedulePreset(id) }
+                                    ) {
+                                        Text(
+                                            stringResource(labelForPreset(id)),
+                                            fontSize = 12.sp,
+                                            maxLines = 1
+                                        )
+                                    }
                                 }
                             }
                             OutlinedButton(
