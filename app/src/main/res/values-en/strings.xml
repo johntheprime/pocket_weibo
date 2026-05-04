@@ -47,6 +47,18 @@
     <string name="settings_export_subtitle">Backup as JSON, ZIP (with photos), or Markdown</string>
     <string name="settings_import_title">Import data</string>
     <string name="settings_import_subtitle">Restore from JSON, ZIP backup, or pasted text</string>
+    <string name="settings_auto_backup_section">Automatic text backup</string>
+    <string name="settings_auto_backup_subtitle">On the first open each day, backs up text only (no images, no custom avatar paths). Files stay in app-private storage and are encrypted with a key derived from this device\'s Android ID; only the latest 3 days are kept.</string>
+    <string name="settings_auto_backup_last_prefix">Last auto backup day:</string>
+    <string name="settings_auto_backup_never">None yet</string>
+    <string name="settings_auto_backup_stored_title">Encrypted copies on device</string>
+    <string name="settings_auto_backup_no_files">No encrypted copies yet (created on first open each day).</string>
+    <string name="settings_auto_backup_decrypt_share">Decrypt and share JSON</string>
+    <string name="settings_auto_backup_pick_file">Decrypt from file…</string>
+    <string name="settings_auto_backup_pick_file_sub">Pick a .pwb file encrypted on this device</string>
+    <string name="settings_auto_backup_share_decrypted_title">Share decrypted JSON</string>
+    <string name="settings_auto_backup_toast_decrypt_ok">Decrypted — choose how to share</string>
+    <string name="settings_auto_backup_toast_decrypt_fail">Decrypt failed (wrong device or corrupt file)</string>
 
     <string name="settings_language_section">Display language</string>
     <string name="settings_language_system">Follow system</string>

@@ -10,6 +10,7 @@ data class CommentWithIdentity(
     val identityId: Long,
     val identityName: String,
     val identityAvatarResName: String,
+    val identityCustomAvatarUri: String?,
     val content: String,
     val createdAt: Long,
     val replyingToCommentId: Long?,
@@ -22,7 +23,9 @@ data class CommentWithIdentity(
 interface CommentDao {
     @Query("""
         SELECT c.id, c.postId, c.identityId, i.name as identityName, 
-               i.avatarResName as identityAvatarResName, c.content, c.createdAt,
+               i.avatarResName as identityAvatarResName,
+               i.customAvatarUri as identityCustomAvatarUri,
+               c.content, c.createdAt,
                c.replyingToCommentId, 
                (SELECT i2.name FROM identities i2 INNER JOIN comments c2 ON c2.identityId = i2.id WHERE c2.id = c.replyingToCommentId) as replyingToIdentityName,
                c.likeCount,
@@ -36,7 +39,9 @@ interface CommentDao {
 
     @Query("""
         SELECT c.id, c.postId, c.identityId, i.name as identityName, 
-               i.avatarResName as identityAvatarResName, c.content, c.createdAt,
+               i.avatarResName as identityAvatarResName,
+               i.customAvatarUri as identityCustomAvatarUri,
+               c.content, c.createdAt,
                c.replyingToCommentId, 
                (SELECT i2.name FROM identities i2 INNER JOIN comments c2 ON c2.identityId = i2.id WHERE c2.id = c.replyingToCommentId) as replyingToIdentityName,
                c.likeCount, 0 as isLikedByMe
@@ -52,6 +57,9 @@ interface CommentDao {
 
     @Delete
     suspend fun delete(comment: CommentEntity)
+
+    @Query("SELECT * FROM comments ORDER BY createdAt ASC")
+    suspend fun listAllForBackup(): List<CommentEntity>
 
     @Query("DELETE FROM comments")
     suspend fun deleteAll()

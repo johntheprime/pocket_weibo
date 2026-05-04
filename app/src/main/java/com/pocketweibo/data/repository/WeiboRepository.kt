@@ -375,6 +375,91 @@ class WeiboRepository(
     }
 
     /**
+     * JSON only: identities (no [IdentityEntity.customAvatarUri]), posts with empty [PostEntity.imageUris],
+     * comments, and [post_reminders] rows. For automatic encrypted daily backups (no binary media).
+     */
+    suspend fun exportTextOnlyForAutoBackup(): String = withContext(Dispatchers.IO) {
+        val identities = identityDao.getAllIdentities().first()
+        val posts = postDao.getAllPosts().first()
+        val comments = commentDao.listAllForBackup()
+        val reminders = postReminderDao.listAll()
+
+        val json = JSONObject()
+        json.put("kind", "pocket_weibo_text_auto_backup")
+        json.put("exportedAt", System.currentTimeMillis())
+        json.put("version", 1)
+
+        val identitiesArray = JSONArray()
+        identities.forEach { identity ->
+            val identityJson = JSONObject().apply {
+                put("id", identity.id)
+                put("name", identity.name)
+                put("avatarResName", identity.avatarResName)
+                put("nationality", identity.nationality)
+                put("gender", identity.gender)
+                put("birthYear", identity.birthYear)
+                put("deathYear", identity.deathYear)
+                put("occupation", identity.occupation)
+                put("motto", identity.motto)
+                put("famousWork", identity.famousWork)
+                put("bio", identity.bio)
+                put("createdAt", identity.createdAt)
+                put("isActive", identity.isActive)
+            }
+            identitiesArray.put(identityJson)
+        }
+        json.put("identities", identitiesArray)
+
+        val postsArray = JSONArray()
+        posts.forEach { post ->
+            val postJson = JSONObject().apply {
+                put("id", post.id)
+                put("identityId", post.identityId)
+                put("content", post.content)
+                put("imageUris", "")
+                put("extrasJson", post.extrasJson)
+                put("createdAt", post.createdAt)
+                put("likeCount", post.likeCount)
+                put("commentCount", post.commentCount)
+                put("isLiked", post.isLiked)
+            }
+            postsArray.put(postJson)
+        }
+        json.put("posts", postsArray)
+
+        val commentsArray = JSONArray()
+        comments.forEach { comment ->
+            val commentJson = JSONObject().apply {
+                put("id", comment.id)
+                put("postId", comment.postId)
+                put("identityId", comment.identityId)
+                put("content", comment.content)
+                put("createdAt", comment.createdAt)
+                put("replyingToCommentId", comment.replyingToCommentId ?: JSONObject.NULL)
+                put("likeCount", comment.likeCount)
+                put("likedBy", comment.likedBy)
+            }
+            commentsArray.put(commentJson)
+        }
+        json.put("comments", commentsArray)
+
+        val remindersArray = JSONArray()
+        reminders.forEach { r ->
+            remindersArray.put(
+                JSONObject().apply {
+                    put("id", r.id)
+                    put("postId", r.postId)
+                    put("fireAtMillis", r.fireAtMillis)
+                    put("repeatRule", r.repeatRule)
+                }
+            )
+        }
+        json.put("postReminders", remindersArray)
+
+        json.toString(2)
+    }
+
+    /**
      * Writes `data.json` plus files under [PostAttachmentStorage.REL_ROOT] into a ZIP under cache.
      * Re-import via Settings → Import (merge or replace).
      */

@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.me
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,6 +54,9 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
+import com.pocketweibo.data.backup.AutoBackupCrypto
+import com.pocketweibo.data.backup.AutoDailyBackup
+import com.pocketweibo.data.prefs.BackupPreferences
 import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.diagnostic.DiagnosticLog
 import com.pocketweibo.diagnostic.DiagnosticLogBuffer
@@ -132,6 +137,10 @@ fun MeSettingsScreen(
                 LanguagePreferenceSection(
                     onApplied = { context.findActivity()?.recreate() }
                 )
+            }
+            item {
+                Divider()
+                AutoBackupSettingsSection()
             }
             item {
                 Divider()
@@ -242,6 +251,183 @@ fun MeSettingsScreen(
                 }
             }
         )
+    }
+}
+
+private fun shareDecryptedJsonForBackup(context: Context, plain: ByteArray) {
+    val out = File(context.cacheDir, "pw_decrypted_${System.currentTimeMillis()}.json")
+    out.writeBytes(plain)
+    val uri = FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.provider",
+        out
+    )
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "application/json"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(
+        Intent.createChooser(send, context.getString(R.string.settings_auto_backup_share_decrypted_title))
+    )
+}
+
+@Composable
+private fun AutoBackupSettingsSection() {
+    val context = LocalContext.current
+    val app = context.applicationContext as PocketWeiboApp
+    val scope = rememberCoroutineScope()
+    var lastDay by remember { mutableStateOf<String?>(null) }
+    var backupFiles by remember { mutableStateOf<List<File>>(emptyList()) }
+
+    fun load() {
+        scope.launch(Dispatchers.IO) {
+            val d = BackupPreferences.getLastAutoTextBackupDay(app)
+            val list = AutoDailyBackup.listBackupFilesNewestFirst(app)
+            withContext(Dispatchers.Main) {
+                lastDay = d
+                backupFiles = list
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        load()
+    }
+
+    val pickLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                        ?: error("empty")
+                    AutoBackupCrypto.decrypt(bytes, app)
+                }
+            }
+            result.fold(
+                onSuccess = { bytes ->
+                    shareDecryptedJsonForBackup(context, bytes)
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.settings_auto_backup_toast_decrypt_ok),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
+                onFailure = {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.settings_auto_backup_toast_decrypt_fail),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            )
+        }
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.settings_auto_backup_section),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = GrayDark
+            )
+            Text(
+                text = stringResource(R.string.settings_auto_backup_subtitle),
+                fontSize = 13.sp,
+                color = GrayMiddle,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+            Text(
+                text = stringResource(R.string.settings_auto_backup_last_prefix) +
+                    (lastDay ?: stringResource(R.string.settings_auto_backup_never)),
+                fontSize = 13.sp,
+                color = GrayDark,
+                modifier = Modifier.padding(top = 10.dp)
+            )
+            Text(
+                text = stringResource(R.string.settings_auto_backup_stored_title),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = GrayDark,
+                modifier = Modifier.padding(top = 14.dp)
+            )
+            if (backupFiles.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.settings_auto_backup_no_files),
+                    fontSize = 13.sp,
+                    color = GrayMiddle,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            } else {
+                backupFiles.forEach { f ->
+                    val label = f.name.removePrefix("pw_auto_").removeSuffix(".pwb")
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                val result = withContext(Dispatchers.IO) {
+                                    runCatching {
+                                        AutoBackupCrypto.decrypt(f.readBytes(), app)
+                                    }
+                                }
+                                result.fold(
+                                    onSuccess = { bytes ->
+                                        shareDecryptedJsonForBackup(context, bytes)
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.settings_auto_backup_toast_decrypt_ok),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onFailure = {
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.settings_auto_backup_toast_decrypt_fail),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_auto_backup_decrypt_share) + " ($label)",
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+            OutlinedButton(
+                onClick = { pickLauncher.launch(arrayOf("*/*")) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.settings_auto_backup_pick_file))
+                    Text(
+                        text = stringResource(R.string.settings_auto_backup_pick_file_sub),
+                        fontSize = 12.sp,
+                        color = GrayMiddle,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+        }
     }
 }
 

@@ -47,6 +47,18 @@
     <string name="settings_export_subtitle">备份为 JSON、ZIP（含图片）或 Markdown</string>
     <string name="settings_import_title">导入数据</string>
     <string name="settings_import_subtitle">从 JSON、ZIP 备份或粘贴内容恢复</string>
+    <string name="settings_auto_backup_section">自动文本备份</string>
+    <string name="settings_auto_backup_subtitle">每日首次打开应用时备份纯文本（无配图、无自定义头像路径）；文件仅存于应用私有目录，使用本机 Android ID 派生密钥加密；仅保留最近 3 天。</string>
+    <string name="settings_auto_backup_last_prefix">上次自动备份日：</string>
+    <string name="settings_auto_backup_never">尚无</string>
+    <string name="settings_auto_backup_stored_title">本地加密文件</string>
+    <string name="settings_auto_backup_no_files">尚无保留的加密副本（备份在每日首次打开应用时创建）。</string>
+    <string name="settings_auto_backup_decrypt_share">解密并分享 JSON</string>
+    <string name="settings_auto_backup_pick_file">从文件解密…</string>
+    <string name="settings_auto_backup_pick_file_sub">选择 .pwb（须为本机生成的加密备份）</string>
+    <string name="settings_auto_backup_share_decrypted_title">分享解密后的 JSON</string>
+    <string name="settings_auto_backup_toast_decrypt_ok">已解密，请选择分享方式</string>
+    <string name="settings_auto_backup_toast_decrypt_fail">解密失败（可能不是本机备份或文件已损坏）</string>
 
     <string name="settings_language_section">界面语言</string>
     <string name="settings_language_system">跟随系统</string>

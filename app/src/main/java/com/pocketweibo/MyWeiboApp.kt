@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
 import com.pocketweibo.R
+import com.pocketweibo.data.backup.AutoDailyBackup
 import com.pocketweibo.data.DataSeeder
 import com.pocketweibo.data.local.AppDatabase
 import com.pocketweibo.data.prefs.UiPreferences
@@ -59,6 +60,7 @@ class PocketWeiboApp : Application() {
         }
         applicationScope.launch(Dispatchers.IO) {
             DataSeeder.seedIfEmpty(repository)
+            AutoDailyBackup.runIfDue(this@PocketWeiboApp, repository)
         }
     }
 
