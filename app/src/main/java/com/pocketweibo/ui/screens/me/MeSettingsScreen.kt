@@ -24,10 +24,11 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -44,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -400,6 +402,7 @@ private fun buildDiagnosticLogHeader(context: android.content.Context): String {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LanguagePreferenceSection(onApplied: () -> Unit) {
     val context = LocalContext.current
@@ -418,76 +421,85 @@ private fun LanguagePreferenceSection(onApplied: () -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Text(
                 text = stringResource(R.string.settings_language_section),
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = GrayDark
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = GrayMiddle
             )
-            LanguageRow(
-                label = stringResource(R.string.settings_language_system),
-                selected = selected == "system",
-                onClick = {
-                    scope.launch {
-                        UiPreferences.setLanguageCode(appCtx, "system")
-                        UiPreferences.applyLanguageCode("system")
-                        selected = "system"
-                        onApplied()
-                    }
-                }
-            )
-            LanguageRow(
-                label = stringResource(R.string.settings_language_zh),
-                selected = selected == "zh",
-                onClick = {
-                    scope.launch {
-                        UiPreferences.setLanguageCode(appCtx, "zh")
-                        UiPreferences.applyLanguageCode("zh")
-                        selected = "zh"
-                        onApplied()
-                    }
-                }
-            )
-            LanguageRow(
-                label = stringResource(R.string.settings_language_en),
-                selected = selected == "en",
-                onClick = {
-                    scope.launch {
-                        UiPreferences.setLanguageCode(appCtx, "en")
-                        UiPreferences.applyLanguageCode("en")
-                        selected = "en"
-                        onApplied()
-                    }
-                }
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val chipModifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 36.dp)
+                FilterChip(
+                    selected = selected == "system",
+                    onClick = {
+                        scope.launch {
+                            UiPreferences.setLanguageCode(appCtx, "system")
+                            UiPreferences.applyLanguageCode("system")
+                            selected = "system"
+                            onApplied()
+                        }
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.settings_language_system),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontSize = 12.sp
+                        )
+                    },
+                    modifier = chipModifier
+                )
+                FilterChip(
+                    selected = selected == "zh",
+                    onClick = {
+                        scope.launch {
+                            UiPreferences.setLanguageCode(appCtx, "zh")
+                            UiPreferences.applyLanguageCode("zh")
+                            selected = "zh"
+                            onApplied()
+                        }
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.settings_language_zh),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontSize = 12.sp
+                        )
+                    },
+                    modifier = chipModifier
+                )
+                FilterChip(
+                    selected = selected == "en",
+                    onClick = {
+                        scope.launch {
+                            UiPreferences.setLanguageCode(appCtx, "en")
+                            UiPreferences.applyLanguageCode("en")
+                            selected = "en"
+                            onApplied()
+                        }
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(R.string.settings_language_en),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontSize = 12.sp
+                        )
+                    },
+                    modifier = chipModifier
+                )
+            }
         }
-    }
-}
-
-@Composable
-private fun LanguageRow(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RadioButton(selected = selected, onClick = onClick)
-        Text(
-            text = label,
-            fontSize = 15.sp,
-            color = GrayDark,
-            modifier = Modifier
-                .padding(start = 4.dp)
-                .weight(1f)
-                .clickable(onClick = onClick)
-        )
     }
 }
 
