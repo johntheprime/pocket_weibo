@@ -51,8 +51,8 @@
     <string name="settings_auto_backup_subtitle">每日首次打开应用时备份纯文本（无配图、无自定义头像路径）；文件仅存于应用私有目录，使用本机 Android ID 派生密钥加密；仅保留最近 3 天。</string>
     <string name="settings_auto_backup_last_prefix">上次自动备份日：</string>
     <string name="settings_auto_backup_never">尚无</string>
-    <string name="settings_auto_backup_stored_title">本地加密文件</string>
-    <string name="settings_auto_backup_no_files">尚无保留的加密副本（备份在每日首次打开应用时创建）。</string>
+    <string name="settings_auto_backup_three_slots_title">最近 3 日备份（可逐日解密）</string>
+    <string name="settings_auto_backup_slot_missing">该日尚未生成自动备份</string>
     <string name="settings_auto_backup_decrypt_share">解密并分享 JSON</string>
     <string name="settings_auto_backup_pick_file">从文件解密…</string>
     <string name="settings_auto_backup_pick_file_sub">选择 .pwb（须为本机生成的加密备份）</string>

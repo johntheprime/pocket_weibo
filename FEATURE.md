@@ -63,7 +63,7 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-035 | **预设身份头像（萌系矢量）**：内置 **8** 款身份可选头像改为统一 **萌系卡通** 风格矢量图（圆脸、腮红、大眼高光、柔和配色）；资源为 **项目内原创绘制**，可 **自由商用**，无需第三方署名。 | Done |
 | F-036 | **发微博页自动聚焦输入**：进入 **写微博** 页后，**正文输入框**自动获得焦点并 **唤起系统键盘**（在草稿/分享预填加载完成后触发）。 | Done |
 | F-037 | **身份头像 · 萌系男卡通分区与相册自定义**：编辑身份时 **萌系卡通（男）** 四款矢量预设 **单独分区**；**从相册上传** 经系统选图写入 `IdentityAvatarStorage`，保存走 **`saveIdentityWithAvatarOptions`**；可 **移除照片** 回到预设；详情/列表头图与全局 **`Avatar`** 一致展示自定义图。 | Done |
-| F-038 | **自动每日文本备份**：**本地日历日** 首次打开应用时生成 **纯文本** JSON（无配图、无自定义头像路径），写入 **`filesDir/auto_text_backups`**，**AES-GCM** 密钥由 **Android ID + 包名** 派生；**仅保留最近 3 天**；**设置** 中可 **解密并分享 JSON**，或从 **.pwb 文件** 解密（须本机生成）。 | Done |
+| F-038 | **自动每日文本备份**：**本地日历日** 首次打开应用时生成 **纯文本** JSON（无配图、无自定义头像路径），写入 **`filesDir/auto_text_backups`**，**AES-GCM** 密钥由 **Android ID + 包名** 派生；**仅保留最近 3 天**；**设置** 中固定展示 **最近 3 个日历日** 各一条 **解密并分享 JSON**（有则按钮、无则提示），并支持从 **.pwb 文件** 解密。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 

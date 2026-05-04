@@ -10,11 +10,21 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+data class DayBackupSlot(
+    /** Calendar day this row refers to (newest first: today, yesterday, …). */
+    val date: LocalDate,
+    /** Present when `pw_auto_{date}.pwb` exists under [AutoDailyBackup.REL_DIR]. */
+    val file: File?
+)
+
 object AutoDailyBackup {
 
     const val REL_DIR = "auto_text_backups"
     private val DATE_FMT: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
     private const val KEEP_DAYS = 3
+
+    /** Number of calendar days retained and shown in Settings. */
+    const val RETAINED_DAY_COUNT: Int = KEEP_DAYS
 
     fun directory(context: Context): File =
         File(context.filesDir, REL_DIR).apply { mkdirs() }
@@ -53,9 +63,19 @@ object AutoDailyBackup {
         return runCatching { LocalDate.parse(core, DATE_FMT) }.getOrNull()
     }
 
-    fun listBackupFilesNewestFirst(context: Context): List<File> =
-        directory(context).listFiles()
-            ?.filter { it.isFile && it.name.endsWith(".pwb") }
-            ?.sortedByDescending { parseDateFromFileName(it.name) ?: LocalDate.MIN }
-            ?: emptyList()
+    /**
+     * Fixed [KEEP_DAYS] rows: **today** and the previous **KEEP_DAYS - 1** local calendar days,
+     * each with an optional on-device `.pwb` so Settings can offer **one decrypt action per retained day**.
+     */
+    fun listLastThreeCalendarDaySlots(context: Context): List<DayBackupSlot> {
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+        val dir = directory(context)
+        return (0 until KEEP_DAYS).map { offset ->
+            val d = today.minusDays(offset.toLong())
+            val name = "pw_auto_${d.format(DATE_FMT)}.pwb"
+            val f = File(dir, name)
+            DayBackupSlot(d, f.takeIf { it.isFile })
+        }
+    }
 }

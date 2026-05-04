@@ -56,6 +56,7 @@ import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.backup.AutoBackupCrypto
 import com.pocketweibo.data.backup.AutoDailyBackup
+import com.pocketweibo.data.backup.DayBackupSlot
 import com.pocketweibo.data.prefs.BackupPreferences
 import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.diagnostic.DiagnosticLog
@@ -71,6 +72,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
 
 private const val RepoUrl = "https://github.com/johntheprime/pocket_weibo"
 
@@ -278,15 +282,18 @@ private fun AutoBackupSettingsSection() {
     val app = context.applicationContext as PocketWeiboApp
     val scope = rememberCoroutineScope()
     var lastDay by remember { mutableStateOf<String?>(null) }
-    var backupFiles by remember { mutableStateOf<List<File>>(emptyList()) }
+    var daySlots by remember { mutableStateOf<List<DayBackupSlot>>(emptyList()) }
+    val dateFormatter = remember {
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.getDefault())
+    }
 
     fun load() {
         scope.launch(Dispatchers.IO) {
             val d = BackupPreferences.getLastAutoTextBackupDay(app)
-            val list = AutoDailyBackup.listBackupFilesNewestFirst(app)
+            val slots = AutoDailyBackup.listLastThreeCalendarDaySlots(app)
             withContext(Dispatchers.Main) {
                 lastDay = d
-                backupFiles = list
+                daySlots = slots
             }
         }
     }
@@ -356,57 +363,70 @@ private fun AutoBackupSettingsSection() {
                 modifier = Modifier.padding(top = 10.dp)
             )
             Text(
-                text = stringResource(R.string.settings_auto_backup_stored_title),
+                text = stringResource(R.string.settings_auto_backup_three_slots_title),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = GrayDark,
                 modifier = Modifier.padding(top = 14.dp)
             )
-            if (backupFiles.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.settings_auto_backup_no_files),
-                    fontSize = 13.sp,
-                    color = GrayMiddle,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            } else {
-                backupFiles.forEach { f ->
-                    val label = f.name.removePrefix("pw_auto_").removeSuffix(".pwb")
-                    OutlinedButton(
-                        onClick = {
-                            scope.launch {
-                                val result = withContext(Dispatchers.IO) {
-                                    runCatching {
-                                        AutoBackupCrypto.decrypt(f.readBytes(), app)
+            daySlots.forEach { slot ->
+                val dateLabel = slot.date.format(dateFormatter)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp)
+                ) {
+                    Text(
+                        text = dateLabel,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = GrayDark
+                    )
+                    val file = slot.file
+                    if (file != null) {
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    val result = withContext(Dispatchers.IO) {
+                                        runCatching {
+                                            AutoBackupCrypto.decrypt(file.readBytes(), app)
+                                        }
                                     }
+                                    result.fold(
+                                        onSuccess = { bytes ->
+                                            shareDecryptedJsonForBackup(context, bytes)
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.settings_auto_backup_toast_decrypt_ok),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        },
+                                        onFailure = {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.settings_auto_backup_toast_decrypt_fail),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    )
                                 }
-                                result.fold(
-                                    onSuccess = { bytes ->
-                                        shareDecryptedJsonForBackup(context, bytes)
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.settings_auto_backup_toast_decrypt_ok),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    },
-                                    onFailure = {
-                                        Toast.makeText(
-                                            context,
-                                            context.getString(R.string.settings_auto_backup_toast_decrypt_fail),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                )
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                    ) {
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 6.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.settings_auto_backup_decrypt_share),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    } else {
                         Text(
-                            text = stringResource(R.string.settings_auto_backup_decrypt_share) + " ($label)",
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            text = stringResource(R.string.settings_auto_backup_slot_missing),
+                            fontSize = 13.sp,
+                            color = GrayMiddle,
+                            modifier = Modifier.padding(top = 6.dp)
                         )
                     }
                 }

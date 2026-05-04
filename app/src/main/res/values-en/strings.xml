@@ -51,8 +51,8 @@
     <string name="settings_auto_backup_subtitle">On the first open each day, backs up text only (no images, no custom avatar paths). Files stay in app-private storage and are encrypted with a key derived from this device\'s Android ID; only the latest 3 days are kept.</string>
     <string name="settings_auto_backup_last_prefix">Last auto backup day:</string>
     <string name="settings_auto_backup_never">None yet</string>
-    <string name="settings_auto_backup_stored_title">Encrypted copies on device</string>
-    <string name="settings_auto_backup_no_files">No encrypted copies yet (created on first open each day).</string>
+    <string name="settings_auto_backup_three_slots_title">Last 3 days — decrypt any snapshot</string>
+    <string name="settings_auto_backup_slot_missing">No automatic snapshot for this day yet</string>
     <string name="settings_auto_backup_decrypt_share">Decrypt and share JSON</string>
     <string name="settings_auto_backup_pick_file">Decrypt from file…</string>
     <string name="settings_auto_backup_pick_file_sub">Pick a .pwb file encrypted on this device</string>
