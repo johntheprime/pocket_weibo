@@ -70,4 +70,10 @@ keytool -genkeypair -v -storetype PKCS12 -keystore pocket-weibo-release.keystore
 base64 -w0 pocket-weibo-release.keystore   # paste value into ANDROID_KEYSTORE_BASE64
 ```
 
+### Local signed APK (same inputs as CI)
+
+Create **`github-keystore-secrets.local.txt`** at the repo root (gitignored) with the same keys as the table above (`ANDROID_KEYSTORE_BASE64` as a **single line**, `KEYSTORE_PASSWORD`, optional `KEY_PASSWORD` / `KEY_ALIAS`). See **`github-keystore-secrets.local.txt.example`**.
+
+Then run **`scripts/build-pocketweibo-release.sh`**: it decodes the keystore to `ci-release.keystore`, writes `keystore.properties`, runs `./gradlew assembleRelease`, renames the APK under the repo root, and optionally **`cp`** copies it (default directory `/storage/emulated/0/Downloads`; use `--no-copy` to skip).
+
 - If a change is **reverted** or **superseded**, add a short note in the ledger row or a new row pointing to the follow-up fix.

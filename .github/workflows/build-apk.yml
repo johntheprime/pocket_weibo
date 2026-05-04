@@ -24,7 +24,7 @@
 #
 # To trigger: push to `apk-build`, or run manually (workflow_dispatch).
 #
-# Local same-signature release APK: scripts/build-pocketweibo-release.sh (uses keystore.properties).
+# Local same-signature release APK: scripts/build-pocketweibo-release.sh (reads github-keystore-secrets.local.txt like CI secrets).
 
 name: Build APK
 

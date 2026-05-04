@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
 # Build a signed release APK the same way as GitHub Actions (.github/workflows/build-apk.yml):
+#   decode ANDROID_KEYSTORE_BASE64 → ci-release.keystore, write keystore.properties, then
 #   ./gradlew assembleRelease
-# with signing from repo-root keystore.properties (see keystore.properties.example).
 #
-# CI writes keystore.properties from secrets ANDROID_KEYSTORE_BASE64, KEYSTORE_PASSWORD,
-# KEY_PASSWORD, KEY_ALIAS — locally you keep a real keystore file + keystore.properties (gitignored).
+# Signing material is read from repo-root github-keystore-secrets.local.txt (gitignored) — use the
+# same names/values as GitHub Actions secrets (see FIX.md and the workflow file).
+#
+# File format (one KEY=value per line, # comments and blank lines allowed):
+#   ANDROID_KEYSTORE_BASE64=<base64 -w0 of your .keystore / .p12 / .jks>
+#   KEYSTORE_PASSWORD=...
+#   KEY_PASSWORD=...          # optional; defaults to KEYSTORE_PASSWORD
+#   KEY_ALIAS=...             # optional; defaults to pocketweibo
 #
 # After build: renames the APK to pocketweibo-v<versionName>-<versionCode>-local-<timestamp>.apk
-# in the repo root (same version fields as parsed from app/build.gradle.kts).
+# in the repo root.
 #
-# Default: adb push to /storage/emulated/0/Downloads (override with --copy-dest; many devices use
-# /storage/emulated/0/Download — use --copy-dest if push fails). Skip copy with --no-copy / -n.
+# Default: cp the APK to /storage/emulated/0/Downloads (override with --copy-dest). Skip with --no-copy.
 #
 # Usage:
 #   ./scripts/build-pocketweibo-release.sh
@@ -25,19 +30,25 @@ cd "$ROOT"
 DO_COPY=true
 COPY_DEST="/storage/emulated/0/Downloads"
 
+SECRETS_FILE="${ROOT}/github-keystore-secrets.local.txt"
+KS_OUT="${ROOT}/ci-release.keystore"
+PROPS_OUT="${ROOT}/keystore.properties"
+
 usage() {
   cat <<EOF
-Build signed release APK (same as CI: ./gradlew assembleRelease + keystore.properties).
+Build signed release APK using the same inputs as CI (secrets file → keystore + keystore.properties).
 
 Usage: $(basename "$0") [options]
 
 Options:
-  --no-copy, -n     Do not adb push after rename (build + rename only).
-  --copy-dest PATH  Device directory for adb push (default: ${COPY_DEST}).
-  -h, --help        Show this help.
+  --no-copy, -n       Do not copy the renamed APK after build (cp skipped).
+  --copy-dest PATH    Local directory to copy the APK into (default: ${COPY_DEST}).
+  --secrets-file F    Path to secrets file (default: ${SECRETS_FILE}).
+  -h, --help          Show this help.
 
-Requires: repo-root keystore.properties + keystore file; JDK 17; Android SDK.
-See: .github/workflows/build-apk.yml, keystore.properties.example
+Requires: ${SECRETS_FILE} with ANDROID_KEYSTORE_BASE64 + KEYSTORE_PASSWORD; JDK 17; Android SDK.
+Copy step uses plain cp (destination must exist or be creatable with mkdir -p).
+See: .github/workflows/build-apk.yml, FIX.md
 EOF
 }
 
@@ -50,6 +61,11 @@ while [ $# -gt 0 ]; do
     --copy-dest)
       if [ $# -lt 2 ]; then echo "[FAIL] --copy-dest requires a path" >&2; exit 2; fi
       COPY_DEST="$2"
+      shift 2
+      ;;
+    --secrets-file)
+      if [ $# -lt 2 ]; then echo "[FAIL] --secrets-file requires a path" >&2; exit 2; fi
+      SECRETS_FILE="$2"
       shift 2
       ;;
     -h|--help)
@@ -66,6 +82,34 @@ done
 ok() { echo "[OK] $*"; }
 fail() { echo "[FAIL] $*" >&2; exit 1; }
 
+# Parse KEY=value secrets file (first '=' separates key from value; value may contain '=').
+# Sets: ANDROID_KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS (last wins if duplicated).
+load_github_secrets() {
+  local f="$1"
+  ANDROID_KEYSTORE_BASE64=""
+  KEYSTORE_PASSWORD=""
+  KEY_PASSWORD=""
+  KEY_ALIAS=""
+  [ -f "$f" ] || fail "Secrets file not found: $f"
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    [[ "$line" != *=* ]] && continue
+    local key val
+    key="${line%%=*}"
+    val="${line#*=}"
+    key="${key#"${key%%[![:space:]]*}"}"
+    key="${key%"${key##*[![:space:]]}"}"
+    case "$key" in
+      ANDROID_KEYSTORE_BASE64) ANDROID_KEYSTORE_BASE64="$val" ;;
+      KEYSTORE_PASSWORD) KEYSTORE_PASSWORD="$val" ;;
+      KEY_PASSWORD) KEY_PASSWORD="$val" ;;
+      KEY_ALIAS) KEY_ALIAS="$val" ;;
+    esac
+  done < "$f"
+}
+
 # --- 1) Version from Gradle (same sed as CI) ---
 VN=$(sed -n 's/.*versionName *= *"\([^"]*\)".*/\1/p' app/build.gradle.kts | head -1)
 VC=$(sed -n 's/.*versionCode *= *\([0-9][0-9]*\).*/\1/p' app/build.gradle.kts | head -1)
@@ -74,27 +118,32 @@ if [ -z "${VN:-}" ] || [ -z "${VC:-}" ]; then
 fi
 ok "App version from Gradle: versionName=$VN versionCode=$VC"
 
-# --- 2) Keystore (local keystore.properties + store file, same contract as app/build.gradle.kts) ---
-PROPS="$ROOT/keystore.properties"
-if [ ! -f "$PROPS" ]; then
-  fail "Missing $PROPS. Copy keystore.properties.example to keystore.properties and set storeFile, passwords, keyAlias. See .github/workflows/build-apk.yml header for CI secret mapping."
+# --- 2) Signing from github-keystore-secrets.local.txt (same as CI) ---
+load_github_secrets "$SECRETS_FILE"
+if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+  fail "Missing ANDROID_KEYSTORE_BASE64 in $SECRETS_FILE (same as GitHub secret; see FIX.md)"
 fi
+if [ -z "$KEYSTORE_PASSWORD" ]; then
+  fail "Missing KEYSTORE_PASSWORD in $SECRETS_FILE"
+fi
+KEY_PASS="${KEY_PASSWORD:-$KEYSTORE_PASSWORD}"
+ALIAS="${KEY_ALIAS:-pocketweibo}"
 
-STORE_REL=$(sed -n 's/^storeFile[[:space:]]*=[[:space:]]*//p' "$PROPS" | head -1 | tr -d '\r')
-STORE_REL="${STORE_REL#"${STORE_REL%%[![:space:]]*}"}"
-STORE_REL="${STORE_REL%"${STORE_REL##*[![:space:]]}"}"
-if [ -z "$STORE_REL" ]; then
-  fail "keystore.properties has no storeFile=..."
+umask 077
+printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$KS_OUT"
+chmod 600 "$KS_OUT"
+if [ ! -s "$KS_OUT" ]; then
+  rm -f "$KS_OUT"
+  fail "Decoded keystore is empty — check ANDROID_KEYSTORE_BASE64 (e.g. base64 -w0 my.keystore)"
 fi
-if [[ "$STORE_REL" == /* ]]; then
-  STORE_ABS="$STORE_REL"
-else
-  STORE_ABS="$ROOT/$STORE_REL"
-fi
-if [ ! -f "$STORE_ABS" ]; then
-  fail "Keystore file not found: $STORE_ABS (from storeFile=$STORE_REL in keystore.properties)"
-fi
-ok "Signing: keystore.properties present, storeFile resolves to existing file"
+{
+  echo "storeFile=ci-release.keystore"
+  echo "storePassword=${KEYSTORE_PASSWORD}"
+  echo "keyAlias=${ALIAS}"
+  echo "keyPassword=${KEY_PASS}"
+} > "$PROPS_OUT"
+chmod 600 "$PROPS_OUT"
+ok "Wrote $KS_OUT and $PROPS_OUT from $SECRETS_FILE (same layout as CI)"
 
 # --- 3) Gradle assembleRelease (same as CI) ---
 if [ ! -x ./gradlew ]; then
@@ -129,23 +178,18 @@ DEST="$ROOT/$DEST_NAME"
 mv "$SRC" "$DEST"
 ok "Renamed to $DEST"
 
-# --- 6) Optional adb copy ---
+# --- 6) Optional local copy (cp only; no adb) ---
 if [ "$DO_COPY" = true ]; then
-  if ! command -v adb >/dev/null 2>&1; then
-    fail "adb not found in PATH; install platform-tools or use --no-copy"
-  fi
-  if ! adb devices 2>/dev/null | grep -qE '[[:space:]]device$'; then
-    fail "No device in 'adb devices' with state 'device'. Connect a phone/emulator or use --no-copy"
-  fi
-  REMOTE_PATH="${COPY_DEST%/}/$DEST_NAME"
-  echo "[..] adb push \"$DEST\" \"$REMOTE_PATH\""
-  if adb push "$DEST" "$REMOTE_PATH"; then
-    ok "Copied to device: $REMOTE_PATH"
+  mkdir -p "$COPY_DEST" || fail "mkdir -p failed: $COPY_DEST"
+  COPY_PATH="${COPY_DEST%/}/$DEST_NAME"
+  echo "[..] cp \"$DEST\" \"$COPY_PATH\""
+  if cp "$DEST" "$COPY_PATH"; then
+    ok "Copied with cp to: $COPY_PATH"
   else
-    fail "adb push failed. Try --copy-dest /storage/emulated/0/Download (singular) if your device has no Downloads folder."
+    fail "cp failed. Check permissions and that $COPY_DEST is a writable directory on this machine."
   fi
 else
-  ok "Skipped device copy (--no-copy)"
+  ok "Skipped copy (--no-copy)"
 fi
 
 echo ""
@@ -153,8 +197,8 @@ echo "========== SUCCESS =========="
 echo "  APK:     $DEST"
 echo "  version: $VN (code $VC)"
 if [ "$DO_COPY" = true ]; then
-  echo "  device:  ${COPY_DEST%/}/$DEST_NAME"
+  echo "  copy:    ${COPY_DEST%/}/$DEST_NAME"
 else
-  echo "  device:  (not copied)"
+  echo "  copy:    (skipped)"
 fi
 echo "=============================="
