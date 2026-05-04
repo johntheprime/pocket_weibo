@@ -49,7 +49,7 @@ Build signed release APK using the same inputs as CI (secrets file → keystore 
 Usage: $(basename "$0") [options]
 
 Options:
-  --no-copy, -n       Do not copy the renamed APK after build (cp skipped).
+  --no-copy, -n       Do not copy after build; APK stays in repo root only (default: copy then rm root).
   --copy-dest PATH    Local directory to copy the APK into (default: ${COPY_DEST}).
   --secrets-file F    Path to secrets file (default: ${SECRETS_FILE}).
   -h, --help          Show this help.
@@ -89,6 +89,18 @@ done
 
 ok() { echo "[OK] $*"; }
 fail() { echo "[FAIL] $*" >&2; exit 1; }
+
+# Remove only the known root release APK path (guards against accidental rm of wrong paths).
+rm_guarded_root_release_apk() {
+  local path="$1" vn="$2" vc="$3" ts="$4" name="$5"
+  local rb="${ROOT%/}"
+  [[ "$path" == "${rb}/"*.apk ]] || fail "rm guard: not an .apk under repo root: $path"
+  [[ "$(basename "$path")" == "$name" ]] || fail "rm guard: basename $(basename "$path") != $name"
+  [[ "$name" == "pocketweibo-v${vn}-${vc}-local-${ts}.apk" ]] || fail "rm guard: unexpected archive name $name"
+  [ -f "$path" ] || fail "rm guard: not a regular file: $path"
+  [ "$(dirname "$path")" = "$rb" ] || fail "rm guard: not a direct child of repo root (dirname=$(dirname "$path"))"
+  rm -- "$path" || fail "rm failed: $path"
+}
 
 # Parse KEY=value secrets file (first '=' separates key from value; value may contain '=').
 # Sets: ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_BASE64_FILE, KEYSTORE_PASSWORD, KEY_PASSWORD, KEY_ALIAS.
@@ -205,20 +217,24 @@ ok "Built APK: $SRC"
 # --- 5) Rename: pocketweibo first + version + build (versionCode) + local timestamp ---
 TS=$(date +%Y%m%d-%H%M%S)
 DEST_NAME="pocketweibo-v${VN}-${VC}-local-${TS}.apk"
-DEST="$ROOT/$DEST_NAME"
-mv "$SRC" "$DEST"
-ok "Renamed to $DEST"
+# Only this path is ever passed to rm (after guards); do not rm any other variable.
+ROOT_RELEASE_APK="${ROOT%/}/${DEST_NAME}"
+readonly ROOT_RELEASE_APK
+mv "$SRC" "$ROOT_RELEASE_APK"
+ok "Renamed to $ROOT_RELEASE_APK"
+
+APK_OUT="$ROOT_RELEASE_APK"
 
 # --- 6) Optional local copy (cp only; no adb). POSIX: cp SOURCE DEST — source first, destination second.
 if [ "$DO_COPY" = true ]; then
   mkdir -p "$COPY_DEST" || fail "mkdir -p failed: $COPY_DEST"
   COPY_PATH="${COPY_DEST%/}/$DEST_NAME"
-  echo "[..] cp SOURCE DEST  →  cp \"$DEST\" \"$COPY_PATH\""
-  if cp "$DEST" "$COPY_PATH"; then
+  echo "[..] cp SOURCE DEST  →  cp \"$ROOT_RELEASE_APK\" \"$COPY_PATH\""
+  if cp "$ROOT_RELEASE_APK" "$COPY_PATH"; then
     ok "Copied with cp to: $COPY_PATH"
-    rm -f "$DEST" || fail "rm failed: $DEST (copy exists at $COPY_PATH)"
+    rm_guarded_root_release_apk "$ROOT_RELEASE_APK" "$VN" "$VC" "$TS" "$DEST_NAME"
     ok "Removed root copy: $DEST_NAME"
-    DEST="$COPY_PATH"
+    APK_OUT="$COPY_PATH"
   else
     fail "cp failed. Check permissions and that $COPY_DEST is a writable directory on this machine."
   fi
@@ -228,7 +244,7 @@ fi
 
 echo ""
 echo "========== SUCCESS =========="
-echo "  APK:     $DEST"
+echo "  APK:     $APK_OUT"
 echo "  version: $VN (code $VC)"
 if [ "$DO_COPY" = true ]; then
   echo "  copy:    ${COPY_DEST%/}/$DEST_NAME (root copy removed after cp)"
