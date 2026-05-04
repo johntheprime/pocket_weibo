@@ -218,31 +218,22 @@ private fun CommentItem(
                 modifier = Modifier.padding(top = 4.dp)
             )
             
-            if (isOwnComment) {
+            if (isOwnComment && canDeleteComment) {
                 Row(
                     modifier = Modifier.padding(top = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (canDeleteComment) {
-                        TextButton(onClick = onDelete) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = stringResource(R.string.delete),
-                                tint = WeiboOrange,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = stringResource(R.string.delete),
-                                fontSize = 12.sp,
-                                color = WeiboOrange
-                            )
-                        }
-                    } else {
+                    TextButton(onClick = onDelete) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = stringResource(R.string.delete),
+                            tint = WeiboOrange,
+                            modifier = Modifier.size(16.dp)
+                        )
                         Text(
-                            text = stringResource(R.string.comment_delete_locked_hint),
+                            text = stringResource(R.string.delete),
                             fontSize = 12.sp,
-                            color = GrayMiddle,
-                            modifier = Modifier.padding(top = 2.dp)
+                            color = WeiboOrange
                         )
                     }
                 }

@@ -389,14 +389,6 @@ fun ComposeScreen(
                             color = if (content.length > 1900) Color(0xFFFF5136) else GrayMiddle
                         )
                     }
-                    Text(
-                        text = stringResource(R.string.compose_shake_hint),
-                        fontSize = 11.sp,
-                        color = GrayMiddle,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 6.dp)
-                    )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -404,24 +396,15 @@ fun ComposeScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(
+                        Text(
+                            text = stringResource(R.string.compose_per_post_original_title),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = GrayDark,
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(end = 12.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.compose_per_post_original_title),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = GrayDark
-                            )
-                            Text(
-                                text = stringResource(R.string.compose_per_post_original_subtitle),
-                                fontSize = 11.sp,
-                                color = GrayMiddle,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                        }
+                        )
                         Switch(
                             checked = useOriginalForThisPost,
                             onCheckedChange = { useOriginalForThisPost = it }
