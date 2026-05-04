@@ -10,8 +10,6 @@
     <string name="tab_compose_cd">New post</string>
 
     <string name="title_home">Home</string>
-    <string name="home_my_posts_link">My posts</string>
-    <string name="home_my_posts_cd">My posts</string>
     <string name="title_message">Messages</string>
     <string name="title_discover">Discover</string>
     <string name="title_me">Me</string>
@@ -122,8 +120,16 @@
 
     <string name="home_search_cd">Search</string>
     <string name="home_more_cd">More</string>
-    <string name="home_title_menu_title">Home</string>
-    <string name="home_title_menu_refresh">Refresh timeline</string>
+    <string name="home_title_sheet_title">Quick access</string>
+    <string name="home_title_sheet_my_posts_subtitle">View everything you published</string>
+    <string name="home_title_sheet_section_identities">Identities &amp; recent posts</string>
+    <string name="home_title_sheet_empty_identity_posts">No posts yet</string>
+    <string name="home_title_sheet_more_posts">%1$d more…</string>
+    <string name="home_title_sheet_badge_active">Active</string>
+    <string name="home_title_sheet_my_posts_row_cd">My posts, view all</string>
+    <string name="home_title_sheet_identity_row_cd">Switch active identity to %1$s</string>
+    <string name="home_title_sheet_post_open_cd">Open this post</string>
+    <string name="home_title_open_menu_cd">Open quick access</string>
     <string name="home_search_dialog_title">Search posts</string>
     <string name="home_search_hint">Keyword in body or display name</string>
     <string name="home_search_apply">Search</string>

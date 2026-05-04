@@ -21,6 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,6 +40,8 @@ fun WeiboTitleBar(
     onRightIconClick: (() -> Unit)? = null,
     /** Shown under the title in the center (e.g. Home → “我的发布”). */
     centerBelowTitle: @Composable (() -> Unit)? = null,
+    /** When [showDropdown] is true, spoken label for the title tap target (e.g. “Open quick access”). */
+    titleDropdownContentDescription: String? = null,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -79,6 +83,15 @@ fun WeiboTitleBar(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .then(
+                                if (showDropdown && titleDropdownContentDescription != null) {
+                                    Modifier.semantics {
+                                        contentDescription = titleDropdownContentDescription
+                                    }
+                                } else {
+                                    Modifier
+                                }
+                            )
                             .clickable(enabled = showDropdown, onClick = onTitleClick),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
@@ -104,6 +117,15 @@ fun WeiboTitleBar(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .then(
+                            if (showDropdown && titleDropdownContentDescription != null) {
+                                Modifier.semantics {
+                                    contentDescription = titleDropdownContentDescription
+                                }
+                            } else {
+                                Modifier
+                            }
+                        )
                         .clickable(enabled = showDropdown, onClick = onTitleClick),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
