@@ -274,7 +274,7 @@ fun PostDetailScreen(
                     Divider(thickness = 0.5.dp)
                     Row(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.Bottom
                     ) {
                         OutlinedTextField(
                             value = commentText,
@@ -322,6 +322,8 @@ fun PostDetailScreen(
                 .fillMaxSize()
                 .background(Background)
                 .padding(innerPadding)
+                // Reserve space for the IME so the list scrolls above the keyboard
+                .imePadding()
         ) {
             post?.let { currentPost ->
                 item {

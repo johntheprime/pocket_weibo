@@ -67,6 +67,7 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-039 | **自定义头像全链路展示**：`IdentityAvatarStorage` 私有文件；**`Avatar`** 加载 **filesDir 相对路径** 与 **content/file** URI；**`PostWithIdentity`** 增加 **`identityCustomAvatarUri`**；首页卡片/评论表/详情/发现/消息/写微博栏统一展示；**男萌系卡通** 四款 **矢量 drawable** 入库（与 **F-037** 选区一致）。 | Done |
 | F-040 | **删除身份保留内容**：删除身份后，其微博与评论仍保留；作者展示为 **已注销账号**（中英资源）；`posts` / `comments` 对身份 **ON DELETE SET NULL**；若删的是当前身份则自动激活最早创建的另一身份。**入口**：**设置 → 身份管理** 列表每行 **删除图标**；**身份详情 / 编辑** 顶栏 **⋮ → 删除身份**。 | Done |
 | F-041 | **我页待处理提醒 · 按需展示**：**无**定时提醒时 **不显示**「待处理提醒」整块（含分隔线与空态）；存在至少一条时再显示标题、数量与列表（与 **F-019** / **F-027** 一致，减少空页面噪音）。 | Done |
+| F-042 | **评论与键盘**：**微博详情** 评论列表 **`LazyColumn`** 增加 **`imePadding()`**，正文区可 **上滑** 而不被键盘挡住；底栏输入与 **`OutlinedTextField`**（多行）**底对齐**。**评论底部弹层** 根 **`Column`** 使用 **`fillMaxHeight(0.92f)` + `imePadding()` + `navigationBarsPadding()`**，列表 **`weight(1f)`** 占满中间；空态用 **`weight(1f)`** 居中，输入条贴底；弹层内输入 **`maxLines = 5`** 自动换行。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 

@@ -3,9 +3,13 @@ package com.pocketweibo.ui.components
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -76,7 +80,10 @@ fun CommentBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 32.dp)
+                .fillMaxHeight(0.92f)
+                .imePadding()
+                .navigationBarsPadding()
+                .padding(bottom = 8.dp)
         ) {
             Row(
                 modifier = Modifier
@@ -103,19 +110,24 @@ fun CommentBottomSheet(
             Divider()
             
             if (comments.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.comments_empty),
-                    fontSize = 14.sp,
-                    color = GrayMiddle,
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp)
-                )
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.comments_empty),
+                        fontSize = 14.sp,
+                        color = GrayMiddle,
+                        modifier = Modifier.padding(32.dp)
+                    )
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f, fill = false)
+                        .weight(1f)
                 ) {
                     items(comments, key = { it.id }) { comment ->
                         CommentItem(
@@ -134,7 +146,7 @@ fun CommentBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Bottom
             ) {
                 OutlinedTextField(
                     value = commentText,
@@ -142,7 +154,7 @@ fun CommentBottomSheet(
                     placeholder = { Text(stringResource(R.string.comment_hint), fontSize = 14.sp) },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(20.dp),
-                    singleLine = true
+                    maxLines = 5
                 )
                 IconButton(
                     onClick = {
