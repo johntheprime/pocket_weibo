@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -297,8 +298,12 @@ fun ComposeScreen(
         onShakeSend = { performSend() }
     )
 
+    val formScrollState = rememberScrollState()
+
     Surface(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .imePadding(),
         color = Background
     ) {
         Column(
@@ -360,195 +365,202 @@ fun ComposeScreen(
                 }
             }
 
-            Surface(
+            Column(
                 modifier = Modifier
+                    .weight(1f, fill = true)
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                color = Surface,
-                shape = RoundedCornerShape(8.dp)
+                    .verticalScroll(formScrollState)
             ) {
-                Column(
-                    modifier = Modifier.padding(12.dp)
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = Surface,
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { showIdentityPicker = !showIdentityPicker }
+                    Column(
+                        modifier = Modifier.padding(12.dp)
                     ) {
-                        if (selectedIdentity != null) {
-                            Avatar(
-                                name = selectedIdentity!!.name,
-                                color = Color(0xFF4A90D9),
-                                size = 32.dp,
-                                avatarResName = selectedIdentity!!.avatarResName,
-                                customAvatarUri = selectedIdentity!!.customAvatarUri
-                            )
-                            Text(
-                                text = selectedIdentity!!.name,
-                                fontSize = 14.sp,
-                                color = GrayDark,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .background(GrayLight, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(text = "?", fontSize = 14.sp, color = GrayMiddle)
-                            }
-                            Text(
-                                text = stringResource(R.string.compose_select_identity),
-                                fontSize = 14.sp,
-                                color = GrayMiddle,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
-                    }
-
-                    if (showIdentityPicker && identities.isNotEmpty()) {
-                        LazyRow(
-                            modifier = Modifier.padding(top = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { showIdentityPicker = !showIdentityPicker }
                         ) {
-                            items(identities) { identity ->
+                            if (selectedIdentity != null) {
+                                Avatar(
+                                    name = selectedIdentity!!.name,
+                                    color = Color(0xFF4A90D9),
+                                    size = 32.dp,
+                                    avatarResName = selectedIdentity!!.avatarResName,
+                                    customAvatarUri = selectedIdentity!!.customAvatarUri
+                                )
+                                Text(
+                                    text = selectedIdentity!!.name,
+                                    fontSize = 14.sp,
+                                    color = GrayDark,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            } else {
                                 Box(
                                     modifier = Modifier
-                                        .size(40.dp)
-                                        .background(
-                                            if (selectedIdentity?.id == identity.id)
-                                                Color(0xFF4A90D9)
-                                            else
-                                                GrayLight,
-                                            CircleShape
-                                        )
-                                        .border(
-                                            width = if (selectedIdentity?.id == identity.id) 2.dp else 0.dp,
-                                            color = if (selectedIdentity?.id == identity.id) GrayDark else Color.Transparent,
-                                            shape = CircleShape
-                                        )
-                                        .clickable {
-                                            selectedIdentity = identity
-                                            showIdentityPicker = false
-                                        },
+                                        .size(32.dp)
+                                        .background(GrayLight, CircleShape),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = identity.name.first().toString().uppercase(),
-                                        color = Color.White,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Text(text = "?", fontSize = 14.sp, color = GrayMiddle)
+                                }
+                                Text(
+                                    text = stringResource(R.string.compose_select_identity),
+                                    fontSize = 14.sp,
+                                    color = GrayMiddle,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                            }
+                        }
+
+                        if (showIdentityPicker && identities.isNotEmpty()) {
+                            LazyRow(
+                                modifier = Modifier.padding(top = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(identities) { identity ->
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .background(
+                                                if (selectedIdentity?.id == identity.id)
+                                                    Color(0xFF4A90D9)
+                                                else
+                                                    GrayLight,
+                                                CircleShape
+                                            )
+                                            .border(
+                                                width = if (selectedIdentity?.id == identity.id) 2.dp else 0.dp,
+                                                color = if (selectedIdentity?.id == identity.id) GrayDark else Color.Transparent,
+                                                shape = CircleShape
+                                            )
+                                            .clickable {
+                                                selectedIdentity = identity
+                                                showIdentityPicker = false
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = identity.name.first().toString().uppercase(),
+                                            color = Color.White,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    TextField(
-                        value = content,
-                        onValueChange = {
-                            if (it.length <= 2000) {
-                                content = it
-                                lastContentEditedAt = SystemClock.elapsedRealtime()
-                            }
-                        },
-                        placeholder = { Text(stringResource(R.string.compose_content_hint), color = GrayMiddle) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp)
-                            .focusRequester(contentFocusRequester),
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent
-                        ),
-                        minLines = 5
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        Text(
-                            text = "${content.length}/2000",
-                            fontSize = 12.sp,
-                            color = if (content.length > 1900) Color(0xFFFF5136) else GrayMiddle
-                        )
-                    }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.compose_per_post_original_title),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = GrayDark,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 12.dp)
-                        )
-                        Switch(
-                            checked = useOriginalForThisPost,
-                            onCheckedChange = { useOriginalForThisPost = it }
-                        )
-                    }
-                    if (isPreparingImages) {
-                        Text(
-                            text = stringResource(R.string.compose_preparing_images),
-                            fontSize = 11.sp,
-                            color = WeiboOrange,
+                        TextField(
+                            value = content,
+                            onValueChange = {
+                                if (it.length <= 2000) {
+                                    content = it
+                                    lastContentEditedAt = SystemClock.elapsedRealtime()
+                                }
+                            },
+                            placeholder = { Text(stringResource(R.string.compose_content_hint), color = GrayMiddle) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 4.dp)
+                                .padding(top = 12.dp)
+                                .focusRequester(contentFocusRequester),
+                            colors = TextFieldDefaults.colors(
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent
+                            ),
+                            minLines = 5
                         )
-                    }
 
-                    if (preparedImageFiles.isNotEmpty()) {
-                        LazyRow(
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                .padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.End
                         ) {
-                            items(preparedImageFiles, key = { it.absolutePath }) { file ->
-                                Box(
-                                    modifier = Modifier.size(80.dp)
-                                ) {
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data(file)
-                                            .crossfade(true)
-                                            .build(),
-                                        contentDescription = stringResource(R.string.compose_image_cd),
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .size(80.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                    )
-                                    IconButton(
-                                        onClick = {
-                                            if (file.exists()) file.delete()
-                                            preparedImageFiles =
-                                                preparedImageFiles.filter { it.absolutePath != file.absolutePath }
-                                        },
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .size(20.dp)
-                                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                            Text(
+                                text = "${content.length}/2000",
+                                fontSize = 12.sp,
+                                color = if (content.length > 1900) Color(0xFFFF5136) else GrayMiddle
+                            )
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.compose_per_post_original_title),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = GrayDark,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(end = 12.dp)
+                            )
+                            Switch(
+                                checked = useOriginalForThisPost,
+                                onCheckedChange = { useOriginalForThisPost = it }
+                            )
+                        }
+                        if (isPreparingImages) {
+                            Text(
+                                text = stringResource(R.string.compose_preparing_images),
+                                fontSize = 11.sp,
+                                color = WeiboOrange,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp)
+                            )
+                        }
+
+                        if (preparedImageFiles.isNotEmpty()) {
+                            LazyRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(preparedImageFiles, key = { it.absolutePath }) { file ->
+                                    Box(
+                                        modifier = Modifier.size(80.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Close,
-                                            contentDescription = stringResource(R.string.compose_remove_image_cd),
-                                            tint = Color.White,
-                                            modifier = Modifier.size(12.dp)
+                                        AsyncImage(
+                                            model = ImageRequest.Builder(context)
+                                                .data(file)
+                                                .crossfade(true)
+                                                .build(),
+                                            contentDescription = stringResource(R.string.compose_image_cd),
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .size(80.dp)
+                                                .clip(RoundedCornerShape(8.dp))
                                         )
+                                        IconButton(
+                                            onClick = {
+                                                if (file.exists()) file.delete()
+                                                preparedImageFiles =
+                                                    preparedImageFiles.filter { it.absolutePath != file.absolutePath }
+                                            },
+                                            modifier = Modifier
+                                                .align(Alignment.TopEnd)
+                                                .size(20.dp)
+                                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = stringResource(R.string.compose_remove_image_cd),
+                                                tint = Color.White,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }

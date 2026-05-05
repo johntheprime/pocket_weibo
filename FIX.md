@@ -8,6 +8,7 @@ This file records **resolved requirements** and the **standard process** for eve
 
 | Date (UTC) | Requirement | Resolution | Verified |
 |-------------|---------------|------------|----------|
+| 2026-05-05 | **发微博**：正文过长时 **不随键盘上移**，内容被键盘挡住、不便编辑 | **`ComposeScreen`** 根 **`Surface`** 增加 **`imePadding()`**；正文与身份/配图卡片区放入 **`Modifier.weight(1f).verticalScroll`**，底部图片/相机/@ **工具栏** 固定在其下，键盘弹出时可 **滚动查看全文**。版本 **3.38.4 (159)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-05 | **删除身份无 UI 入口**：列表项传入 **`onDelete`** 却从未调用，用户无法删除身份 | **`IdentityListItem`** 行尾增加 **`IconButton`(删除)**，确认框不变；**`IdentityDetailScreen`** 在已有身份时顶栏 **⋮** 菜单 **删除身份** + 同一确认文案。更新 **`identity_delete_message`** 说明微博与评论保留；**`identity_delete_cd` / `identity_detail_more_cd`**。`FEATURE.md` **F-040** 补入口说明。版本 **3.38.3 (158)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-05 | **设置 · 导出数据**：备份成功后 **导出对话框应自动关闭** | 在 **`MeSettingsScreen`** 导出协程成功路径（分享面板已唤起）后设置 **`showExportDialog = false`**；失败时 **`toast_export_fail`**（中英）且不关对话框。版本 **3.38.2 (157)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-05 | **F-040** 升级后 **应用启动崩溃**（6→7 迁移） | **根因**：`comments_new` 外键指向 **`posts_new`**，随后将 **`posts_new` 重命名为 `posts`**，SQLite 仍保留对已不存在父表名的引用，数据库无法正常打开。**修复**：6→7 改为先将 **`comments` 拷入临时表**、替换 **`posts`** 后再建 **`comments_new` 且 `REFERENCES posts(id)`**；新增 **7→8** **`MIGRATION_7_8`** 重建 **`comments`**，修复已执行过错误脚本的用户库。`AppDatabase` **version 8**。版本 **3.38.1 (156)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
