@@ -215,44 +215,35 @@ fun MeScreen(
                 }
             }
 
-            item {
-                Divider(thickness = 0.5.dp)
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = SurfaceColor,
-                    tonalElevation = 1.dp
-                ) {
-                    val scrollState = rememberScrollState()
-                    Column(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+            if (pendingReminders.isNotEmpty()) {
+                item {
+                    Divider(thickness = 0.5.dp)
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = SurfaceColor,
+                        tonalElevation = 1.dp
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
+                        val scrollState = rememberScrollState()
+                        Column(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                         ) {
-                            Text(
-                                text = stringResource(R.string.me_reminders_title),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = GrayDark,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (pendingReminders.isNotEmpty()) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.me_reminders_title),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GrayDark,
+                                    modifier = Modifier.weight(1f)
+                                )
                                 Text(
                                     text = "(${pendingReminders.size})",
                                     fontSize = 14.sp,
                                     color = GrayMiddle
                                 )
                             }
-                        }
-                        if (pendingReminders.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.me_reminders_empty),
-                                fontSize = 13.sp,
-                                color = GrayMiddle,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        } else {
                             Text(
                                 text = stringResource(R.string.me_reminders_bottom_hint),
                                 fontSize = 12.sp,

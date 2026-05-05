@@ -33,7 +33,6 @@
     <string name="me_identity_count">%1$d 个身份</string>
     <string name="me_avatar_placeholder">?</string>
     <string name="me_reminders_title">待处理提醒</string>
-    <string name="me_reminders_empty">暂无定时提醒。在任意帖子详情 ⋮ 中可设置。</string>
     <string name="me_reminders_subtitle">%1$s · %2$s</string>
     <string name="me_reminders_subtitle_repeat">%1$s · %2$s · %3$s</string>
     <string name="me_reminders_subtitle_next_repeat">下次 %1$s · %2$s</string>

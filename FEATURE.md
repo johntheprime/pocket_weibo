@@ -66,6 +66,7 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-038 | **自动每日文本备份**：**本地日历日** 首次打开应用时生成 **纯文本** JSON（无配图、无自定义头像路径），写入 **`filesDir/auto_text_backups`**，**AES-GCM** 密钥由 **Android ID + 包名** 派生；**仅保留最近 3 天**；**设置** 中固定展示 **最近 3 个日历日** 各一条 **解密并分享 JSON**（有则按钮、无则提示），并支持从 **.pwb 文件** 解密。 | Done |
 | F-039 | **自定义头像全链路展示**：`IdentityAvatarStorage` 私有文件；**`Avatar`** 加载 **filesDir 相对路径** 与 **content/file** URI；**`PostWithIdentity`** 增加 **`identityCustomAvatarUri`**；首页卡片/评论表/详情/发现/消息/写微博栏统一展示；**男萌系卡通** 四款 **矢量 drawable** 入库（与 **F-037** 选区一致）。 | Done |
 | F-040 | **删除身份保留内容**：删除身份后，其微博与评论仍保留；作者展示为 **已注销账号**（中英资源）；`posts` / `comments` 对身份 **ON DELETE SET NULL**；若删的是当前身份则自动激活最早创建的另一身份。**入口**：**设置 → 身份管理** 列表每行 **删除图标**；**身份详情 / 编辑** 顶栏 **⋮ → 删除身份**。 | Done |
+| F-041 | **我页待处理提醒 · 按需展示**：**无**定时提醒时 **不显示**「待处理提醒」整块（含分隔线与空态）；存在至少一条时再显示标题、数量与列表（与 **F-019** / **F-027** 一致，减少空页面噪音）。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 
