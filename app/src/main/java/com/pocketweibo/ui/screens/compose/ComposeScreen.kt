@@ -118,6 +118,10 @@ fun ComposeScreen(
     var useOriginalForThisPost by remember { mutableStateOf(false) }
     var showMentionDialog by remember { mutableStateOf(false) }
 
+    LaunchedEffect(preparedImageFiles.size) {
+        if (preparedImageFiles.isEmpty()) useOriginalForThisPost = false
+    }
+
     var lastContentEditedAt by remember { mutableStateOf(SystemClock.elapsedRealtime()) }
     val composeOpenedAt = remember { SystemClock.elapsedRealtime() }
     var lastPostedAt by remember { mutableStateOf(0L) }
@@ -489,26 +493,28 @@ fun ComposeScreen(
                                 color = if (content.length > 1900) Color(0xFFFF5136) else GrayMiddle
                             )
                         }
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 10.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.compose_per_post_original_title),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = GrayDark,
+                        if (preparedImageFiles.isNotEmpty()) {
+                            Row(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(end = 12.dp)
-                            )
-                            Switch(
-                                checked = useOriginalForThisPost,
-                                onCheckedChange = { useOriginalForThisPost = it }
-                            )
+                                    .fillMaxWidth()
+                                    .padding(top = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.compose_per_post_original_title),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = GrayDark,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = 12.dp)
+                                )
+                                Switch(
+                                    checked = useOriginalForThisPost,
+                                    onCheckedChange = { useOriginalForThisPost = it }
+                                )
+                            }
                         }
                         if (isPreparingImages) {
                             Text(
