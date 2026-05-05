@@ -14,9 +14,6 @@
     <string name="title_discover">发现</string>
     <string name="title_me">我</string>
     <string name="title_settings">设置</string>
-    <string name="title_my_posts">我的发布</string>
-    <string name="my_posts_empty_title">该身份暂无发布内容</string>
-    <string name="my_posts_empty_subtitle">切换身份或发布新内容</string>
     <string name="title_post_detail">微博详情</string>
     <string name="title_identities">身份管理</string>
     <string name="title_compose">发微博</string>
@@ -135,16 +132,19 @@
 
     <string name="home_search_cd">搜索</string>
     <string name="home_more_cd">更多</string>
-    <string name="home_title_sheet_title">快捷入口</string>
-    <string name="home_title_sheet_my_posts_subtitle">查看全部发布内容</string>
-    <string name="home_title_sheet_section_identities">身份与最近微博</string>
+    <string name="home_title_sheet_title">首页筛选</string>
+    <string name="home_filter_all_title">全部动态</string>
+    <string name="home_filter_all_subtitle">显示所有身份的微博</string>
+    <string name="home_filter_all_row_cd">显示全部动态</string>
+    <string name="home_filter_section_identities">按身份查看</string>
+    <string name="home_filter_strip_label">仅看：%1$s</string>
+    <string name="home_filter_clear_cd">清除身份筛选</string>
     <string name="home_title_sheet_empty_identity_posts">暂无微博</string>
     <string name="home_title_sheet_more_posts">还有 %1$d 条…</string>
     <string name="home_title_sheet_badge_active">当前</string>
-    <string name="home_title_sheet_my_posts_row_cd">我的发布，查看全部</string>
-    <string name="home_title_sheet_identity_row_cd">切换当前身份为 %1$s</string>
+    <string name="home_title_sheet_identity_row_cd">仅看 %1$s 的微博并设为当前身份</string>
     <string name="home_title_sheet_post_open_cd">打开这条微博</string>
-    <string name="home_title_open_menu_cd">打开快捷入口</string>
+    <string name="home_title_open_menu_cd">打开首页筛选</string>
     <string name="home_search_dialog_title">搜索微博</string>
     <string name="home_search_hint">正文或昵称关键词</string>
     <string name="home_search_apply">搜索</string>
@@ -152,6 +152,7 @@
     <string name="home_more_settings">设置</string>
     <string name="home_more_discover">发现</string>
     <string name="home_empty_search">没有匹配的动态</string>
+    <string name="home_empty_filter_identity">该身份下暂无微博</string>
 
     <string name="message_tab_received">收到的评论</string>
     <string name="message_tab_sent">发出的评论</string>

@@ -32,7 +32,6 @@ import com.pocketweibo.ui.screens.identity.IdentityDetailScreen
 import com.pocketweibo.ui.screens.identity.IdentityListScreen
 import com.pocketweibo.ui.screens.me.MeScreen
 import com.pocketweibo.ui.screens.me.MeSettingsScreen
-import com.pocketweibo.ui.screens.me.MyPostsScreen
 import com.pocketweibo.ui.screens.message.MessageScreen
 import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.ui.ComposeIntentViewModel
@@ -85,10 +84,8 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     val homeListState = rememberLazyListState()
     val discoverTrendingListState = rememberLazyListState()
     val discoverSearchListState = rememberLazyListState()
-    val myPostsListState = rememberLazyListState()
     var selectedTab by remember { mutableStateOf(MainTab.HOME) }
     var showCompose by remember { mutableStateOf(false) }
-    var showMyPosts by remember { mutableStateOf(false) }
     var showIdentityList by remember { mutableStateOf(false) }
     var identityDetailId by remember { mutableStateOf<Long?>(null) }
     var postDetailId by remember { mutableStateOf<Long?>(null) }
@@ -118,18 +115,17 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
             identityDetailId != null -> identityDetailId = null
             showIdentityList -> showIdentityList = false
             postDetailId != null -> postDetailId = null
-            showMyPosts -> showMyPosts = false
             showCompose -> showCompose = false
             showMeSettings -> showMeSettings = false
         }
     }
 
-    val canSwipeBack = identityDetailId != null || showIdentityList || postDetailId != null || showMyPosts || showCompose || showMeSettings
+    val canSwipeBack = identityDetailId != null || showIdentityList || postDetailId != null || showCompose || showMeSettings
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (!showCompose && !showMyPosts && !showIdentityList && identityDetailId == null && postDetailId == null && !showMeSettings) {
+            if (!showCompose && !showIdentityList && identityDetailId == null && postDetailId == null && !showMeSettings) {
                 WeiboBottomTabBar(
                     selectedTab = selectedTab,
                     onTabSelected = { tab ->
@@ -201,14 +197,6 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
-                showMyPosts -> {
-                    MyPostsScreen(
-                        onBack = { showMyPosts = false },
-                        onPostClick = { postId -> postDetailId = postId },
-                        listState = myPostsListState,
-                        modifier = Modifier.padding(paddingValues)
-                    )
-                }
                 showMeSettings -> {
                     MeSettingsScreen(
                         onBack = { showMeSettings = false },
@@ -225,7 +213,6 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             onPostClick = { postId -> postDetailId = postId },
                             onOpenSettings = { showMeSettings = true },
                             onNavigateToDiscover = { selectedTab = MainTab.DISCOVER },
-                            onOpenMyPosts = { showMyPosts = true },
                             listState = homeListState,
                             scrollToLatestSignal = homeScrollToLatestSignal,
                             scrollToLatestConsumedSignal = homeScrollToLatestConsumed,

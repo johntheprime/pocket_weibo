@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,7 +24,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -84,7 +86,6 @@ fun HomeScreen(
     onPostClick: (Long) -> Unit = {},
     onOpenSettings: () -> Unit = {},
     onNavigateToDiscover: () -> Unit = {},
-    onOpenMyPosts: () -> Unit = {},
     listState: LazyListState,
     /** Incremented when user double-taps the Home tab or publishes a post: clear search filter and replay refresh affordance. */
     scrollToLatestSignal: Int = 0,
@@ -128,6 +129,8 @@ fun HomeScreen(
     var showSearchDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var searchDraft by remember { mutableStateOf("") }
+    /** `null` = show every identity on the home feed; non-null = only posts by that identity. */
+    var homeIdentityFilterId by remember { mutableStateOf<Long?>(null) }
     var moreMenuExpanded by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
 
@@ -142,9 +145,14 @@ fun HomeScreen(
         }
     )
 
-    val filteredPosts = remember(posts, searchQuery) {
-        if (searchQuery.isBlank()) posts
-        else posts.filter { p ->
+    val filteredPosts = remember(posts, searchQuery, homeIdentityFilterId) {
+        var list = posts
+        val fid = homeIdentityFilterId
+        if (fid != null) {
+            list = list.filter { it.identityId == fid }
+        }
+        if (searchQuery.isBlank()) list
+        else list.filter { p ->
             p.content.contains(searchQuery, ignoreCase = true) ||
                 (p.identityName?.contains(searchQuery, ignoreCase = true) == true)
         }
@@ -154,6 +162,7 @@ fun HomeScreen(
         if (scrollToLatestSignal <= scrollToLatestConsumedSignal) return@LaunchedEffect
         searchQuery = ""
         searchDraft = ""
+        homeIdentityFilterId = null
         isRefreshing = true
         delay(450L)
         isRefreshing = false
@@ -219,6 +228,43 @@ fun HomeScreen(
 
             Divider(thickness = 0.5.dp)
 
+            homeIdentityFilterId?.let { fid ->
+                val labelName = identities.find { it.id == fid }?.name?.let { identityDisplayName(it) } ?: "—"
+                val clearFilterCd = stringResource(R.string.home_filter_clear_cd)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(WeiboOrange.copy(alpha = 0.1f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_filter_strip_label, labelName),
+                        fontSize = 13.sp,
+                        color = GrayDark,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 8.dp)
+                    )
+                    IconButton(
+                        onClick = { homeIdentityFilterId = null },
+                        modifier = Modifier.semantics {
+                            contentDescription = clearFilterCd
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                            tint = GrayMiddle,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                Divider(thickness = 0.5.dp)
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -227,7 +273,8 @@ fun HomeScreen(
             ) {
                 when {
                     posts.isEmpty() -> EmptyFeed()
-                    filteredPosts.isEmpty() -> EmptySearch()
+                    filteredPosts.isEmpty() && searchQuery.isNotBlank() -> EmptySearch()
+                    filteredPosts.isEmpty() -> EmptyFilteredFeed()
                     else -> {
                         LazyColumn(
                             state = listState,
@@ -287,13 +334,15 @@ fun HomeScreen(
                 sortedIdentities = sortedIdentitiesForSheet,
                 postsByIdentity = postsByIdentity,
                 activeIdentityId = activeIdentity?.id,
-                onMyPosts = {
+                filterIdentityId = homeIdentityFilterId,
+                onChooseAll = {
+                    homeIdentityFilterId = null
                     showTitleQuickAccessSheet = false
-                    onOpenMyPosts()
                 },
-                onPickIdentity = { id ->
+                onChooseIdentity = { id ->
                     scope.launch {
                         app.repository.setActiveIdentity(id)
+                        homeIdentityFilterId = id
                         showTitleQuickAccessSheet = false
                     }
                 },
@@ -348,11 +397,12 @@ private fun HomeTitleQuickAccessSheet(
     sortedIdentities: List<IdentityEntity>,
     postsByIdentity: Map<Long?, List<PostWithIdentity>>,
     activeIdentityId: Long?,
-    onMyPosts: () -> Unit,
-    onPickIdentity: (Long) -> Unit,
+    filterIdentityId: Long?,
+    onChooseAll: () -> Unit,
+    onChooseIdentity: (Long) -> Unit,
     onOpenPost: (Long) -> Unit
 ) {
-    val myPostsRowCd = stringResource(R.string.home_title_sheet_my_posts_row_cd)
+    val allRowCd = stringResource(R.string.home_filter_all_row_cd)
     val postOpenCd = stringResource(R.string.home_title_sheet_post_open_cd)
     LazyColumn(
         modifier = Modifier
@@ -370,14 +420,20 @@ private fun HomeTitleQuickAccessSheet(
                     .padding(top = 4.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))
+            val allSelected = filterIdentityId == null
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = WeiboOrange.copy(alpha = 0.09f),
+                color = if (allSelected) WeiboOrange.copy(alpha = 0.12f) else Color.White,
                 modifier = Modifier
                     .padding(horizontal = 20.dp)
                     .fillMaxWidth()
-                    .semantics { contentDescription = myPostsRowCd }
-                    .clickable(onClick = onMyPosts)
+                    .border(
+                        width = if (allSelected) 2.dp else 1.dp,
+                        color = if (allSelected) WeiboOrange else GrayMiddle.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .semantics { contentDescription = allRowCd }
+                    .clickable(onClick = onChooseAll)
             ) {
                 Row(
                     modifier = Modifier
@@ -387,30 +443,33 @@ private fun HomeTitleQuickAccessSheet(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = stringResource(R.string.title_my_posts),
-                            color = WeiboOrange,
+                            text = stringResource(R.string.home_filter_all_title),
+                            color = if (allSelected) WeiboOrange else GrayDark,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = stringResource(R.string.home_title_sheet_my_posts_subtitle),
+                            text = stringResource(R.string.home_filter_all_subtitle),
                             color = GrayMiddle,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(top = 2.dp)
                         )
                     }
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        tint = GrayMiddle
-                    )
+                    if (allSelected) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = WeiboOrange,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
             Divider(modifier = Modifier.padding(horizontal = 20.dp))
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = stringResource(R.string.home_title_sheet_section_identities),
+                text = stringResource(R.string.home_filter_section_identities),
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 color = GrayDark,
@@ -420,6 +479,7 @@ private fun HomeTitleQuickAccessSheet(
         }
         items(sortedIdentities, key = { it.id }) { identity ->
             val identityRowCd = stringResource(R.string.home_title_sheet_identity_row_cd, identity.name)
+            val filteredToThis = filterIdentityId != null && filterIdentityId == identity.id
             val list = postsByIdentity[identity.id].orEmpty()
             val top = list.take(3)
             val more = (list.size - 3).coerceAtLeast(0)
@@ -427,12 +487,24 @@ private fun HomeTitleQuickAccessSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .then(
+                        if (filteredToThis) {
+                            Modifier.border(
+                                width = 2.dp,
+                                color = WeiboOrange.copy(alpha = 0.5f),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .padding(horizontal = 4.dp, vertical = 4.dp)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .semantics { contentDescription = identityRowCd }
-                        .clickable { onPickIdentity(identity.id) },
+                        .clickable { onChooseIdentity(identity.id) },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Avatar(
@@ -470,6 +542,16 @@ private fun HomeTitleQuickAccessSheet(
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
+                        }
+                        if (filteredToThis) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = WeiboOrange,
+                                modifier = Modifier
+                                    .padding(start = 6.dp)
+                                    .size(20.dp)
+                            )
                         }
                     }
                 }
@@ -510,6 +592,20 @@ private fun HomeTitleQuickAccessSheet(
         item {
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+private fun EmptyFilteredFeed() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = stringResource(R.string.home_empty_filter_identity),
+            fontSize = 16.sp,
+            color = GrayMiddle
+        )
     }
 }
 

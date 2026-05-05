@@ -38,7 +38,7 @@ fun WeiboTitleBar(
     leftIcon: @Composable (() -> Unit)? = null,
     rightIcon: @Composable (() -> Unit)? = null,
     onRightIconClick: (() -> Unit)? = null,
-    /** Shown under the title in the center (e.g. Home → “我的发布”). */
+    /** Shown under the title in the center (optional subtitle / chips). */
     centerBelowTitle: @Composable (() -> Unit)? = null,
     /** When [showDropdown] is true, spoken label for the title tap target (e.g. “Open quick access”). */
     titleDropdownContentDescription: String? = null,
