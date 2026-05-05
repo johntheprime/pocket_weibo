@@ -1,0 +1,13 @@
+PocketWeibo preset identity avatars (sketch / hand-drawn style)
+
+Artwork: Open Peeps
+  Creator: Pablo Stanley
+  Website: https://www.openpeeps.com/
+  License: CC0 1.0 Universal (public domain, free for commercial use)
+
+Renders: PNG exports were generated with DiceBear 9.x “open-peeps” style
+  Project: https://www.dicebear.com
+  Note: DiceBear’s code is MIT-licensed; the Open Peeps artwork used by
+  that style remains under CC0 as stated on DiceBear’s style page.
+
+No affiliation with the Open Peeps or DiceBear projects.

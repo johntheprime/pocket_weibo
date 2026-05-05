@@ -70,6 +70,7 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-042 | **评论与键盘**：**微博详情** 评论列表 **`LazyColumn`** 增加 **`imePadding()`**，正文区可 **上滑** 而不被键盘挡住；底栏输入与 **`OutlinedTextField`**（多行）**底对齐**。**评论底部弹层** 根 **`Column`** 使用 **`fillMaxHeight(0.92f)` + `imePadding()` + `navigationBarsPadding()`**，列表 **`weight(1f)`** 占满中间；空态用 **`weight(1f)`** 居中，输入条贴底；弹层内输入 **`maxLines = 5`** 自动换行。 | Done |
 | F-043 | **发微博 · 原图开关按需展示**：**本帖原图（不压缩）** 行与 **`Switch`** 仅在 **已附加至少一张配图** 时显示；删光配图后 **自动关闭** 原图开关，避免无图时误显压缩选项。 | Done |
 | F-044 | **首页 · 标题筛选（当前页）**：点击 **首页** 标题打开面板；**全部动态** 为默认（列表含所有身份）；选某身份则 **首页列表就地筛选** 为该身份帖子，并 **设为当前身份**；标题下 **浅色条** 显示「仅看：某身份」与 **清除**；双击首页 Tab **一并清除身份筛选**（与 **F-034** 一致）；**移除** 独立 **`MyPostsScreen`** 全屏入口。 | Done |
+| F-045 | **身份预设头像 · Open Peeps 速写风**：内置 **Open Peeps**（Pablo Stanley，**CC0** 可商用）经 **DiceBear** Open Peeps 样式导出的 **PNG**（透明底）；身份编辑中 **男 / 女** 各 **4** 款速写预设（`drawable-nodpi`），取代原萌系矢量卡通选区；旧卡通 **`drawable`** 仍保留以兼容已存 `avatarResName`。许可说明见 **`legal/open_peeps_notice.txt`**。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 

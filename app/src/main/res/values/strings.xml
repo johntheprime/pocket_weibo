@@ -286,8 +286,8 @@
     <string name="identity_avatar_from_gallery">从相册上传头像</string>
     <string name="identity_avatar_from_gallery_cd">从相册选择图片作为头像</string>
     <string name="identity_avatar_section_custom">自定义头像</string>
-    <string name="identity_avatar_section_cartoon_boy">萌系卡通头像（男）</string>
-    <string name="identity_avatar_section_more_presets">更多预设</string>
+    <string name="identity_avatar_section_sketch_male">手绘速写头像（男）</string>
+    <string name="identity_avatar_section_sketch_female">手绘速写头像（女）</string>
     <string name="identity_avatar_clear_custom">移除照片，使用下方预设</string>
     <string name="identity_avatar_clear_custom_cd">移除自定义头像并改用预设</string>
     <string name="identity_label_name">姓名</string>

@@ -56,6 +56,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -76,15 +77,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** Male cartoon-style vector presets (F-035 / identity editor). */
-internal val avatarBoyCartoonPresets = listOf(
-    "avatar_boy_hoodie", "avatar_boy_sport", "avatar_boy_shades", "avatar_boy_formal"
+/** Hand-drawn sketch-style presets (Open Peeps, CC0) via DiceBear; see `legal/open_peeps_notice.txt`. */
+internal val avatarSketchMalePresets = listOf(
+    "avatar_sketch_m1", "avatar_sketch_m2", "avatar_sketch_m3", "avatar_sketch_m4"
 )
 
-internal val avatarOtherPresets = listOf(
-    "avatar_default",
-    "avatar_scholar", "avatar_artist", "avatar_scientist",
-    "avatar_writer", "avatar_female_scholar", "avatar_western", "avatar_chinese_scholar"
+internal val avatarSketchFemalePresets = listOf(
+    "avatar_sketch_f1", "avatar_sketch_f2", "avatar_sketch_f3", "avatar_sketch_f4"
 )
 
 @Composable
@@ -96,7 +95,10 @@ private fun PresetAvatarThumbnail(resName: String, size: Int) {
         Image(
             painter = androidx.compose.ui.res.painterResource(id = resourceId),
             contentDescription = null,
-            modifier = Modifier.size(size.dp)
+            modifier = Modifier
+                .size(size.dp)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
         )
     } else {
         Box(
@@ -439,7 +441,7 @@ fun IdentityDetailScreen(
 
                 item {
                     Text(
-                        text = stringResource(R.string.identity_avatar_section_cartoon_boy),
+                        text = stringResource(R.string.identity_avatar_section_sketch_male),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = GrayDark,
@@ -458,7 +460,7 @@ fun IdentityDetailScreen(
                                 .padding(16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(avatarBoyCartoonPresets) { resName ->
+                            items(avatarSketchMalePresets) { resName ->
                                 val selected =
                                     !preferCustomAvatar && avatarResName == resName
                                 PresetAvatarRow(
@@ -477,7 +479,7 @@ fun IdentityDetailScreen(
 
                 item {
                     Text(
-                        text = stringResource(R.string.identity_avatar_section_more_presets),
+                        text = stringResource(R.string.identity_avatar_section_sketch_female),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = GrayDark,
@@ -496,7 +498,7 @@ fun IdentityDetailScreen(
                                 .padding(16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(avatarOtherPresets) { resName ->
+                            items(avatarSketchFemalePresets) { resName ->
                                 val selected =
                                     !preferCustomAvatar && avatarResName == resName
                                 PresetAvatarRow(
