@@ -15,9 +15,9 @@ android {
         minSdk = 26
         targetSdk = 34
         // versionName: semantic versioning (MAJOR.MINOR.PATCH). Bump when you ship user-facing changes.
-        versionName = "3.41.0"
+        versionName = "3.41.1"
         // versionCode: must increase for every release APK that should upgrade in-place (same signing key).
-        versionCode = 164
+        versionCode = 165
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -43,7 +43,10 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 shrinks unused code; ~smaller release APK. Resource shrinking stays off:
+            // avatars are resolved via Resources.getIdentifier(name, "drawable", …).
+            isMinifyEnabled = true
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
