@@ -325,6 +325,7 @@
     <string name="md_section_posts">Posts</string>
     <string name="md_post_heading">Post by %1$s</string>
     <string name="md_unknown_author">Unknown</string>
+    <string name="deleted_identity_label">Deleted account</string>
     <string name="md_field_nationality">Nationality</string>
     <string name="md_field_gender">Gender</string>
     <string name="md_field_occupation">Occupation</string>

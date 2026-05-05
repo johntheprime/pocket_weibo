@@ -124,8 +124,13 @@ class WeiboRepository(
         }
 
     suspend fun deleteIdentity(identity: IdentityEntity) = withContext(Dispatchers.IO) {
+        val wasActive = identity.isActive
         IdentityAvatarStorage.deleteForIdentity(context, identity.id)
         identityDao.delete(identity)
+        if (wasActive) {
+            identityDao.deactivateAll()
+            identityDao.getFirstIdentityByCreatedAt()?.let { identityDao.activate(it.id) }
+        }
     }
 
     suspend fun setActiveIdentity(id: Long) {
@@ -342,7 +347,7 @@ class WeiboRepository(
         posts.forEach { post ->
             val postJson = JSONObject().apply {
                 put("id", post.id)
-                put("identityId", post.identityId)
+                if (post.identityId != null) put("identityId", post.identityId) else put("identityId", JSONObject.NULL)
                 put("content", post.content)
                 put("imageUris", post.imageUris)
                 put("extrasJson", post.extrasJson)
@@ -360,7 +365,7 @@ class WeiboRepository(
             val commentJson = JSONObject().apply {
                 put("id", comment.id)
                 put("postId", comment.postId)
-                put("identityId", comment.identityId)
+                if (comment.identityId != null) put("identityId", comment.identityId) else put("identityId", JSONObject.NULL)
                 put("content", comment.content)
                 put("createdAt", comment.createdAt)
             }
@@ -414,7 +419,7 @@ class WeiboRepository(
         posts.forEach { post ->
             val postJson = JSONObject().apply {
                 put("id", post.id)
-                put("identityId", post.identityId)
+                if (post.identityId != null) put("identityId", post.identityId) else put("identityId", JSONObject.NULL)
                 put("content", post.content)
                 put("imageUris", "")
                 put("extrasJson", post.extrasJson)
@@ -432,7 +437,7 @@ class WeiboRepository(
             val commentJson = JSONObject().apply {
                 put("id", comment.id)
                 put("postId", comment.postId)
-                put("identityId", comment.identityId)
+                if (comment.identityId != null) put("identityId", comment.identityId) else put("identityId", JSONObject.NULL)
                 put("content", comment.content)
                 put("createdAt", comment.createdAt)
                 put("replyingToCommentId", comment.replyingToCommentId ?: JSONObject.NULL)
@@ -524,8 +529,10 @@ class WeiboRepository(
         sb.appendLine()
 
         posts.forEach { post ->
-            val identity = identities.find { it.id == post.identityId }
-            val author = identity?.name ?: r.getString(R.string.md_unknown_author)
+            val identity = post.identityId?.let { id -> identities.find { it.id == id } }
+            val author = identity?.name
+                ?: if (post.identityId == null) r.getString(R.string.deleted_identity_label)
+                else r.getString(R.string.md_unknown_author)
             sb.appendLine("### ${r.getString(R.string.md_post_heading, author)}")
             sb.appendLine()
             sb.appendLine(post.content)
@@ -747,15 +754,19 @@ class WeiboRepository(
                     for (i in 0 until postsArray.length()) {
                         val postJson = postsArray.getJSONObject(i)
                         val oldPostId = postJson.getLong("id")
-                        val oldIdentityId = postJson.getLong("identityId")
-                        val newIdentityId = identityOldToNew[oldIdentityId] ?: continue
+                        val newIdentityId: Long? = if (postJson.isNull("identityId")) {
+                            null
+                        } else {
+                            identityOldToNew[postJson.getLong("identityId")]
+                        }
                         val stripImages = mergeAttachmentStaging != null
                         val newPostId = postDao.insert(
                             postFromJson(
                                 postJson,
                                 id = 0L,
+                                imageUrisOverride = if (stripImages) "" else null,
                                 identityId = newIdentityId,
-                                imageUrisOverride = if (stripImages) "" else null
+                                useIdentityFromJson = false
                             )
                         )
                         postOldToNew[oldPostId] = newPostId
@@ -767,7 +778,12 @@ class WeiboRepository(
                                 postJson.optString("imageUris", "")
                             )
                             if (merged.isNotEmpty()) {
-                                val current = postFromJson(postJson, newPostId, newIdentityId)
+                                val current = postFromJson(
+                                    postJson,
+                                    id = newPostId,
+                                    identityId = newIdentityId,
+                                    useIdentityFromJson = false
+                                )
                                 postDao.update(current.copy(imageUris = merged))
                             }
                         }
@@ -779,9 +795,20 @@ class WeiboRepository(
                         val commentJson = commentsArray.getJSONObject(i)
                         val oldPostId = commentJson.getLong("postId")
                         val newPostId = postOldToNew[oldPostId] ?: continue
-                        val oldIdentityId = commentJson.getLong("identityId")
-                        val newIdentityId = identityOldToNew[oldIdentityId] ?: continue
-                        commentDao.insert(commentFromJson(commentJson, 0L, newPostId, newIdentityId))
+                        val newIdentityId: Long? = if (commentJson.isNull("identityId")) {
+                            null
+                        } else {
+                            identityOldToNew[commentJson.getLong("identityId")]
+                        }
+                        commentDao.insert(
+                            commentFromJson(
+                                commentJson,
+                                id = 0L,
+                                postId = newPostId,
+                                identityId = newIdentityId,
+                                useFixedPostAndIdentity = true
+                            )
+                        )
                     }
                 }
             }
@@ -826,10 +853,18 @@ class WeiboRepository(
     private fun postFromJson(
         postJson: JSONObject,
         id: Long,
+        imageUrisOverride: String? = null,
         identityId: Long? = null,
-        imageUrisOverride: String? = null
+        useIdentityFromJson: Boolean = true
     ): PostEntity {
-        val resolvedIdentityId = identityId ?: postJson.getLong("identityId")
+        val resolvedIdentityId = if (useIdentityFromJson) {
+            when {
+                postJson.isNull("identityId") -> null
+                else -> postJson.getLong("identityId")
+            }
+        } else {
+            identityId
+        }
         return PostEntity(
             id = id,
             identityId = resolvedIdentityId,
@@ -875,16 +910,31 @@ class WeiboRepository(
         commentJson: JSONObject,
         id: Long,
         postId: Long? = null,
-        identityId: Long? = null
+        identityId: Long? = null,
+        useFixedPostAndIdentity: Boolean = false
     ): CommentEntity {
-        val resolvedPostId = postId ?: commentJson.getLong("postId")
-        val resolvedIdentityId = identityId ?: commentJson.getLong("identityId")
+        val resolvedPostId = if (useFixedPostAndIdentity) postId!! else commentJson.getLong("postId")
+        val resolvedIdentityId = if (useFixedPostAndIdentity) {
+            identityId
+        } else {
+            when {
+                commentJson.isNull("identityId") -> null
+                else -> commentJson.getLong("identityId")
+            }
+        }
+        val replying = when {
+            !commentJson.has("replyingToCommentId") || commentJson.isNull("replyingToCommentId") -> null
+            else -> commentJson.getLong("replyingToCommentId")
+        }
         return CommentEntity(
             id = id,
             postId = resolvedPostId,
             identityId = resolvedIdentityId,
             content = commentJson.getString("content"),
-            createdAt = commentJson.getLong("createdAt")
+            createdAt = commentJson.getLong("createdAt"),
+            replyingToCommentId = replying,
+            likeCount = commentJson.optInt("likeCount", 0),
+            likedBy = commentJson.optString("likedBy", "")
         )
     }
 

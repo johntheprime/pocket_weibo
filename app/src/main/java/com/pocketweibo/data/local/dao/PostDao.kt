@@ -6,9 +6,9 @@ import kotlinx.coroutines.flow.Flow
 
 data class PostWithIdentity(
     val id: Long,
-    val identityId: Long,
-    val identityName: String,
-    val identityAvatarResName: String,
+    val identityId: Long?,
+    val identityName: String?,
+    val identityAvatarResName: String?,
     val identityCustomAvatarUri: String?,
     val content: String,
     val imageUris: String,
@@ -26,7 +26,7 @@ interface PostDao {
                i.customAvatarUri as identityCustomAvatarUri,
                p.content, p.imageUris, p.extrasJson, p.createdAt, p.likeCount, p.commentCount, p.isLiked
         FROM posts p
-        INNER JOIN identities i ON p.identityId = i.id
+        LEFT JOIN identities i ON p.identityId = i.id
         ORDER BY p.createdAt DESC
     """)
     fun getAllPosts(): Flow<List<PostWithIdentity>>
@@ -36,7 +36,7 @@ interface PostDao {
                i.customAvatarUri as identityCustomAvatarUri,
                p.content, p.imageUris, p.extrasJson, p.createdAt, p.likeCount, p.commentCount, p.isLiked
         FROM posts p
-        INNER JOIN identities i ON p.identityId = i.id
+        LEFT JOIN identities i ON p.identityId = i.id
         WHERE p.identityId = :identityId
         ORDER BY p.createdAt DESC
     """)

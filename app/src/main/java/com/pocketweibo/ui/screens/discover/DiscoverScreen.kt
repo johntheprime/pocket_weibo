@@ -61,6 +61,7 @@ import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.util.identityDisplayName
 
 @Composable
 fun DiscoverScreen(
@@ -301,6 +302,7 @@ private fun TrendingPostItem(
     onClick: () -> Unit
 ) {
     var showSelectableCopy by remember { mutableStateOf(false) }
+    val displayName = identityDisplayName(post.identityName)
     Box(modifier = Modifier.fillMaxWidth()) {
         Surface(
             modifier = Modifier
@@ -318,7 +320,7 @@ private fun TrendingPostItem(
             verticalAlignment = Alignment.Top
         ) {
             Avatar(
-                name = post.identityName,
+                name = displayName,
                 color = Color(0xFF4A90D9),
                 size = 40.dp,
                 avatarResName = post.identityAvatarResName,
@@ -330,7 +332,7 @@ private fun TrendingPostItem(
                     .padding(start = 12.dp)
             ) {
                 Text(
-                    text = post.identityName,
+                    text = displayName,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = GrayDark
@@ -499,6 +501,7 @@ private fun PostSearchItem(
     onClick: () -> Unit
 ) {
     var showSelectableCopy by remember { mutableStateOf(false) }
+    val displayName = identityDisplayName(post.identityName)
     Box(modifier = Modifier.fillMaxWidth()) {
         Surface(
             modifier = Modifier
@@ -514,7 +517,7 @@ private fun PostSearchItem(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Avatar(
-                name = post.identityName,
+                name = displayName,
                 color = Color(0xFF4A90D9),
                 size = 36.dp,
                 avatarResName = post.identityAvatarResName,
@@ -526,7 +529,7 @@ private fun PostSearchItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = post.identityName,
+                        text = displayName,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = GrayDark,

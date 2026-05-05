@@ -65,6 +65,7 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-037 | **身份头像 · 萌系男卡通分区与相册自定义**：编辑身份时 **萌系卡通（男）** 四款矢量预设 **单独分区**；**从相册上传** 经系统选图写入 `IdentityAvatarStorage`，保存走 **`saveIdentityWithAvatarOptions`**；可 **移除照片** 回到预设；详情/列表头图与全局 **`Avatar`** 一致展示自定义图。 | Done |
 | F-038 | **自动每日文本备份**：**本地日历日** 首次打开应用时生成 **纯文本** JSON（无配图、无自定义头像路径），写入 **`filesDir/auto_text_backups`**，**AES-GCM** 密钥由 **Android ID + 包名** 派生；**仅保留最近 3 天**；**设置** 中固定展示 **最近 3 个日历日** 各一条 **解密并分享 JSON**（有则按钮、无则提示），并支持从 **.pwb 文件** 解密。 | Done |
 | F-039 | **自定义头像全链路展示**：`IdentityAvatarStorage` 私有文件；**`Avatar`** 加载 **filesDir 相对路径** 与 **content/file** URI；**`PostWithIdentity`** 增加 **`identityCustomAvatarUri`**；首页卡片/评论表/详情/发现/消息/写微博栏统一展示；**男萌系卡通** 四款 **矢量 drawable** 入库（与 **F-037** 选区一致）。 | Done |
+| F-040 | **删除身份保留内容**：删除身份后，其微博与评论仍保留；作者展示为 **已注销账号**（中英资源）；`posts` / `comments` 对身份 **ON DELETE SET NULL**；若删的是当前身份则自动激活最早创建的另一身份。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 

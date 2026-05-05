@@ -120,7 +120,7 @@ class MyPostsViewModel(private val repository: WeiboRepository) : ViewModel() {
                 CommentEntity(
                     id = commentId,
                     postId = postId,
-                    identityId = 0,
+                    identityId = null,
                     content = ""
                 )
             )

@@ -15,7 +15,7 @@ interface IdentityDao {
     @Query("SELECT * FROM identities WHERE id = :id")
     suspend fun getIdentityById(id: Long): IdentityEntity?
 
-    /** New row only ([IdentityEntity.id] = 0 for auto id). Never use REPLACE on this table: SQLite deletes the old row first and CASCADE-wipes posts for that identity. */
+    /** New row only ([IdentityEntity.id] = 0 for auto id). Never use REPLACE on this table: SQLite deletes the old row first and can orphan linked rows unpredictably. */
     @Insert
     suspend fun insert(identity: IdentityEntity): Long
 
@@ -36,4 +36,7 @@ interface IdentityDao {
 
     @Query("DELETE FROM identities")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM identities ORDER BY createdAt ASC LIMIT 1")
+    suspend fun getFirstIdentityByCreatedAt(): IdentityEntity?
 }

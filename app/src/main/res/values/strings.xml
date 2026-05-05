@@ -325,6 +325,7 @@
     <string name="md_section_posts">微博列表</string>
     <string name="md_post_heading">%1$s 的微博</string>
     <string name="md_unknown_author">未知</string>
+    <string name="deleted_identity_label">已注销账号</string>
     <string name="md_field_nationality">国籍</string>
     <string name="md_field_gender">性别</string>
     <string name="md_field_occupation">职业</string>

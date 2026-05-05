@@ -47,6 +47,7 @@ import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.components.WeiboTitleBar
+import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
@@ -314,7 +315,7 @@ fun MeScreen(
                                                 modifier = Modifier.padding(top = 4.dp)
                                             )
                                             Text(
-                                                text = row.identityName,
+                                                text = identityDisplayName(row.identityName),
                                                 fontSize = 12.sp,
                                                 color = GrayMiddle,
                                                 modifier = Modifier.padding(top = 2.dp),

@@ -12,7 +12,7 @@ import androidx.room.PrimaryKey
             entity = IdentityEntity::class,
             parentColumns = ["id"],
             childColumns = ["identityId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.SET_NULL
         )
     ],
     indices = [Index("identityId")]
@@ -20,7 +20,7 @@ import androidx.room.PrimaryKey
 data class PostEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    val identityId: Long,
+    val identityId: Long?,
     val content: String,
     val imageUris: String = "",
     /** Reserved for future fields (e.g. audience); keep JSON object shape. */

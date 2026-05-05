@@ -68,9 +68,9 @@ class DiscoverViewModel(private val repository: WeiboRepository) : ViewModel() {
                         results.add(SearchResult.IdentityResult(it))
                     }
                     
-                    posts.filter { 
-                        it.identityName.lowercase().contains(lowerQuery) ||
-                        it.content.lowercase().contains(lowerQuery)
+                    posts.filter {
+                        (it.identityName?.lowercase()?.contains(lowerQuery) == true) ||
+                            it.content.lowercase().contains(lowerQuery)
                     }.forEach { 
                         results.add(SearchResult.PostResult(it))
                     }

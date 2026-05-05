@@ -18,7 +18,7 @@ import androidx.room.PrimaryKey
             entity = IdentityEntity::class,
             parentColumns = ["id"],
             childColumns = ["identityId"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.SET_NULL
         )
     ],
     indices = [Index("postId"), Index("identityId")]
@@ -27,7 +27,7 @@ data class CommentEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val postId: Long,
-    val identityId: Long,
+    val identityId: Long?,
     val content: String,
     val createdAt: Long = System.currentTimeMillis(),
     val replyingToCommentId: Long? = null,

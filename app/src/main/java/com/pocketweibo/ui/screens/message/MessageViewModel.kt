@@ -19,8 +19,8 @@ data class ReceivedMessage(
     val postId: Long,
     val postContent: String,
     val commentContent: String,
-    val commentIdentityName: String,
-    val commentIdentityResName: String,
+    val commentIdentityName: String?,
+    val commentIdentityResName: String?,
     val commentIdentityCustomAvatarUri: String?,
     val createdAt: Long
 )
@@ -88,7 +88,7 @@ class MessageViewModel(private val repository: WeiboRepository) : ViewModel() {
                                         postId = post.id,
                                         postContent = post.content,
                                         commentContent = comment.content,
-                                        commentIdentityName = allPosts.find { it.identityId == activeIdentity.id }?.identityName ?: "",
+                                        commentIdentityName = activeIdentity.name,
                                         commentIdentityResName = activeIdentity.avatarResName,
                                         commentIdentityCustomAvatarUri = activeIdentity.customAvatarUri,
                                         createdAt = comment.createdAt
@@ -148,7 +148,7 @@ class MessageViewModel(private val repository: WeiboRepository) : ViewModel() {
                 CommentEntity(
                     id = commentId,
                     postId = postId,
-                    identityId = 0,
+                    identityId = null,
                     content = ""
                 )
             )

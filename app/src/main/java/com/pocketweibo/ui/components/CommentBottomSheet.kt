@@ -45,6 +45,7 @@ import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
 import com.pocketweibo.ui.util.formatRelativeTime
+import com.pocketweibo.ui.util.identityDisplayName
 
 private const val COMMENT_DELETE_WINDOW_MS = 48L * 60L * 60L * 1000L
 
@@ -119,7 +120,7 @@ fun CommentBottomSheet(
                     items(comments, key = { it.id }) { comment ->
                         CommentItem(
                             comment = comment,
-                            isOwnComment = comment.identityId == activeIdentityId,
+                            isOwnComment = activeIdentityId != null && comment.identityId == activeIdentityId,
                             canDeleteComment = isCommentWithinDeleteWindow(comment.createdAt),
                             onDelete = { onDeleteComment(comment.id) }
                         )
@@ -173,6 +174,7 @@ private fun CommentItem(
     val context = LocalContext.current
     val clipLabel = stringResource(R.string.clipboard_label_comment)
     val copiedToast = stringResource(R.string.toast_comment_copied)
+    val displayName = identityDisplayName(comment.identityName)
 
     Row(
         modifier = Modifier
@@ -186,7 +188,7 @@ private fun CommentItem(
             )
     ) {
         Avatar(
-            name = comment.identityName,
+            name = displayName,
             color = Color(0xFF4A90D9),
             size = 36.dp,
             avatarResName = comment.identityAvatarResName,
@@ -201,7 +203,7 @@ private fun CommentItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = comment.identityName,
+                    text = displayName,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = GrayDark

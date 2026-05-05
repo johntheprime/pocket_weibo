@@ -53,6 +53,7 @@ import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
 import com.pocketweibo.ui.util.formatRelativeTime
+import com.pocketweibo.ui.util.identityDisplayName
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -231,7 +232,7 @@ private fun ReceivedMessageItem(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Avatar(
-                name = message.commentIdentityName,
+                name = identityDisplayName(message.commentIdentityName),
                 color = Color(0xFF4A90D9),
                 size = 48.dp,
                 avatarResName = message.commentIdentityResName,
@@ -247,7 +248,7 @@ private fun ReceivedMessageItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = message.commentIdentityName,
+                        text = identityDisplayName(message.commentIdentityName),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = GrayDark
@@ -318,7 +319,7 @@ private fun SentMessageItem(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Avatar(
-                name = message.commentIdentityName,
+                name = identityDisplayName(message.commentIdentityName),
                 color = Color(0xFF4A90D9),
                 size = 48.dp,
                 avatarResName = message.commentIdentityResName,
@@ -334,7 +335,7 @@ private fun SentMessageItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = message.commentIdentityName,
+                        text = identityDisplayName(message.commentIdentityName),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = GrayDark

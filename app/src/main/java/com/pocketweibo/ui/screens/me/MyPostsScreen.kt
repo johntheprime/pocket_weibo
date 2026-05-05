@@ -48,6 +48,7 @@ import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.ui.components.Avatar
+import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.ui.components.CommentBottomSheet
 import com.pocketweibo.ui.components.PostCard
 import com.pocketweibo.ui.components.WeiboTitleBar
@@ -144,7 +145,9 @@ fun MyPostsScreen(
                         post = post,
                         onLikeClick = { viewModel.toggleLike(post.id) },
                         onCommentClick = { viewModel.openComments(post.id) },
-                        onShareClick = { sharePost(context, post.identityName, post.content) },
+                        onShareClick = {
+                            sharePost(context, context.identityDisplayName(post.identityName), post.content)
+                        },
                         onPostClick = { onPostClick(post.id) }
                     )
                     Divider(thickness = 6.dp, color = Background)

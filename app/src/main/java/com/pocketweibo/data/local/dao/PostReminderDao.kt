@@ -13,7 +13,7 @@ data class PostReminderWithPreview(
     val fireAtMillis: Long,
     val repeatRule: String,
     val content: String,
-    val identityName: String
+    val identityName: String?
 )
 
 @Dao
@@ -38,7 +38,7 @@ interface PostReminderDao {
                p.content AS content, i.name AS identityName
         FROM post_reminders r
         INNER JOIN posts p ON r.postId = p.id
-        INNER JOIN identities i ON p.identityId = i.id
+        LEFT JOIN identities i ON p.identityId = i.id
         ORDER BY r.fireAtMillis ASC
         """
     )

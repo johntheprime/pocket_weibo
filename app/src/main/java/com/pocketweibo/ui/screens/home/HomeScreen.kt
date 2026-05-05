@@ -74,6 +74,7 @@ import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.util.identityDisplayName
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -145,7 +146,7 @@ fun HomeScreen(
         if (searchQuery.isBlank()) posts
         else posts.filter { p ->
             p.content.contains(searchQuery, ignoreCase = true) ||
-                p.identityName.contains(searchQuery, ignoreCase = true)
+                (p.identityName?.contains(searchQuery, ignoreCase = true) == true)
         }
     }
 
@@ -239,7 +240,13 @@ fun HomeScreen(
                                     post = post,
                                     onLikeClick = { viewModel.toggleLike(post.id) },
                                     onCommentClick = { viewModel.openComments(post.id) },
-                                    onShareClick = { sharePost(context, post.identityName, post.content) },
+                                    onShareClick = {
+                                        sharePost(
+                                            context,
+                                            context.identityDisplayName(post.identityName),
+                                            post.content
+                                        )
+                                    },
                                     onPostClick = { onPostClick(post.id) }
                                 )
                             }
@@ -339,7 +346,7 @@ fun HomeScreen(
 @Composable
 private fun HomeTitleQuickAccessSheet(
     sortedIdentities: List<IdentityEntity>,
-    postsByIdentity: Map<Long, List<PostWithIdentity>>,
+    postsByIdentity: Map<Long?, List<PostWithIdentity>>,
     activeIdentityId: Long?,
     onMyPosts: () -> Unit,
     onPickIdentity: (Long) -> Unit,

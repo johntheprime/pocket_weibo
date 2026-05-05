@@ -44,6 +44,7 @@ import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.formatRelativeTime
+import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.GrayDark
 @OptIn(ExperimentalFoundationApi::class)
@@ -60,6 +61,7 @@ fun PostCard(
 ) {
     var showSelectableCopy by remember { mutableStateOf(false) }
     val resources = LocalContext.current.resources
+    val displayName = identityDisplayName(post.identityName)
     val hasStoredImages = remember(post.id, post.imageUris) {
         PostAttachmentStorage.parseStoredPaths(post.imageUris).isNotEmpty()
     }
@@ -83,7 +85,7 @@ fun PostCard(
                 verticalAlignment = Alignment.Top
             ) {
                 Avatar(
-                    name = post.identityName,
+                    name = displayName,
                     color = Color(0xFF4A90D9),
                     size = 40.dp,
                     avatarResName = post.identityAvatarResName,
@@ -96,7 +98,7 @@ fun PostCard(
                         .padding(start = 10.dp)
                 ) {
                     Text(
-                        text = post.identityName,
+                        text = displayName,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black,

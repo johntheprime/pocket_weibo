@@ -95,6 +95,7 @@ import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
 import com.pocketweibo.ui.util.findActivity
 import com.pocketweibo.ui.util.formatRelativeTime
+import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
@@ -327,7 +328,13 @@ fun PostDetailScreen(
                     PostDetailCard(
                         post = currentPost,
                         onLikeClick = { viewModel.toggleLike() },
-                        onShareClick = { sharePost(context, currentPost.identityName, currentPost.content) },
+                        onShareClick = {
+                            sharePost(
+                                context,
+                                context.identityDisplayName(currentPost.identityName),
+                                currentPost.content
+                            )
+                        },
                         onPostImageClick = { index ->
                             imageViewer = PostAttachmentStorage.parseStoredPaths(currentPost.imageUris) to index
                         },
@@ -403,6 +410,7 @@ private fun PostDetailCard(
     val moreCd = stringResource(R.string.post_detail_more_cd)
     val shareCd = stringResource(R.string.post_detail_share_cd)
     val likeLabelZero = stringResource(R.string.action_like)
+    val displayName = identityDisplayName(post.identityName)
     var moreExpanded by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showRemindPicker by remember { mutableStateOf(false) }
@@ -425,7 +433,7 @@ private fun PostDetailCard(
                 verticalAlignment = Alignment.Top
             ) {
                 Avatar(
-                    name = post.identityName,
+                    name = displayName,
                     color = Color(0xFF4A90D9),
                     size = 56.dp,
                     avatarResName = post.identityAvatarResName,
@@ -437,7 +445,7 @@ private fun PostDetailCard(
                         .padding(start = 12.dp)
                 ) {
                     Text(
-                        text = post.identityName,
+                        text = displayName,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         color = GrayDark
@@ -856,7 +864,7 @@ private fun CommentsHeader(
                                 c.createdAt,
                                 RelativeTimePreset.PostDetail
                             )
-                            "${c.identityName.trim()} · $timeStr\n${c.content.trim()}"
+                            "${context.identityDisplayName(c.identityName).trim()} · $timeStr\n${c.content.trim()}"
                         }
                         context.copyPlainToClipboard(
                             label = context.getString(R.string.clipboard_label_all_comments),
@@ -885,6 +893,7 @@ private fun CommentCard(comment: CommentWithIdentity) {
     val context = LocalContext.current
     val clipLabel = stringResource(R.string.clipboard_label_comment)
     val copiedToast = stringResource(R.string.toast_comment_copied)
+    val displayName = identityDisplayName(comment.identityName)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -903,7 +912,7 @@ private fun CommentCard(comment: CommentWithIdentity) {
                 verticalAlignment = Alignment.Top
             ) {
                 Avatar(
-                    name = comment.identityName,
+                    name = displayName,
                     color = Color(0xFF4A90D9),
                     size = 40.dp,
                     avatarResName = comment.identityAvatarResName,
@@ -918,7 +927,7 @@ private fun CommentCard(comment: CommentWithIdentity) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = comment.identityName,
+                            text = displayName,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = GrayDark

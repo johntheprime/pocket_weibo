@@ -7,9 +7,9 @@ import kotlinx.coroutines.flow.Flow
 data class CommentWithIdentity(
     val id: Long,
     val postId: Long,
-    val identityId: Long,
-    val identityName: String,
-    val identityAvatarResName: String,
+    val identityId: Long?,
+    val identityName: String?,
+    val identityAvatarResName: String?,
     val identityCustomAvatarUri: String?,
     val content: String,
     val createdAt: Long,
@@ -27,11 +27,11 @@ interface CommentDao {
                i.customAvatarUri as identityCustomAvatarUri,
                c.content, c.createdAt,
                c.replyingToCommentId, 
-               (SELECT i2.name FROM identities i2 INNER JOIN comments c2 ON c2.identityId = i2.id WHERE c2.id = c.replyingToCommentId) as replyingToIdentityName,
+               (SELECT i2.name FROM comments c2 LEFT JOIN identities i2 ON c2.identityId = i2.id WHERE c2.id = c.replyingToCommentId) as replyingToIdentityName,
                c.likeCount,
                CASE WHEN c.likedBy LIKE '%' || :currentIdentityId || '%' THEN 1 ELSE 0 END as isLikedByMe
         FROM comments c
-        INNER JOIN identities i ON c.identityId = i.id
+        LEFT JOIN identities i ON c.identityId = i.id
         WHERE c.postId = :postId
         ORDER BY c.createdAt DESC
     """)
@@ -43,10 +43,10 @@ interface CommentDao {
                i.customAvatarUri as identityCustomAvatarUri,
                c.content, c.createdAt,
                c.replyingToCommentId, 
-               (SELECT i2.name FROM identities i2 INNER JOIN comments c2 ON c2.identityId = i2.id WHERE c2.id = c.replyingToCommentId) as replyingToIdentityName,
+               (SELECT i2.name FROM comments c2 LEFT JOIN identities i2 ON c2.identityId = i2.id WHERE c2.id = c.replyingToCommentId) as replyingToIdentityName,
                c.likeCount, 0 as isLikedByMe
         FROM comments c
-        INNER JOIN identities i ON c.identityId = i.id
+        LEFT JOIN identities i ON c.identityId = i.id
         WHERE c.postId = :postId
         ORDER BY c.createdAt DESC
     """)

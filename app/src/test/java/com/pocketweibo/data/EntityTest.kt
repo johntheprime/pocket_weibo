@@ -100,6 +100,16 @@ class PostEntityTest {
     }
 
     @Test
+    fun testPostEntity_nullIdentityId() {
+        val post = com.pocketweibo.data.local.entity.PostEntity(
+            identityId = null,
+            content = "Orphan"
+        )
+        assertNull(post.identityId)
+        assertEquals("Orphan", post.content)
+    }
+
+    @Test
     fun testPostEntity_withValues() {
         val timestamp = System.currentTimeMillis()
         val post = com.pocketweibo.data.local.entity.PostEntity(
@@ -129,5 +139,15 @@ class CommentEntityTest {
         assertEquals("Nice post!", comment.content)
         assertEquals(1L, comment.postId)
         assertEquals(2L, comment.identityId)
+    }
+
+    @Test
+    fun testCommentEntity_nullIdentityId() {
+        val comment = com.pocketweibo.data.local.entity.CommentEntity(
+            postId = 1L,
+            identityId = null,
+            content = "Orphan comment"
+        )
+        assertNull(comment.identityId)
     }
 }
