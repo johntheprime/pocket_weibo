@@ -107,6 +107,7 @@
     <string name="export_cancel">取消</string>
     <string name="export_share_title">分享备份</string>
     <string name="toast_export_done">数据已导出</string>
+    <string name="toast_export_fail">导出失败</string>
 
     <string name="select_copy_title">选择并复制正文</string>
 

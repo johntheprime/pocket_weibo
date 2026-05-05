@@ -197,61 +197,68 @@ fun MeSettingsScreen(
             onDismiss = { showExportDialog = false },
             onExport = { format ->
                 scope.launch {
-                    when (format) {
-                        "ZIP" -> {
-                            val zipFile = withContext(Dispatchers.IO) { app.repository.exportAllDataZip() }
-                            val uri = FileProvider.getUriForFile(
-                                context,
-                                "${context.packageName}.provider",
-                                zipFile
-                            )
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "application/zip"
-                                putExtra(Intent.EXTRA_STREAM, uri)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    try {
+                        when (format) {
+                            "ZIP" -> {
+                                val zipFile = withContext(Dispatchers.IO) { app.repository.exportAllDataZip() }
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.provider",
+                                    zipFile
+                                )
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "application/zip"
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(
+                                    Intent.createChooser(shareIntent, context.getString(R.string.export_share_title))
+                                )
                             }
-                            context.startActivity(
-                                Intent.createChooser(shareIntent, context.getString(R.string.export_share_title))
-                            )
-                        }
-                        "JSON" -> {
-                            val content = app.repository.exportAllData()
-                            val file = File(context.cacheDir, "pocket_weibo_backup.json")
-                            file.writeText(content)
-                            val uri = FileProvider.getUriForFile(
-                                context,
-                                "${context.packageName}.provider",
-                                file
-                            )
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "application/json"
-                                putExtra(Intent.EXTRA_STREAM, uri)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            "JSON" -> {
+                                val content = app.repository.exportAllData()
+                                val file = File(context.cacheDir, "pocket_weibo_backup.json")
+                                file.writeText(content)
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.provider",
+                                    file
+                                )
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "application/json"
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(
+                                    Intent.createChooser(shareIntent, context.getString(R.string.export_share_title))
+                                )
                             }
-                            context.startActivity(
-                                Intent.createChooser(shareIntent, context.getString(R.string.export_share_title))
-                            )
-                        }
-                        else -> {
-                            val content = app.repository.exportAllDataToMarkdown()
-                            val file = File(context.cacheDir, "pocket_weibo_backup.md")
-                            file.writeText(content)
-                            val uri = FileProvider.getUriForFile(
-                                context,
-                                "${context.packageName}.provider",
-                                file
-                            )
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/markdown"
-                                putExtra(Intent.EXTRA_STREAM, uri)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            else -> {
+                                val content = app.repository.exportAllDataToMarkdown()
+                                val file = File(context.cacheDir, "pocket_weibo_backup.md")
+                                file.writeText(content)
+                                val uri = FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.provider",
+                                    file
+                                )
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/markdown"
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(
+                                    Intent.createChooser(shareIntent, context.getString(R.string.export_share_title))
+                                )
                             }
-                            context.startActivity(
-                                Intent.createChooser(shareIntent, context.getString(R.string.export_share_title))
-                            )
                         }
+                        Toast.makeText(context, context.getString(R.string.toast_export_done), Toast.LENGTH_SHORT)
+                            .show()
+                        showExportDialog = false
+                    } catch (_: Exception) {
+                        Toast.makeText(context, context.getString(R.string.toast_export_fail), Toast.LENGTH_SHORT)
+                            .show()
                     }
-                    Toast.makeText(context, context.getString(R.string.toast_export_done), Toast.LENGTH_SHORT).show()
                 }
             }
         )
