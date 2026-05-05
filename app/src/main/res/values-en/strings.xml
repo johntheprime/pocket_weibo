@@ -313,7 +313,9 @@
     <string name="gender_other">Other</string>
 
     <string name="identity_delete_title">Delete identity</string>
-    <string name="identity_delete_message">Delete “%1$s”? This cannot be undone.</string>
+    <string name="identity_delete_message">Delete “%1$s”? Posts and comments are kept (authors show as a deleted account). This cannot be undone.</string>
+    <string name="identity_delete_cd">Delete identity</string>
+    <string name="identity_detail_more_cd">More options</string>
     <string name="identity_edit">Edit</string>
     <string name="add_identity_cd">Add identity</string>
 

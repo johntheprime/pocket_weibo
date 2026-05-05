@@ -313,7 +313,9 @@
     <string name="gender_other">其他</string>
 
     <string name="identity_delete_title">删除身份</string>
-    <string name="identity_delete_message">确定要删除「%1$s」吗？此操作不可恢复。</string>
+    <string name="identity_delete_message">确定要删除「%1$s」吗？其微博与评论仍会保留（作者显示为已注销账号）。此操作不可恢复。</string>
+    <string name="identity_delete_cd">删除身份</string>
+    <string name="identity_detail_more_cd">更多选项</string>
     <string name="identity_edit">编辑</string>
     <string name="add_identity_cd">添加身份</string>
 

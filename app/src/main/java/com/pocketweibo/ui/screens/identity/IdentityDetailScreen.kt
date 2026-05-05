@@ -25,8 +25,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Divider
@@ -172,6 +176,8 @@ fun IdentityDetailScreen(
 
     var pendingAvatarUri by remember { mutableStateOf<Uri?>(null) }
     var preferCustomAvatar by remember { mutableStateOf(false) }
+    var titleMenuExpanded by remember { mutableStateOf(false) }
+    var showDeleteIdentityDialog by remember { mutableStateOf(false) }
 
     val pickAvatarLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -247,8 +253,73 @@ fun IdentityDetailScreen(
                         modifier = Modifier.size(24.dp)
                     )
                 }
+            },
+            rightIcon = if (identityId > 0) {
+                {
+                    Box {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.identity_detail_more_cd),
+                            tint = WeiboOrange,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        DropdownMenu(
+                            expanded = titleMenuExpanded,
+                            onDismissRequest = { titleMenuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        stringResource(R.string.identity_delete_title),
+                                        color = Color.Red
+                                    )
+                                },
+                                onClick = {
+                                    titleMenuExpanded = false
+                                    showDeleteIdentityDialog = true
+                                }
+                            )
+                        }
+                    }
+                }
+            } else {
+                null
+            },
+            onRightIconClick = if (identityId > 0) {
+                { titleMenuExpanded = !titleMenuExpanded }
+            } else {
+                null
             }
         )
+
+        if (showDeleteIdentityDialog && identity != null) {
+            val del = identity!!
+            AlertDialog(
+                onDismissRequest = { showDeleteIdentityDialog = false },
+                title = { Text(stringResource(R.string.identity_delete_title)) },
+                text = { Text(stringResource(R.string.identity_delete_message, del.name)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                withContext(Dispatchers.IO) {
+                                    app.repository.deleteIdentity(del)
+                                }
+                                showDeleteIdentityDialog = false
+                                onBack()
+                            }
+                        }
+                    ) {
+                        Text(stringResource(R.string.delete), color = Color.Red)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteIdentityDialog = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            )
+        }
 
         Divider(thickness = 0.5.dp)
 

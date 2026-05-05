@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -131,10 +130,11 @@ fun IdentityListScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            app.repository.deleteIdentity(identity)
-                        }
+                        val toRemove = identity
                         identityToDelete = null
+                        CoroutineScope(Dispatchers.IO).launch {
+                            app.repository.deleteIdentity(toRemove)
+                        }
                     }
                 ) {
                     Text(stringResource(R.string.delete), color = Color.Red)
@@ -160,54 +160,67 @@ private fun IdentityListItem(
     onActivate: () -> Unit
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth(),
         color = Color.White
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(vertical = 4.dp, horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Avatar(
-                name = identity.name,
-                color = Color(0xFF4A90D9),
-                size = 48.dp,
-                avatarResName = identity.avatarResName,
-                customAvatarUri = identity.customAvatarUri
-            )
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = identity.name,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = GrayDark
-                    )
-                    if (isActive) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onClick)
+                    .padding(vertical = 12.dp, horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Avatar(
+                    name = identity.name,
+                    color = Color(0xFF4A90D9),
+                    size = 48.dp,
+                    avatarResName = identity.avatarResName,
+                    customAvatarUri = identity.customAvatarUri
+                )
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = currentSuffix,
-                            fontSize = 14.sp,
-                            color = WeiboOrange
+                            text = identity.name,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GrayDark
+                        )
+                        if (isActive) {
+                            Text(
+                                text = currentSuffix,
+                                fontSize = 14.sp,
+                                color = WeiboOrange
+                            )
+                        }
+                    }
+                    if (identity.nationality.isNotEmpty() || identity.occupation.isNotEmpty()) {
+                        Text(
+                            text = listOf(identity.nationality, identity.occupation)
+                                .filter { it.isNotEmpty() }
+                                .joinToString(" · "),
+                            fontSize = 13.sp,
+                            color = GrayMiddle,
+                            modifier = Modifier.padding(top = 2.dp)
                         )
                     }
                 }
-                if (identity.nationality.isNotEmpty() || identity.occupation.isNotEmpty()) {
-                    Text(
-                        text = listOf(identity.nationality, identity.occupation)
-                            .filter { it.isNotEmpty() }
-                            .joinToString(" · "),
-                        fontSize = 13.sp,
-                        color = GrayMiddle,
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                }
+
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = GrayLight
+                )
             }
-            
+
             if (!isActive) {
                 Text(
                     text = activateLabel,
@@ -219,12 +232,14 @@ private fun IdentityListItem(
                         .clickable { onActivate() }
                 )
             }
-            
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = GrayLight
-            )
+
+            IconButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.identity_delete_cd),
+                    tint = GrayMiddle
+                )
+            }
         }
     }
 }
