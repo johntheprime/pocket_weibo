@@ -15,9 +15,9 @@ android {
         minSdk = 26
         targetSdk = 34
         // versionName: semantic versioning (MAJOR.MINOR.PATCH). Bump when you ship user-facing changes.
-        versionName = "3.38.0"
+        versionName = "3.38.1"
         // versionCode: must increase for every release APK that should upgrade in-place (same signing key).
-        versionCode = 155
+        versionCode = 156
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

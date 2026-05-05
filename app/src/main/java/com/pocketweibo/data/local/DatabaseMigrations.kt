@@ -49,7 +49,11 @@ object DatabaseMigrations {
 
     /**
      * Orphan posts/comments when an identity is deleted: nullable [posts.identityId] / [comments.identityId],
-     * FK `ON DELETE SET NULL` (was CASCADE).
+     * FK `ON DELETE SET_NULL` (was CASCADE).
+     *
+     * **Important:** Do not create `comments` with `REFERENCES posts_new` then rename `posts_new` — SQLite
+     * keeps a stale parent table name and the DB can fail to open. Copy comments to a temp table, swap
+     * `posts`, then recreate `comments` with `FOREIGN KEY … REFERENCES posts(id)`.
      */
     val MIGRATION_6_7 = object : Migration(6, 7) {
         override fun migrate(db: SupportSQLiteDatabase) {
@@ -72,6 +76,17 @@ object DatabaseMigrations {
             )
             db.execSQL(
                 """
+                INSERT INTO `posts_new` (`id`,`identityId`,`content`,`imageUris`,`extrasJson`,`createdAt`,`likeCount`,`commentCount`,`isLiked`)
+                SELECT `id`,`identityId`,`content`,`imageUris`,`extrasJson`,`createdAt`,`likeCount`,`commentCount`,`isLiked` FROM `posts`
+                """.trimIndent()
+            )
+            db.execSQL("DROP TABLE IF EXISTS `comments_mig_backup`")
+            db.execSQL("CREATE TABLE `comments_mig_backup` AS SELECT * FROM `comments`")
+            db.execSQL("DROP TABLE `comments`")
+            db.execSQL("DROP TABLE `posts`")
+            db.execSQL("ALTER TABLE `posts_new` RENAME TO `posts`")
+            db.execSQL(
+                """
                 CREATE TABLE IF NOT EXISTS `comments_new` (
                     `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                     `postId` INTEGER NOT NULL,
@@ -81,28 +96,59 @@ object DatabaseMigrations {
                     `replyingToCommentId` INTEGER,
                     `likeCount` INTEGER NOT NULL,
                     `likedBy` TEXT NOT NULL,
-                    FOREIGN KEY(`postId`) REFERENCES `posts_new`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                    FOREIGN KEY(`postId`) REFERENCES `posts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
                     FOREIGN KEY(`identityId`) REFERENCES `identities`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL
                 )
                 """.trimIndent()
             )
             db.execSQL(
                 """
-                INSERT INTO `posts_new` (`id`,`identityId`,`content`,`imageUris`,`extrasJson`,`createdAt`,`likeCount`,`commentCount`,`isLiked`)
-                SELECT `id`,`identityId`,`content`,`imageUris`,`extrasJson`,`createdAt`,`likeCount`,`commentCount`,`isLiked` FROM `posts`
+                INSERT INTO `comments_new` (`id`,`postId`,`identityId`,`content`,`createdAt`,`replyingToCommentId`,`likeCount`,`likedBy`)
+                SELECT `id`,`postId`,`identityId`,`content`,`createdAt`,`replyingToCommentId`,`likeCount`,`likedBy` FROM `comments_mig_backup`
+                """.trimIndent()
+            )
+            db.execSQL("DROP TABLE `comments_mig_backup`")
+            db.execSQL("ALTER TABLE `comments_new` RENAME TO `comments`")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_posts_identityId` ON `posts` (`identityId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_comments_postId` ON `comments` (`postId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_comments_identityId` ON `comments` (`identityId`)")
+            db.execSQL("PRAGMA foreign_keys=ON")
+        }
+    }
+
+    /**
+     * Repair DBs that already ran the broken 6→7 script (`comments` referenced renamed `posts_new`).
+     * Safe on a healthy v7 schema (recreates `comments` with correct FKs to `posts`).
+     */
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("PRAGMA foreign_keys=OFF")
+            db.execSQL("DROP TABLE IF EXISTS `comments_mig_r8`")
+            db.execSQL("CREATE TABLE `comments_mig_r8` AS SELECT * FROM `comments`")
+            db.execSQL("DROP TABLE `comments`")
+            db.execSQL(
+                """
+                CREATE TABLE `comments` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `postId` INTEGER NOT NULL,
+                    `identityId` INTEGER,
+                    `content` TEXT NOT NULL,
+                    `createdAt` INTEGER NOT NULL,
+                    `replyingToCommentId` INTEGER,
+                    `likeCount` INTEGER NOT NULL,
+                    `likedBy` TEXT NOT NULL,
+                    FOREIGN KEY(`postId`) REFERENCES `posts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                    FOREIGN KEY(`identityId`) REFERENCES `identities`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL
+                )
                 """.trimIndent()
             )
             db.execSQL(
                 """
-                INSERT INTO `comments_new` (`id`,`postId`,`identityId`,`content`,`createdAt`,`replyingToCommentId`,`likeCount`,`likedBy`)
-                SELECT `id`,`postId`,`identityId`,`content`,`createdAt`,`replyingToCommentId`,`likeCount`,`likedBy` FROM `comments`
+                INSERT INTO `comments` (`id`,`postId`,`identityId`,`content`,`createdAt`,`replyingToCommentId`,`likeCount`,`likedBy`)
+                SELECT `id`,`postId`,`identityId`,`content`,`createdAt`,`replyingToCommentId`,`likeCount`,`likedBy` FROM `comments_mig_r8`
                 """.trimIndent()
             )
-            db.execSQL("DROP TABLE `comments`")
-            db.execSQL("DROP TABLE `posts`")
-            db.execSQL("ALTER TABLE `posts_new` RENAME TO `posts`")
-            db.execSQL("ALTER TABLE `comments_new` RENAME TO `comments`")
-            db.execSQL("CREATE INDEX IF NOT EXISTS `index_posts_identityId` ON `posts` (`identityId`)")
+            db.execSQL("DROP TABLE `comments_mig_r8`")
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_comments_postId` ON `comments` (`postId`)")
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_comments_identityId` ON `comments` (`identityId`)")
             db.execSQL("PRAGMA foreign_keys=ON")
