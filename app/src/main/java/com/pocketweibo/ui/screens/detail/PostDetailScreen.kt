@@ -35,8 +35,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
@@ -271,7 +270,6 @@ fun PostDetailScreen(
                 item {
                     PostDetailCard(
                         post = currentPost,
-                        onLikeClick = { viewModel.toggleLike() },
                         onShareClick = {
                             sharePost(
                                 context,
@@ -332,7 +330,6 @@ fun PostDetailScreen(
 @Composable
 private fun PostDetailCard(
     post: com.pocketweibo.data.local.dao.PostWithIdentity,
-    onLikeClick: () -> Unit,
     onShareClick: () -> Unit,
     onPostImageClick: (Int) -> Unit,
     onCopyPost: () -> Unit,
@@ -344,11 +341,9 @@ private fun PostDetailCard(
     val context = LocalContext.current
     val resources = context.resources
     val shareLabel = stringResource(R.string.post_detail_action_share)
-    val likeCd = stringResource(R.string.post_detail_like_cd)
     val commentCd = stringResource(R.string.post_detail_comment_cd)
     val moreCd = stringResource(R.string.post_detail_more_cd)
     val shareCd = stringResource(R.string.post_detail_share_cd)
-    val likeLabelZero = stringResource(R.string.action_like)
     val displayName = identityDisplayName(post.identityName)
     var moreExpanded by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -476,21 +471,7 @@ private fun PostDetailCard(
                 ActionButton(
                     icon = {
                         Icon(
-                            imageVector = if (post.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = likeCd,
-                            tint = if (post.isLiked) Color(0xFFFF5136) else GrayMiddle,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    text = if (post.likeCount > 0) post.likeCount.toString() else likeLabelZero,
-                    onClick = onLikeClick,
-                    tint = if (post.isLiked) Color(0xFFFF5136) else GrayMiddle
-                )
-                Spacer(modifier = Modifier.width(24.dp))
-                ActionButton(
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
+                            imageVector = Icons.Default.ChatBubbleOutline,
                             contentDescription = commentCd,
                             tint = GrayMiddle,
                             modifier = Modifier.size(20.dp)

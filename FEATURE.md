@@ -73,6 +73,8 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-045 | **身份预设头像 · Open Peeps 速写风**：内置 **Open Peeps**（Pablo Stanley，**CC0** 可商用）经 **DiceBear** Open Peeps 样式导出的 **PNG**（透明底）；身份编辑中 **男 / 女** 各 **4** 款速写预设（`drawable-nodpi`），取代原萌系矢量卡通选区；旧卡通 **`drawable`** 仍保留以兼容已存 `avatarResName`。许可说明见 **`legal/open_peeps_notice.txt`**。 | Done |
 | F-046 | **Release · R8 代码压缩**：**`release`** 启用 **`isMinifyEnabled`**（`proguard-android-optimize.txt` + `proguard-rules.pro`），显著减小 **release APK / DEX**；**未** 启用 **`shrinkResources`**（身份头像等经 **`getIdentifier`** 按名加载，避免误删资源）。 | Done |
 | F-047 | **写微博 · 提醒替代艾特**：发微博页底栏第三枚由 **艾特** 改为 **提醒**（闹钟图标）；弹出与详情 **设置提醒** 一致的快捷时间与重复规则；选择后在 **发送成功** 后为**新帖**写入 `post_reminders` 并挂闹钟（含通知权限流程）；退出或返回关闭时清除未发送的待应用提醒。 | Done |
+| F-048 | **隐藏微博点赞入口**：**首页卡片**、**微博详情** 底部操作区 **不再显示点赞按钮与计数**；操作区仅保留 **转发（分享）** 与 **评论**（详情评论数旁使用 **聊天气泡** 图标，与列表一致）；**发现 · 热门** 行去掉点赞数，**评论数 + 附图角标** 同一行 **两端对齐**（左统计、右角标），避免留白失衡。 | Done |
+| F-049 | **评论可搜索**：**发现** 搜索增加 **评论** 结果区（点按进所属微博）；**首页** 搜索在匹配评论正文、评论者或所属微博正文/作者时 **展示对应微博**。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 

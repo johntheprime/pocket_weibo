@@ -19,6 +19,17 @@ data class CommentWithIdentity(
     val isLikedByMe: Boolean
 )
 
+/** Comment row joined with parent post text and authors for global search. */
+data class CommentSearchRow(
+    val id: Long,
+    val postId: Long,
+    val content: String,
+    val createdAt: Long,
+    val commentAuthorName: String?,
+    val postContent: String,
+    val postAuthorName: String?
+)
+
 @Dao
 interface CommentDao {
     @Query("""
@@ -72,4 +83,17 @@ interface CommentDao {
 
     @Query("UPDATE comments SET content = :newContent WHERE id = :commentId")
     suspend fun updateCommentContent(commentId: Long, newContent: String)
+
+    @Query(
+        """
+        SELECT c.id AS id, c.postId AS postId, c.content AS content, c.createdAt AS createdAt,
+               ci.name AS commentAuthorName, p.content AS postContent, pi.name AS postAuthorName
+        FROM comments c
+        LEFT JOIN identities ci ON c.identityId = ci.id
+        INNER JOIN posts p ON c.postId = p.id
+        LEFT JOIN identities pi ON p.identityId = pi.id
+        ORDER BY c.createdAt DESC
+        """
+    )
+    fun observeAllCommentsForSearch(): Flow<List<CommentSearchRow>>
 }

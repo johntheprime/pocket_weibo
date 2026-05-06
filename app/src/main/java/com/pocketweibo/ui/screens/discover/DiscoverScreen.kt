@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -43,6 +44,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
+import com.pocketweibo.data.local.dao.CommentSearchRow
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.components.ListPostImageIndicator
@@ -226,6 +230,14 @@ private fun TrendingContent(
                 icon = Icons.Default.Search
             )
         }
+
+        item {
+            SearchHintItem(
+                title = stringResource(R.string.discover_search_comment_title),
+                description = stringResource(R.string.discover_search_comment_desc),
+                icon = Icons.Default.ChatBubbleOutline
+            )
+        }
     }
 }
 
@@ -346,15 +358,11 @@ private fun TrendingPostItem(
                     modifier = Modifier.padding(top = 4.dp)
                 )
                 Row(
-                    modifier = Modifier.padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = stringResource(R.string.count_likes, post.likeCount),
-                        fontSize = 12.sp,
-                        color = GrayMiddle
-                    )
                     Text(
                         text = stringResource(R.string.count_comments, post.commentCount),
                         fontSize = 12.sp,
@@ -412,7 +420,8 @@ private fun SearchResultsContent(
         ) {
             val identityResults = results.filterIsInstance<SearchResult.IdentityResult>()
             val postResults = results.filterIsInstance<SearchResult.PostResult>()
-            
+            val commentResults = results.filterIsInstance<SearchResult.CommentResult>()
+
             if (identityResults.isNotEmpty()) {
                 item {
                     Text(
@@ -447,6 +456,24 @@ private fun SearchResultsContent(
                     PostSearchItem(
                         post = result.post,
                         onClick = { onPostClick(result.post.id) }
+                    )
+                }
+            }
+
+            if (commentResults.isNotEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.discover_section_comments),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GrayDark,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+                items(commentResults) { result ->
+                    CommentSearchItem(
+                        row = result.row,
+                        onOpenPost = { onPostClick(result.row.postId) }
                     )
                 }
             }
@@ -553,6 +580,89 @@ private fun PostSearchItem(
         if (showSelectableCopy) {
             SelectableCopyDialog(
                 body = post.content,
+                onDismiss = { showSelectableCopy = false },
+                title = null
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun CommentSearchItem(
+    row: CommentSearchRow,
+    onOpenPost: () -> Unit
+) {
+    var showSelectableCopy by remember { mutableStateOf(false) }
+    val openPostCd = stringResource(R.string.discover_comment_open_post_cd)
+    val commentAuthor = identityDisplayName(row.commentAuthorName)
+    val postLine = stringResource(
+        R.string.discover_comment_parent_post_line,
+        row.postContent.trim().let { t ->
+            if (t.length <= 72) t else t.take(72) + "…"
+        }
+    )
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onOpenPost,
+                    onLongClick = { showSelectableCopy = true }
+                ),
+            color = Color.White
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .semantics { contentDescription = openPostCd },
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ChatBubbleOutline,
+                    contentDescription = null,
+                    tint = WeiboOrange,
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .size(28.dp)
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = commentAuthor,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GrayDark,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = stringResource(R.string.comment_search_result_subtitle),
+                        fontSize = 11.sp,
+                        color = GrayMiddle,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                    Text(
+                        text = row.content,
+                        fontSize = 13.sp,
+                        color = GrayDark,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                    Text(
+                        text = postLine,
+                        fontSize = 11.sp,
+                        color = GrayMiddle,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
+            }
+        }
+        if (showSelectableCopy) {
+            SelectableCopyDialog(
+                body = row.content,
                 onDismiss = { showSelectableCopy = false },
                 title = null
             )

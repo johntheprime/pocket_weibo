@@ -45,13 +45,6 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
         }
     }
     
-    fun toggleLike() {
-        val currentPost = _post.value ?: return
-        viewModelScope.launch {
-            repository.togglePostLike(currentPost.id)
-        }
-    }
-    
     fun addComment(content: String) {
         val currentPost = _post.value ?: return
         viewModelScope.launch {

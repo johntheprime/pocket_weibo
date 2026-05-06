@@ -26,12 +26,6 @@ class HomeViewModel(private val repository: WeiboRepository) : ViewModel() {
     private val _showCommentSheet = MutableStateFlow(false)
     val showCommentSheet: StateFlow<Boolean> = _showCommentSheet.asStateFlow()
     
-    fun toggleLike(postId: Long) {
-        viewModelScope.launch {
-            repository.togglePostLike(postId)
-        }
-    }
-    
     fun openComments(postId: Long) {
         commentsCollectJob?.cancel()
         _selectedPostId.value = postId

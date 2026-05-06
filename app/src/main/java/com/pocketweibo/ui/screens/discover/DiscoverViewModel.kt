@@ -3,6 +3,7 @@ package com.pocketweibo.ui.screens.discover
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.pocketweibo.data.local.dao.CommentSearchRow
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.repository.WeiboRepository
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 sealed class SearchResult {
     data class IdentityResult(val identity: IdentityEntity) : SearchResult()
     data class PostResult(val post: PostWithIdentity) : SearchResult()
+    data class CommentResult(val row: CommentSearchRow) : SearchResult()
 }
 
 class DiscoverViewModel(private val repository: WeiboRepository) : ViewModel() {
@@ -54,8 +56,9 @@ class DiscoverViewModel(private val repository: WeiboRepository) : ViewModel() {
             combine(
                 _searchQuery,
                 repository.allIdentities,
-                repository.allPosts
-            ) { query, identities, posts ->
+                repository.allPosts,
+                repository.allCommentsForSearch
+            ) { query, identities, posts, comments ->
                 if (query.isBlank()) {
                     emptyList()
                 } else {
@@ -73,6 +76,15 @@ class DiscoverViewModel(private val repository: WeiboRepository) : ViewModel() {
                             it.content.lowercase().contains(lowerQuery)
                     }.forEach { 
                         results.add(SearchResult.PostResult(it))
+                    }
+
+                    comments.filter { row ->
+                        row.content.lowercase().contains(lowerQuery) ||
+                            (row.commentAuthorName?.lowercase()?.contains(lowerQuery) == true) ||
+                            row.postContent.lowercase().contains(lowerQuery) ||
+                            (row.postAuthorName?.lowercase()?.contains(lowerQuery) == true)
+                    }.forEach { row ->
+                        results.add(SearchResult.CommentResult(row))
                     }
                     
                     results

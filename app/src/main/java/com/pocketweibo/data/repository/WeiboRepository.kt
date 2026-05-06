@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.pocketweibo.data.local.dao.CommentDao
+import com.pocketweibo.data.local.dao.CommentSearchRow
 import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.data.local.dao.IdentityDao
 import com.pocketweibo.data.local.dao.PostDao
@@ -54,6 +55,7 @@ class WeiboRepository(
     val allIdentities: Flow<List<IdentityEntity>> = identityDao.getAllIdentities()
     val activeIdentity: Flow<IdentityEntity?> = identityDao.getActiveIdentity()
     val allPosts: Flow<List<PostWithIdentity>> = postDao.getAllPosts()
+    val allCommentsForSearch: Flow<List<CommentSearchRow>> = commentDao.observeAllCommentsForSearch()
 
     suspend fun getIdentityById(id: Long): IdentityEntity? = identityDao.getIdentityById(id)
 

@@ -101,6 +101,7 @@ fun HomeScreen(
     )
 
     val posts by app.repository.allPosts.collectAsState(initial = emptyList())
+    val commentSearchRows by app.repository.allCommentsForSearch.collectAsState(initial = emptyList())
     val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
     val comments by viewModel.comments.collectAsState()
     val showCommentSheet by viewModel.showCommentSheet.collectAsState()
@@ -145,16 +146,31 @@ fun HomeScreen(
         }
     )
 
-    val filteredPosts = remember(posts, searchQuery, homeIdentityFilterId) {
+    val filteredPosts = remember(posts, searchQuery, homeIdentityFilterId, commentSearchRows) {
         var list = posts
         val fid = homeIdentityFilterId
         if (fid != null) {
             list = list.filter { it.identityId == fid }
         }
         if (searchQuery.isBlank()) list
-        else list.filter { p ->
-            p.content.contains(searchQuery, ignoreCase = true) ||
-                (p.identityName?.contains(searchQuery, ignoreCase = true) == true)
+        else {
+            val q = searchQuery.trim()
+            val postIdsFromComments = commentSearchRows.mapNotNull { row ->
+                if (row.content.contains(q, ignoreCase = true) ||
+                    row.commentAuthorName?.contains(q, ignoreCase = true) == true ||
+                    row.postContent.contains(q, ignoreCase = true) ||
+                    row.postAuthorName?.contains(q, ignoreCase = true) == true
+                ) {
+                    row.postId
+                } else {
+                    null
+                }
+            }.toSet()
+            list.filter { p ->
+                p.content.contains(q, ignoreCase = true) ||
+                    (p.identityName?.contains(q, ignoreCase = true) == true) ||
+                    p.id in postIdsFromComments
+            }
         }
     }
 
@@ -285,7 +301,6 @@ fun HomeScreen(
                             items(filteredPosts, key = { it.id }) { post ->
                                 PostCard(
                                     post = post,
-                                    onLikeClick = { viewModel.toggleLike(post.id) },
                                     onCommentClick = { viewModel.openComments(post.id) },
                                     onShareClick = {
                                         sharePost(

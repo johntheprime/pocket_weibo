@@ -19,8 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -51,7 +49,6 @@ import com.pocketweibo.ui.theme.GrayDark
 @Composable
 fun PostCard(
     post: PostWithIdentity,
-    onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
     onShareClick: () -> Unit,
     onPostClick: () -> Unit,
@@ -165,16 +162,6 @@ fun PostCard(
                     text = stringResource(R.string.action_comment),
                     count = post.commentCount,
                     onClick = onCommentClick
-                )
-                
-                Spacer(modifier = Modifier.width(10.dp))
-                
-                ActionButton(
-                    icon = if (post.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    text = stringResource(R.string.action_like),
-                    count = post.likeCount,
-                    isLiked = post.isLiked,
-                    onClick = onLikeClick
                 )
             }
         }
