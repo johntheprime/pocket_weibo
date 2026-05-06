@@ -72,6 +72,7 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-044 | **首页 · 标题筛选（当前页）**：点击 **首页** 标题打开面板；**全部动态** 为默认（列表含所有身份）；选某身份则 **首页列表就地筛选** 为该身份帖子，并 **设为当前身份**；标题下 **浅色条** 显示「仅看：某身份」与 **清除**；双击首页 Tab **一并清除身份筛选**（与 **F-034** 一致）；**移除** 独立 **`MyPostsScreen`** 全屏入口。 | Done |
 | F-045 | **身份预设头像 · Open Peeps 速写风**：内置 **Open Peeps**（Pablo Stanley，**CC0** 可商用）经 **DiceBear** Open Peeps 样式导出的 **PNG**（透明底）；身份编辑中 **男 / 女** 各 **4** 款速写预设（`drawable-nodpi`），取代原萌系矢量卡通选区；旧卡通 **`drawable`** 仍保留以兼容已存 `avatarResName`。许可说明见 **`legal/open_peeps_notice.txt`**。 | Done |
 | F-046 | **Release · R8 代码压缩**：**`release`** 启用 **`isMinifyEnabled`**（`proguard-android-optimize.txt` + `proguard-rules.pro`），显著减小 **release APK / DEX**；**未** 启用 **`shrinkResources`**（身份头像等经 **`getIdentifier`** 按名加载，避免误删资源）。 | Done |
+| F-047 | **写微博 · 提醒替代艾特**：发微博页底栏第三枚由 **艾特** 改为 **提醒**（闹钟图标）；弹出与详情 **设置提醒** 一致的快捷时间与重复规则；选择后在 **发送成功** 后为**新帖**写入 `post_reminders` 并挂闹钟（含通知权限流程）；退出或返回关闭时清除未发送的待应用提醒。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 

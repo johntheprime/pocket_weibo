@@ -1,9 +1,13 @@
 package com.pocketweibo.ui.screens.compose
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.SystemClock
+import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -20,16 +24,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.AlternateEmail
+import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,7 +42,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -75,6 +77,7 @@ import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.ui.components.Avatar
+import com.pocketweibo.ui.reminder.ReminderPickerDialog
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
@@ -116,7 +119,59 @@ fun ComposeScreen(
     var isPreparingImages by remember { mutableStateOf(false) }
     var isSending by remember { mutableStateOf(false) }
     var useOriginalForThisPost by remember { mutableStateOf(false) }
-    var showMentionDialog by remember { mutableStateOf(false) }
+    var showRemindPicker by remember { mutableStateOf(false) }
+    /** When non-null, schedule this reminder on the new post id after a successful publish. */
+    var pendingComposeReminder by remember { mutableStateOf<Pair<Long, String>?>(null) }
+    /** Post id + reminder spec waiting for POST_NOTIFICATIONS after publish. */
+    var postIdAwaitingReminderPermission by remember {
+        mutableStateOf<Pair<Long, Pair<Long, String>>?>(null)
+    }
+
+    val notifyPermLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val pending = postIdAwaitingReminderPermission
+        postIdAwaitingReminderPermission = null
+        if (granted && pending != null) {
+            val (postId, spec) = pending
+            val (fireAt, rule) = spec
+            scope.launch {
+                app.repository.schedulePostReminder(postId, fireAt, rule)
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.reminder_scheduled_toast),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        } else if (!granted && pending != null) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.reminder_permission_denied_toast),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    val openExactAlarmSettings: () -> Unit = {
+        if (Build.VERSION.SDK_INT >= 31) {
+            runCatching {
+                context.startActivity(
+                    Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                )
+            }
+        }
+    }
+    val openAppDetailsSettings: () -> Unit = {
+        context.startActivity(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
+    }
 
     LaunchedEffect(preparedImageFiles.size) {
         if (preparedImageFiles.isEmpty()) useOriginalForThisPost = false
@@ -276,11 +331,39 @@ fun ComposeScreen(
         val filesToSend = preparedImageFiles.toList()
         scope.launch {
             try {
-                app.repository.insertPostWithPreparedGallery(
+                val reminderSpec = pendingComposeReminder
+                pendingComposeReminder = null
+                val newPostId = app.repository.insertPostWithPreparedGallery(
                     identityId = identityId,
                     content = text,
                     preparedFiles = filesToSend
                 )
+                if (reminderSpec != null) {
+                    val (fireAt, rule) = reminderSpec
+                    if (fireAt <= System.currentTimeMillis() + 5_000L) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.post_detail_remind_time_past),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else if (
+                        Build.VERSION.SDK_INT >= 33 &&
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        postIdAwaitingReminderPermission = newPostId to (fireAt to rule)
+                        notifyPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        app.repository.schedulePostReminder(newPostId, fireAt, rule)
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.reminder_scheduled_toast),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
                 app.repository.clearDraft()
                 preparedImageFiles = emptyList()
                 onPostPublished()
@@ -326,11 +409,12 @@ fun ComposeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { 
+                IconButton(onClick = {
+                    pendingComposeReminder = null
                     if (content.isNotBlank()) {
                         scope.launch { app.repository.saveDraft(content, selectedIdentity?.id ?: 0L) }
                     }
-                    onDismiss() 
+                    onDismiss()
                 }) {
                     Icon(
                         imageVector = Icons.Default.Close,
@@ -600,9 +684,10 @@ fun ComposeScreen(
                     }
                 )
                 ActionButton(
-                    icon = Icons.Default.AlternateEmail,
-                    label = stringResource(R.string.compose_label_mention),
-                    onClick = { showMentionDialog = true }
+                    icon = Icons.Default.Alarm,
+                    label = stringResource(R.string.compose_label_remind),
+                    contentDescription = stringResource(R.string.compose_remind_cd),
+                    onClick = { showRemindPicker = true }
                 )
             }
 
@@ -622,43 +707,29 @@ fun ComposeScreen(
             }
         }
 
-        if (showMentionDialog) {
-            val others = identities.filter { it.id != selectedIdentity?.id }
-            AlertDialog(
-                onDismissRequest = { showMentionDialog = false },
-                title = { Text(stringResource(R.string.compose_mention_title)) },
-                text = {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                    ) {
-                        if (others.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.compose_mention_empty),
-                                fontSize = 14.sp,
-                                color = GrayMiddle
-                            )
-                        } else {
-                            others.forEach { id ->
-                                TextButton(
-                                    onClick = {
-                                        content = "${content}@${id.name} "
-                                        lastContentEditedAt = SystemClock.elapsedRealtime()
-                                        showMentionDialog = false
-                                    }
-                                ) {
-                                    Text("@${id.name}")
-                                }
-                            }
-                        }
+        if (showRemindPicker) {
+            ReminderPickerDialog(
+                onDismissRequest = { showRemindPicker = false },
+                onScheduleAt = { fireAt, rule ->
+                    if (fireAt <= System.currentTimeMillis() + 5_000L) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.post_detail_remind_time_past),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        pendingComposeReminder = fireAt to rule
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.compose_reminder_saved_for_publish),
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 },
-                confirmButton = {
-                    TextButton(onClick = { showMentionDialog = false }) {
-                        Text(stringResource(R.string.close_cd))
-                    }
-                }
+                onOpenExactAlarmSettings = openExactAlarmSettings,
+                onOpenAppDetailsSettings = openAppDetailsSettings,
+                titleText = stringResource(R.string.compose_remind_title),
+                additionalHint = stringResource(R.string.compose_remind_after_publish_hint)
             )
         }
     }
@@ -668,15 +739,17 @@ fun ComposeScreen(
 private fun ActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    contentDescription: String? = null
 ) {
+    val cd = contentDescription ?: label
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable(onClick = onClick)
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = label,
+            contentDescription = cd,
             tint = WeiboOrange,
             modifier = Modifier.size(28.dp)
         )

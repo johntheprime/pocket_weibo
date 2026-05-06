@@ -243,9 +243,11 @@
     <string name="post_image_next_cd">下一张</string>
     <string name="compose_preparing_images">正在处理图片…</string>
     <string name="compose_per_post_original_title">本帖原图（不压缩）</string>
-    <string name="compose_mention_title">插入 \@ 提及</string>
-    <string name="compose_mention_empty">暂无其他身份可选</string>
-    <string name="compose_label_mention">艾特</string>
+    <string name="compose_remind_title">为这条微博设置提醒</string>
+    <string name="compose_remind_after_publish_hint">选择时间后，将在你点击「发送」并成功发布后为该条微博设置系统提醒。</string>
+    <string name="compose_reminder_saved_for_publish">已记录提醒时间，发送成功后将设置闹钟</string>
+    <string name="compose_label_remind">提醒</string>
+    <string name="compose_remind_cd">为发布后的这条微博设置系统提醒</string>
     <string name="compose_no_identity_hint">请先在「我」页面添加身份</string>
 
     <string name="empty_feed">还没有微博，点击中间+号发布第一条</string>

@@ -243,9 +243,11 @@
     <string name="post_image_next_cd">Next image</string>
     <string name="compose_preparing_images">Processing images…</string>
     <string name="compose_per_post_original_title">Original files for this post</string>
-    <string name="compose_mention_title">Insert \@ mention</string>
-    <string name="compose_mention_empty">No other identities to pick</string>
-    <string name="compose_label_mention">Mention</string>
+    <string name="compose_remind_title">Set a reminder for this post</string>
+    <string name="compose_remind_after_publish_hint">After you pick a time, the reminder is scheduled when you tap Send and the post is published successfully.</string>
+    <string name="compose_reminder_saved_for_publish">Reminder saved; it will be scheduled after you publish</string>
+    <string name="compose_label_remind">Reminder</string>
+    <string name="compose_remind_cd">Set a system reminder for this post after it is published</string>
     <string name="compose_no_identity_hint">Add an identity on the Me tab first</string>
 
     <string name="empty_feed">No posts yet. Tap + to publish.</string>

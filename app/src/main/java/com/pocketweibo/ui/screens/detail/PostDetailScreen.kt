@@ -4,16 +4,11 @@ import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.app.AlarmManager
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import android.os.PowerManager
 import android.provider.Settings
-import android.text.format.DateFormat
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,7 +16,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,7 +29,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -53,9 +46,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -67,7 +58,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -96,60 +86,12 @@ import com.pocketweibo.ui.util.copyPlainToClipboard
 import com.pocketweibo.ui.util.findActivity
 import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
+import com.pocketweibo.ui.reminder.ReminderPickerDialog
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import com.pocketweibo.data.prefs.ReminderQuickPresetId
-import com.pocketweibo.data.prefs.ReminderQuickPresetStats
-import com.pocketweibo.reminder.ReminderRepeatRule
-import androidx.compose.material3.FilterChip
-import java.util.Calendar
-
-private fun millisTomorrowAt(hour: Int, minute: Int): Long {
-    val cal = Calendar.getInstance()
-    cal.add(Calendar.DAY_OF_MONTH, 1)
-    cal.set(Calendar.HOUR_OF_DAY, hour)
-    cal.set(Calendar.MINUTE, minute)
-    cal.set(Calendar.SECOND, 0)
-    cal.set(Calendar.MILLISECOND, 0)
-    return cal.timeInMillis
-}
-
-private fun showReminderDateTimePicker(context: Context, onChosen: (Long) -> Unit) {
-    val activity = context.findActivity() ?: return
-    val now = Calendar.getInstance()
-    DatePickerDialog(
-        activity,
-        { _, year, month, dayOfMonth ->
-            TimePickerDialog(
-                activity,
-                { _, hourOfDay, minute ->
-                    val cal = Calendar.getInstance().apply {
-                        set(Calendar.YEAR, year)
-                        set(Calendar.MONTH, month)
-                        set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                        set(Calendar.HOUR_OF_DAY, hourOfDay)
-                        set(Calendar.MINUTE, minute)
-                        set(Calendar.SECOND, 0)
-                        set(Calendar.MILLISECOND, 0)
-                    }
-                    onChosen(cal.timeInMillis)
-                },
-                now.get(Calendar.HOUR_OF_DAY),
-                now.get(Calendar.MINUTE),
-                DateFormat.is24HourFormat(activity)
-            ).show()
-        },
-        now.get(Calendar.YEAR),
-        now.get(Calendar.MONTH),
-        now.get(Calendar.DAY_OF_MONTH)
-    ).show()
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostDetailScreen(
@@ -400,11 +342,6 @@ private fun PostDetailCard(
     onOpenAppDetailsSettings: () -> Unit
 ) {
     val context = LocalContext.current
-    val appContext = context.applicationContext
-    val scope = rememberCoroutineScope()
-    val quickBar by ReminderQuickPresetStats.barStateFlow(appContext).collectAsState(
-        initial = ReminderQuickPresetStats.defaultBarState()
-    )
     val resources = context.resources
     val shareLabel = stringResource(R.string.post_detail_action_share)
     val likeCd = stringResource(R.string.post_detail_like_cd)
@@ -416,14 +353,6 @@ private fun PostDetailCard(
     var moreExpanded by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showRemindPicker by remember { mutableStateOf(false) }
-    var repeatRule by remember { mutableStateOf(ReminderRepeatRule.NONE) }
-    var showRepeatOptions by remember { mutableStateOf(false) }
-    LaunchedEffect(showRemindPicker) {
-        if (showRemindPicker) {
-            repeatRule = ReminderRepeatRule.NONE
-            showRepeatOptions = false
-        }
-    }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = Color.White
@@ -595,206 +524,16 @@ private fun PostDetailCard(
                 )
             }
             if (showRemindPicker) {
-                val canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-                    (context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager)
-                        ?.canScheduleExactAlarms() == true
-                val ignoringBattery = Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
-                    (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)
-                        ?.isIgnoringBatteryOptimizations(context.packageName) == true
-                AlertDialog(
+                ReminderPickerDialog(
                     onDismissRequest = { showRemindPicker = false },
-                    title = { Text(stringResource(R.string.post_detail_remind_title)) },
-                    text = {
-                        Column(
-                            modifier = Modifier.verticalScroll(rememberScrollState())
-                        ) {
-                            val effectiveRepeat =
-                                if (showRepeatOptions) repeatRule else ReminderRepeatRule.NONE
-                            Text(
-                                text = stringResource(R.string.post_detail_remind_hint_system),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = GrayMiddle
-                            )
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !canExact) {
-                                TextButton(
-                                    onClick = onOpenExactAlarmSettings,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 4.dp)
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.post_detail_remind_open_exact_alarm),
-                                        color = WeiboOrange
-                                    )
-                                }
-                            }
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !ignoringBattery) {
-                                Text(
-                                    text = stringResource(R.string.post_detail_remind_battery_hint),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = GrayMiddle,
-                                    modifier = Modifier.padding(top = 8.dp)
-                                )
-                                TextButton(
-                                    onClick = onOpenAppDetailsSettings,
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.post_detail_remind_open_app_settings),
-                                        color = WeiboOrange
-                                    )
-                                }
-                            }
-                            TextButton(
-                                onClick = { showRepeatOptions = !showRepeatOptions },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(
-                                        if (showRepeatOptions) {
-                                            R.string.post_detail_remind_repeat_hide
-                                        } else {
-                                            R.string.post_detail_remind_repeat_show
-                                        }
-                                    ),
-                                    color = WeiboOrange
-                                )
-                            }
-                            if (showRepeatOptions) {
-                                Text(
-                                    text = stringResource(R.string.post_detail_remind_repeat_label),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = GrayDark,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 6.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    FilterChip(
-                                        selected = repeatRule == ReminderRepeatRule.NONE,
-                                        onClick = { repeatRule = ReminderRepeatRule.NONE },
-                                        label = { Text(stringResource(R.string.reminder_repeat_once)) }
-                                    )
-                                    FilterChip(
-                                        selected = repeatRule == ReminderRepeatRule.DAILY,
-                                        onClick = { repeatRule = ReminderRepeatRule.DAILY },
-                                        label = { Text(stringResource(R.string.reminder_repeat_daily)) }
-                                    )
-                                    FilterChip(
-                                        selected = repeatRule == ReminderRepeatRule.WORKDAYS,
-                                        onClick = { repeatRule = ReminderRepeatRule.WORKDAYS },
-                                        label = { Text(stringResource(R.string.reminder_repeat_workdays)) }
-                                    )
-                                }
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    FilterChip(
-                                        selected = repeatRule == ReminderRepeatRule.WEEKLY,
-                                        onClick = { repeatRule = ReminderRepeatRule.WEEKLY },
-                                        label = { Text(stringResource(R.string.reminder_repeat_weekly)) }
-                                    )
-                                    FilterChip(
-                                        selected = repeatRule == ReminderRepeatRule.MONTHLY,
-                                        onClick = { repeatRule = ReminderRepeatRule.MONTHLY },
-                                        label = { Text(stringResource(R.string.reminder_repeat_monthly)) }
-                                    )
-                                }
-                            }
-                            val presetScroll = rememberScrollState()
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 10.dp)
-                                    .horizontalScroll(presetScroll),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                fun labelForPreset(id: ReminderQuickPresetId): Int = when (id) {
-                                    ReminderQuickPresetId.M15 -> R.string.post_detail_remind_chip_15m
-                                    ReminderQuickPresetId.M30 -> R.string.post_detail_remind_chip_30m
-                                    ReminderQuickPresetId.H1 -> R.string.post_detail_remind_chip_1h
-                                    ReminderQuickPresetId.H3 -> R.string.post_detail_remind_chip_3h
-                                    ReminderQuickPresetId.H6 -> R.string.post_detail_remind_chip_6h
-                                }
-                                fun schedulePreset(id: ReminderQuickPresetId) {
-                                    scope.launch(Dispatchers.IO) {
-                                        ReminderQuickPresetStats.recordUse(appContext, id)
-                                    }
-                                    showRemindPicker = false
-                                    onScheduleReminderAt(
-                                        ReminderQuickPresetStats.millisOffsetMillis(id),
-                                        effectiveRepeat
-                                    )
-                                }
-                                quickBar.topThree.forEach { id ->
-                                    OutlinedButton(
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                                        onClick = { schedulePreset(id) }
-                                    ) {
-                                        Text(
-                                            stringResource(labelForPreset(id)),
-                                            fontSize = 12.sp,
-                                            maxLines = 1
-                                        )
-                                    }
-                                }
-                                OutlinedButton(
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                                    onClick = {
-                                        showRemindPicker = false
-                                        onScheduleReminderAt(
-                                            millisTomorrowAt(9, 0),
-                                            effectiveRepeat
-                                        )
-                                    }
-                                ) {
-                                    Text(
-                                        stringResource(R.string.post_detail_remind_chip_tomorrow_9),
-                                        fontSize = 12.sp,
-                                        maxLines = 2
-                                    )
-                                }
-                                quickBar.remainder.forEach { id ->
-                                    OutlinedButton(
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                                        onClick = { schedulePreset(id) }
-                                    ) {
-                                        Text(
-                                            stringResource(labelForPreset(id)),
-                                            fontSize = 12.sp,
-                                            maxLines = 1
-                                        )
-                                    }
-                                }
-                            }
-                            OutlinedButton(
-                                onClick = {
-                                    showRemindPicker = false
-                                    showReminderDateTimePicker(context) { ms ->
-                                        onScheduleReminderAt(ms, effectiveRepeat)
-                                    }
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 10.dp)
-                            ) {
-                                Text(stringResource(R.string.post_detail_remind_pick_datetime))
-                            }
-                        }
+                    onScheduleAt = { fireAt, repeatRule ->
+                        showRemindPicker = false
+                        onScheduleReminderAt(fireAt, repeatRule)
                     },
-                    confirmButton = {
-                        TextButton(onClick = { showRemindPicker = false }) {
-                            Text(stringResource(R.string.close_cd))
-                        }
-                    }
+                    onOpenExactAlarmSettings = onOpenExactAlarmSettings,
+                    onOpenAppDetailsSettings = onOpenAppDetailsSettings,
+                    titleText = stringResource(R.string.post_detail_remind_title),
+                    additionalHint = null
                 )
             }
         }
