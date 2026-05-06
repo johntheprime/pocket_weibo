@@ -861,13 +861,10 @@ private fun CommentsHeader(
             if (commentCount > 0) {
                 TextButton(
                     onClick = {
-                        val text = comments.joinToString(separator = "\n\n") { c ->
-                            val timeStr = context.resources.formatRelativeTime(
-                                c.createdAt,
-                                RelativeTimePreset.PostDetail
-                            )
-                            "${context.identityDisplayName(c.identityName).trim()} · $timeStr\n${c.content.trim()}"
-                        }
+                        val text = comments
+                            .sortedBy { it.createdAt }
+                            .mapIndexed { index, c -> "${index + 1}. ${c.content.trim()}" }
+                            .joinToString(separator = "\n\n")
                         context.copyPlainToClipboard(
                             label = context.getString(R.string.clipboard_label_all_comments),
                             text = text,

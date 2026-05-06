@@ -217,7 +217,7 @@
     <string name="reminder_in_mixed_future">%1$dh %2$dm left</string>
     <string name="comments_header">Comments</string>
     <string name="comments_copy_all">Copy all</string>
-    <string name="comments_copy_all_cd">Copy all comments on this post to the clipboard</string>
+    <string name="comments_copy_all_cd">Copy all comment bodies on this post to the clipboard (numbered from oldest to newest, without author or time)</string>
     <string name="clipboard_label_all_comments">All comments</string>
     <string name="toast_all_comments_copied">All comments copied</string>
     <string name="comments_empty">No comments yet</string>

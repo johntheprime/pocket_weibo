@@ -217,7 +217,7 @@
     <string name="reminder_in_mixed_future">%1$d 时 %2$d 分钟后</string>
     <string name="comments_header">评论</string>
     <string name="comments_copy_all">复制全部</string>
-    <string name="comments_copy_all_cd">复制本条微博的全部评论到剪贴板</string>
+    <string name="comments_copy_all_cd">复制本条微博的全部评论正文到剪贴板（按时间从早到晚编号，不含作者与时间）</string>
     <string name="clipboard_label_all_comments">全部评论</string>
     <string name="toast_all_comments_copied">已全部复制评论</string>
     <string name="comments_empty">暂无评论，快来抢沙发吧</string>
