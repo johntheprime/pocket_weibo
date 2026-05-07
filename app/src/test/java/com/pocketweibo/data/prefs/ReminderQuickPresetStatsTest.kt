@@ -19,7 +19,11 @@ class ReminderQuickPresetStatsTest {
             bar.topThree
         )
         assertEquals(
-            listOf(ReminderQuickPresetId.H3, ReminderQuickPresetId.H6),
+            listOf(
+                ReminderQuickPresetId.H3,
+                ReminderQuickPresetId.H6,
+                ReminderQuickPresetId.H10
+            ),
             bar.remainder
         )
     }
@@ -32,7 +36,8 @@ class ReminderQuickPresetStatsTest {
                 ReminderQuickPresetId.M30 to 5,
                 ReminderQuickPresetId.H1 to 5,
                 ReminderQuickPresetId.H3 to 0,
-                ReminderQuickPresetId.H6 to 0
+                ReminderQuickPresetId.H6 to 0,
+                ReminderQuickPresetId.H10 to 0
             )
         )
         assertEquals(
@@ -44,7 +49,11 @@ class ReminderQuickPresetStatsTest {
             bar.topThree
         )
         assertEquals(
-            listOf(ReminderQuickPresetId.H3, ReminderQuickPresetId.H6),
+            listOf(
+                ReminderQuickPresetId.H3,
+                ReminderQuickPresetId.H6,
+                ReminderQuickPresetId.H10
+            ),
             bar.remainder
         )
     }

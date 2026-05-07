@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -50,6 +51,7 @@ import com.pocketweibo.ui.theme.GrayDark
 fun PostCard(
     post: PostWithIdentity,
     onCommentClick: () -> Unit,
+    onRemindClick: () -> Unit,
     onShareClick: () -> Unit,
     onPostClick: () -> Unit,
     /** List feeds are text-first; images remain visible in post detail. */
@@ -154,9 +156,18 @@ fun PostCard(
                     count = null,
                     onClick = onShareClick
                 )
-                
+
                 Spacer(modifier = Modifier.width(10.dp))
-                
+
+                ActionButton(
+                    icon = Icons.Default.Schedule,
+                    text = stringResource(R.string.post_card_remind_cd),
+                    count = null,
+                    onClick = onRemindClick
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
                 ActionButton(
                     icon = Icons.Default.ChatBubbleOutline,
                     text = stringResource(R.string.action_comment),

@@ -1,9 +1,14 @@
 package com.pocketweibo.ui.screens.home
 
+import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,6 +57,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,6 +70,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
@@ -76,9 +84,12 @@ import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.reminder.ReminderPickerDialog
 import com.pocketweibo.ui.util.identityDisplayName
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+private data class PendingHomeReminder(val postId: Long, val fireAt: Long, val rule: String)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
@@ -111,6 +122,80 @@ fun HomeScreen(
     val commentSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val titleQuickAccessSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val scope = rememberCoroutineScope()
+
+    var remindPickerPostId by remember { mutableStateOf<Long?>(null) }
+    var pendingHomeReminder by remember { mutableStateOf<PendingHomeReminder?>(null) }
+
+    val notifyPermLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val pending = pendingHomeReminder
+        pendingHomeReminder = null
+        if (granted && pending != null) {
+            scope.launch {
+                app.repository.schedulePostReminder(pending.postId, pending.fireAt, pending.rule)
+            }
+            Toast.makeText(
+                context,
+                context.getString(R.string.reminder_scheduled_toast),
+                Toast.LENGTH_SHORT
+            ).show()
+        } else if (!granted && pending != null) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.reminder_permission_denied_toast),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    val openExactAlarmSettings: () -> Unit = {
+        if (Build.VERSION.SDK_INT >= 31) {
+            runCatching {
+                context.startActivity(
+                    Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                )
+            }
+        }
+    }
+    val openAppDetailsSettings: () -> Unit = {
+        context.startActivity(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
+    }
+
+    fun tryScheduleHomeReminder(postId: Long, fireAt: Long, repeatRule: String) {
+        if (fireAt <= System.currentTimeMillis() + 5000L) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.post_detail_remind_time_past),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingHomeReminder = PendingHomeReminder(postId, fireAt, repeatRule)
+            notifyPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            return
+        }
+        scope.launch {
+            app.repository.schedulePostReminder(postId, fireAt, repeatRule)
+        }
+        Toast.makeText(
+            context,
+            context.getString(R.string.reminder_scheduled_toast),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
 
     val postsByIdentity = remember(posts) {
         posts.groupBy { it.identityId }.mapValues { (_, list) ->
@@ -302,6 +387,7 @@ fun HomeScreen(
                                 PostCard(
                                     post = post,
                                     onCommentClick = { viewModel.openComments(post.id) },
+                                    onRemindClick = { remindPickerPostId = post.id },
                                     onShareClick = {
                                         sharePost(
                                             context,
@@ -336,6 +422,20 @@ fun HomeScreen(
                 onDeleteComment = { commentId ->
                     viewModel.deleteComment(commentId, selectedPostId!!)
                 }
+            )
+        }
+
+        remindPickerPostId?.let { postIdForRemind ->
+            ReminderPickerDialog(
+                onDismissRequest = { remindPickerPostId = null },
+                onScheduleAt = { fireAt, repeatRule ->
+                    remindPickerPostId = null
+                    tryScheduleHomeReminder(postIdForRemind, fireAt, repeatRule)
+                },
+                onOpenExactAlarmSettings = openExactAlarmSettings,
+                onOpenAppDetailsSettings = openAppDetailsSettings,
+                titleText = stringResource(R.string.post_detail_remind_title),
+                additionalHint = null
             )
         }
     }

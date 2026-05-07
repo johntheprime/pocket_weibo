@@ -59,6 +59,20 @@ internal fun millisTomorrowAt(hour: Int, minute: Int): Long {
     return cal.timeInMillis
 }
 
+/** Next local 20:00: today if still in the future (with a short buffer), otherwise tomorrow 20:00. */
+internal fun millisNextTodayOrTomorrowAt20(): Long {
+    val minFuture = System.currentTimeMillis() + 5_000L
+    val cal = Calendar.getInstance()
+    cal.set(Calendar.HOUR_OF_DAY, 20)
+    cal.set(Calendar.MINUTE, 0)
+    cal.set(Calendar.SECOND, 0)
+    cal.set(Calendar.MILLISECOND, 0)
+    if (cal.timeInMillis <= minFuture) {
+        cal.add(Calendar.DAY_OF_MONTH, 1)
+    }
+    return cal.timeInMillis
+}
+
 internal fun showReminderDateTimePicker(context: Context, onChosen: (Long) -> Unit) {
     val activity = context.findActivity() ?: return
     val now = Calendar.getInstance()
@@ -257,6 +271,7 @@ fun ReminderPickerDialog(
                         ReminderQuickPresetId.H1 -> R.string.post_detail_remind_chip_1h
                         ReminderQuickPresetId.H3 -> R.string.post_detail_remind_chip_3h
                         ReminderQuickPresetId.H6 -> R.string.post_detail_remind_chip_6h
+                        ReminderQuickPresetId.H10 -> R.string.post_detail_remind_chip_10h
                     }
                     fun schedulePreset(id: ReminderQuickPresetId) {
                         scope.launch(Dispatchers.IO) {
@@ -290,6 +305,21 @@ fun ReminderPickerDialog(
                     ) {
                         Text(
                             stringResource(R.string.post_detail_remind_chip_tomorrow_9),
+                            fontSize = 12.sp,
+                            maxLines = 2
+                        )
+                    }
+                    OutlinedButton(
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                        onClick = {
+                            dismissThenSchedule(
+                                millisNextTodayOrTomorrowAt20(),
+                                effectiveRepeat
+                            )
+                        }
+                    ) {
+                        Text(
+                            stringResource(R.string.post_detail_remind_chip_today_20),
                             fontSize = 12.sp,
                             maxLines = 2
                         )

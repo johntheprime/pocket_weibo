@@ -192,7 +192,10 @@
     <string name="post_detail_remind_chip_1h">1 时</string>
     <string name="post_detail_remind_chip_3h">3 时</string>
     <string name="post_detail_remind_chip_6h">6 时</string>
+    <string name="post_detail_remind_chip_10h">10 时</string>
+    <string name="post_detail_remind_chip_today_20">今天 20:00</string>
     <string name="post_detail_remind_chip_tomorrow_9">明天 9:00</string>
+    <string name="post_card_remind_cd">设置提醒</string>
     <string name="post_detail_remind_repeat_show">重复提醒（可选）</string>
     <string name="post_detail_remind_repeat_hide">隐藏重复选项</string>
     <string name="post_detail_remind_repeat_label">重复</string>

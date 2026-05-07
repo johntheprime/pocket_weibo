@@ -22,11 +22,12 @@ enum class ReminderQuickPresetId {
     M30,
     H1,
     H3,
-    H6;
+    H6,
+    H10;
 
     companion object {
         /** Tie-break when counts are equal: earlier = higher priority for top-3. */
-        val DEFAULT_ORDER: List<ReminderQuickPresetId> = listOf(M15, M30, H1, H3, H6)
+        val DEFAULT_ORDER: List<ReminderQuickPresetId> = listOf(M15, M30, H1, H3, H6, H10)
     }
 }
 
@@ -38,8 +39,11 @@ data class ReminderQuickBarState(
 ) {
     init {
         require(topThree.size == 3 && topThree.toSet().size == 3) { "topThree must be 3 distinct presets" }
-        require(remainder.size == 2 && remainder.toSet().size == 2) { "remainder must be 2 distinct presets" }
-        require((topThree.toSet() + remainder.toSet()).size == ReminderQuickPresetId.entries.size)
+        val n = ReminderQuickPresetId.entries.size
+        require(remainder.size == n - 3 && remainder.toSet().size == n - 3) {
+            "remainder must hold all presets not in topThree"
+        }
+        require((topThree.toSet() + remainder.toSet()).size == n)
     }
 }
 
@@ -61,6 +65,7 @@ object ReminderQuickPresetStats {
             ReminderQuickPresetId.H1 -> now + 60 * 60_000L
             ReminderQuickPresetId.H3 -> now + 3 * 60 * 60_000L
             ReminderQuickPresetId.H6 -> now + 6 * 60 * 60_000L
+            ReminderQuickPresetId.H10 -> now + 10 * 60 * 60_000L
         }
     }
 

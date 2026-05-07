@@ -192,7 +192,10 @@
     <string name="post_detail_remind_chip_1h">1h</string>
     <string name="post_detail_remind_chip_3h">3h</string>
     <string name="post_detail_remind_chip_6h">6h</string>
+    <string name="post_detail_remind_chip_10h">10h</string>
+    <string name="post_detail_remind_chip_today_20">Today 8:00 PM</string>
     <string name="post_detail_remind_chip_tomorrow_9">Tomorrow 9:00</string>
+    <string name="post_card_remind_cd">Set reminder</string>
     <string name="post_detail_remind_repeat_show">Repeat options (optional)</string>
     <string name="post_detail_remind_repeat_hide">Hide repeat options</string>
     <string name="post_detail_remind_repeat_label">Repeat</string>
