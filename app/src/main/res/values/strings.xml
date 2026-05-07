@@ -255,6 +255,7 @@
     <string name="compose_label_remind">提醒</string>
     <string name="compose_remind_cd">为发布后的这条微博设置系统提醒</string>
     <string name="compose_no_identity_hint">请先在「我」页面添加身份</string>
+    <string name="compose_double_tap_blank_cd">正文下方空白区域；连点两下可发送（与摇一摇发送可同时使用）</string>
 
     <string name="empty_feed">还没有微博，点击中间+号发布第一条</string>
     <string name="empty_feed_title">还没有微博</string>

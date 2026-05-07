@@ -13,10 +13,12 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -58,6 +60,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -67,6 +70,8 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -374,6 +379,14 @@ fun ComposeScreen(
         }
     }
 
+    val canQuickSend =
+        (content.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
+            selectedIdentity != null &&
+            !isSending &&
+            !isPreparingImages
+    val canQuickSendState by rememberUpdatedState(canQuickSend)
+    val performSendAction by rememberUpdatedState(newValue = { performSend() })
+
     ShakeToSendEffect(
         canSend = (content.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
             selectedIdentity != null &&
@@ -459,6 +472,7 @@ fun ComposeScreen(
                     .fillMaxWidth()
                     .verticalScroll(formScrollState)
             ) {
+                val composeDoubleTapBlankCd = stringResource(R.string.compose_double_tap_blank_cd)
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -657,6 +671,19 @@ fun ComposeScreen(
                         }
                     }
                 }
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minHeight = 160.dp)
+                        .semantics { contentDescription = composeDoubleTapBlankCd }
+                        .pointerInput(canQuickSend) {
+                            detectTapGestures(
+                                onDoubleTap = {
+                                    if (canQuickSendState) performSendAction()
+                                }
+                            )
+                        }
+                )
             }
 
             Row(

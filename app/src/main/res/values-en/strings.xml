@@ -255,6 +255,7 @@
     <string name="compose_label_remind">Reminder</string>
     <string name="compose_remind_cd">Set a system reminder for this post after it is published</string>
     <string name="compose_no_identity_hint">Add an identity on the Me tab first</string>
+    <string name="compose_double_tap_blank_cd">Blank area below the draft; double-tap to send (works alongside shake to send)</string>
 
     <string name="empty_feed">No posts yet. Tap + to publish.</string>
     <string name="empty_feed_title">No posts yet</string>
