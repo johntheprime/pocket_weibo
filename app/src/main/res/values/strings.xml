@@ -20,7 +20,7 @@
     <string name="settings_shake_reminder_evening_subtitle">未到该时间则定在今日 %1$s；已过则改为次日早晨时刻。</string>
     <string name="settings_shake_reminder_morning_title">次日早晨提醒时刻</string>
     <string name="settings_shake_reminder_morning_subtitle">当晚间时刻已过时的提醒时间：%1$s（次日）。</string>
-    <string name="toast_shake_reminder_set">已设置提醒</string>
+    <string name="toast_shake_reminder_set_fmt">已设置提醒：%1$s</string>
     <string name="title_post_detail">微博详情</string>
     <string name="title_identities">身份管理</string>
     <string name="title_compose">发微博</string>

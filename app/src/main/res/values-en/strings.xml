@@ -20,7 +20,7 @@
     <string name="settings_shake_reminder_evening_subtitle">If still before %1$s today, schedule then; otherwise use the next-morning time below.</string>
     <string name="settings_shake_reminder_morning_title">Next morning time</string>
     <string name="settings_shake_reminder_morning_subtitle">When today’s evening time has passed: %1$s the next day.</string>
-    <string name="toast_shake_reminder_set">Reminder set</string>
+    <string name="toast_shake_reminder_set_fmt">Reminder set: %1$s</string>
     <string name="title_post_detail">Post</string>
     <string name="title_identities">Identities</string>
     <string name="title_compose">New post</string>

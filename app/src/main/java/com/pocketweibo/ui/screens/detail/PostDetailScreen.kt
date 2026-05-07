@@ -90,6 +90,7 @@ import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
 import com.pocketweibo.ui.util.findActivity
 import com.pocketweibo.ui.util.formatRelativeTime
+import com.pocketweibo.ui.util.formatReminderFireToastTime
 import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.ui.reminder.ReminderPickerDialog
@@ -106,7 +107,7 @@ import kotlinx.coroutines.withContext
 private data class PendingReminderSchedule(
     val fireAt: Long,
     val rule: String,
-    val toastOverrideResId: Int?,
+    val toastTextOverride: String?,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -130,12 +131,9 @@ fun PostDetailScreen(
         pendingSchedule = null
         if (granted && pending != null) {
             viewModel.scheduleReminderAt(pending.fireAt, pending.rule)
-            val toastRes = pending.toastOverrideResId ?: R.string.reminder_scheduled_toast
-            Toast.makeText(
-                context,
-                context.getString(toastRes),
-                Toast.LENGTH_SHORT
-            ).show()
+            val toastText = pending.toastTextOverride
+                ?: context.getString(R.string.reminder_scheduled_toast)
+            Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show()
         } else if (!granted && pending != null) {
             Toast.makeText(
                 context,
@@ -145,7 +143,7 @@ fun PostDetailScreen(
         }
     }
 
-    val scheduleReminderAt: (Long, String, Int?) -> Unit = { fireAt, repeatRule, toastOverrideResId ->
+    val scheduleReminderAt: (Long, String, String?) -> Unit = { fireAt, repeatRule, toastTextOverride ->
         if (fireAt <= System.currentTimeMillis() + 5000L) {
             Toast.makeText(
                 context,
@@ -159,16 +157,13 @@ fun PostDetailScreen(
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            pendingSchedule = PendingReminderSchedule(fireAt, repeatRule, toastOverrideResId)
+            pendingSchedule = PendingReminderSchedule(fireAt, repeatRule, toastTextOverride)
             notifyPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
             viewModel.scheduleReminderAt(fireAt, repeatRule)
-            val toastRes = toastOverrideResId ?: R.string.reminder_scheduled_toast
-            Toast.makeText(
-                context,
-                context.getString(toastRes),
-                Toast.LENGTH_SHORT
-            ).show()
+            val toastText = toastTextOverride
+                ?: context.getString(R.string.reminder_scheduled_toast)
+            Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -239,7 +234,9 @@ fun PostDetailScreen(
                     return@launch
                 }
                 lastShakeReminderScheduledAt = SystemClock.elapsedRealtime()
-                scheduleReminderAt(fireAt, ReminderRepeatRule.NONE, R.string.toast_shake_reminder_set)
+                val whenText = context.resources.formatReminderFireToastTime(fireAt)
+                val shakeToast = context.getString(R.string.toast_shake_reminder_set_fmt, whenText)
+                scheduleReminderAt(fireAt, ReminderRepeatRule.NONE, shakeToast)
             }
         }
     )
@@ -404,7 +401,7 @@ private fun PostDetailCard(
     onPostImageClick: (Int) -> Unit,
     onCopyPost: () -> Unit,
     onDeletePost: () -> Unit,
-    onScheduleReminderAt: (Long, String, Int?) -> Unit,
+    onScheduleReminderAt: (Long, String, String?) -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
     onOpenAppDetailsSettings: () -> Unit
 ) {

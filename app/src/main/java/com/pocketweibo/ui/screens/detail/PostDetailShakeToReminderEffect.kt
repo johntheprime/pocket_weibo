@@ -22,17 +22,18 @@ import com.pocketweibo.ui.util.findActivity
 import kotlin.math.abs
 import kotlin.math.sqrt
 
-private const val SHAKE_WARMUP_MS = 1_600L
-private const val SHAKE_AFTER_TYPING_IDLE_MS = 1_200L
-private const val SHAKE_COOLDOWN_MS = 3_000L
-private const val LINEAR_SHAKE_THRESHOLD = 12.5f
-private const val ACCEL_DELTA_THRESHOLD = 22f
-private const val SHAKE_WINDOW_MS = 380L
-private const val IMPULSES_NEEDED = 3
+/** Softer than [com.pocketweibo.ui.screens.compose.ShakeToSendEffect] so a light shake can set a reminder. */
+private const val SHAKE_WARMUP_MS = 900L
+private const val SHAKE_AFTER_TYPING_IDLE_MS = 700L
+private const val SHAKE_COOLDOWN_MS = 2_200L
+private const val LINEAR_SHAKE_THRESHOLD = 8f
+private const val ACCEL_DELTA_THRESHOLD = 14f
+private const val SHAKE_WINDOW_MS = 520L
+private const val IMPULSES_NEEDED = 2
 
 /**
  * While post detail is visible: deliberate shake schedules the configured default reminder.
- * Same motion heuristics as compose [com.pocketweibo.ui.screens.compose.ShakeToSendEffect].
+ * Detection is intentionally easier than compose “shake to send”.
  */
 @Composable
 fun PostDetailShakeToReminderEffect(
