@@ -3,8 +3,14 @@ package com.pocketweibo.ui.screens.photo
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculateCentroidSize
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateRotation
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -40,7 +46,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -50,6 +58,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.PI
+import kotlin.math.abs
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.pocketweibo.PocketWeiboApp
@@ -73,6 +83,95 @@ private fun clampPhotoPan(offset: Offset, scale: Float, widthPx: Float, heightPx
         offset.x.coerceIn(-maxX, maxX),
         offset.y.coerceIn(-maxY, maxY)
     )
+}
+
+/**
+ * Like [androidx.compose.foundation.gestures.detectTransformGestures] (panZoomLock false) after slop,
+ * but when [allowSingleFingerPan] is false at gesture start (~1× in the feed) we only cross touch
+ * slop for pinch / rotation / two-finger drag — not a one-finger pan — so [LazyColumn] keeps smooth
+ * vertical scroll.
+ */
+private suspend fun PointerInputScope.detectPhotoFeedTransformGestures(
+    allowSingleFingerPan: () -> Boolean,
+    onGesture: (centroid: Offset, pan: Offset, zoom: Float, rotation: Float) -> Unit,
+) {
+    awaitEachGesture {
+        val allowPan = allowSingleFingerPan()
+        var rotationAccum = 0f
+        var zoomAccum = 1f
+        var panAccum = Offset.Zero
+        var pastTouchSlop = false
+        val touchSlop = viewConfiguration.touchSlop
+        val panZoomLock = false
+        var lockedToPanZoom = false
+
+        awaitFirstDown(requireUnconsumed = false)
+        do {
+            val event = awaitPointerEvent()
+            var eventCanceled = false
+            for (ch in event.changes) {
+                if (ch.isConsumed) {
+                    eventCanceled = true
+                    break
+                }
+            }
+            if (!eventCanceled) {
+                val zoomChange: Float = event.calculateZoom()
+                val rotationChange: Float = event.calculateRotation()
+                val panChange = event.calculatePan()
+
+                if (!pastTouchSlop) {
+                    zoomAccum *= zoomChange
+                    rotationAccum += rotationChange
+                    panAccum += panChange
+
+                    val centroidSize = event.calculateCentroidSize(useCurrent = false)
+                    val zoomMotion = abs(1f - zoomAccum) * centroidSize
+                    val rotationMotion = abs(rotationAccum * PI.toFloat() * centroidSize / 180f)
+                    val panMotion = panAccum.getDistance()
+                    var touchCount = 0
+                    for (ch in event.changes) {
+                        if (ch.pressed) touchCount++
+                    }
+                    val multiTouch = touchCount >= 2
+
+                    val crossSlop = if (allowPan) {
+                        zoomMotion > touchSlop ||
+                            rotationMotion > touchSlop ||
+                            panMotion > touchSlop
+                    } else {
+                        zoomMotion > touchSlop ||
+                            rotationMotion > touchSlop ||
+                            (multiTouch && panMotion > touchSlop)
+                    }
+                    if (crossSlop) {
+                        pastTouchSlop = true
+                        lockedToPanZoom = panZoomLock && rotationMotion < touchSlop
+                    }
+                }
+
+                if (pastTouchSlop) {
+                    val centroid = event.calculateCentroid(useCurrent = false)
+                    val effectiveRotation = if (lockedToPanZoom) 0f else rotationChange
+                    if (effectiveRotation != 0f || zoomChange != 1f || panChange != Offset.Zero) {
+                        onGesture(centroid, panChange, zoomChange, effectiveRotation)
+                    }
+                    for (change in event.changes) {
+                        if (change.positionChanged()) {
+                            change.consume()
+                        }
+                    }
+                }
+            }
+            var anyPressed = false
+            for (ch in event.changes) {
+                if (ch.pressed) {
+                    anyPressed = true
+                    break
+                }
+            }
+        } while (!eventCanceled && anyPressed)
+    }
 }
 
 @Composable
@@ -170,7 +269,9 @@ private fun PhotoFeedCard(
                             translationY = offset.y
                         }
                         .pointerInput(post.id, wPx, hPx) {
-                            detectTransformGestures { _, pan, zoom, _ ->
+                            detectPhotoFeedTransformGestures(
+                                allowSingleFingerPan = { scale > 1.02f },
+                            ) { _, pan, zoom, _ ->
                                 val newScale = (scale * zoom).coerceIn(1f, PhotoZoomMaxScale)
                                 scale = newScale
                                 offset = if (newScale <= 1f) {
