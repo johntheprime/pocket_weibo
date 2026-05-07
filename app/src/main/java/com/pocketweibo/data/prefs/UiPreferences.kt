@@ -7,6 +7,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -17,6 +18,11 @@ private val Context.uiPreferencesDataStore: DataStore<Preferences> by preference
 
 private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
 private val KEY_DIAGNOSTIC_LOG_CAPTURE = booleanPreferencesKey("diagnostic_log_capture")
+
+private val KEY_SHAKE_EV_H = intPreferencesKey("shake_rem_evening_h")
+private val KEY_SHAKE_EV_M = intPreferencesKey("shake_rem_evening_m")
+private val KEY_SHAKE_MO_H = intPreferencesKey("shake_rem_morning_h")
+private val KEY_SHAKE_MO_M = intPreferencesKey("shake_rem_morning_m")
 
 /** Stored codes: `system`, `zh`, `en`. */
 object UiPreferences {
@@ -51,5 +57,33 @@ object UiPreferences {
 
     suspend fun setDiagnosticLogCaptureEnabled(context: Context, enabled: Boolean) {
         context.uiPreferencesDataStore.edit { it[KEY_DIAGNOSTIC_LOG_CAPTURE] = enabled }
+    }
+
+    /** Shake on post detail: default “today evening” and “next morning” reminder anchors. */
+    fun shakeReminderSettingsFlow(context: Context): Flow<ShakeReminderSettings> =
+        context.uiPreferencesDataStore.data.map { prefs ->
+            ShakeReminderSettings(
+                eveningHour = (prefs[KEY_SHAKE_EV_H] ?: 20).coerceIn(0, 23),
+                eveningMinute = (prefs[KEY_SHAKE_EV_M] ?: 0).coerceIn(0, 59),
+                morningHour = (prefs[KEY_SHAKE_MO_H] ?: 9).coerceIn(0, 23),
+                morningMinute = (prefs[KEY_SHAKE_MO_M] ?: 0).coerceIn(0, 59),
+            )
+        }
+
+    suspend fun getShakeReminderSettings(context: Context): ShakeReminderSettings =
+        shakeReminderSettingsFlow(context).first()
+
+    suspend fun setShakeReminderEvening(context: Context, hour: Int, minute: Int) {
+        context.uiPreferencesDataStore.edit {
+            it[KEY_SHAKE_EV_H] = hour.coerceIn(0, 23)
+            it[KEY_SHAKE_EV_M] = minute.coerceIn(0, 59)
+        }
+    }
+
+    suspend fun setShakeReminderMorning(context: Context, hour: Int, minute: Int) {
+        context.uiPreferencesDataStore.edit {
+            it[KEY_SHAKE_MO_H] = hour.coerceIn(0, 23)
+            it[KEY_SHAKE_MO_M] = minute.coerceIn(0, 59)
+        }
     }
 }

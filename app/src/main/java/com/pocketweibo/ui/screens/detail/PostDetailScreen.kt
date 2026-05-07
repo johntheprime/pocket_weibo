@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -56,8 +57,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,6 +78,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.dao.CommentWithIdentity
+import com.pocketweibo.data.prefs.UiPreferences
+import com.pocketweibo.data.prefs.nextShakeReminderFireAtMillis
 import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.components.PostImageFullscreenViewer
@@ -86,13 +91,24 @@ import com.pocketweibo.ui.util.copyPlainToClipboard
 import com.pocketweibo.ui.util.findActivity
 import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
+import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.ui.reminder.ReminderPickerDialog
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+private data class PendingReminderSchedule(
+    val fireAt: Long,
+    val rule: String,
+    val toastOverrideResId: Int?,
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostDetailScreen(
@@ -104,18 +120,20 @@ fun PostDetailScreen(
     val context = LocalContext.current
     val app = context.applicationContext as PocketWeiboApp
     val viewModel: PostDetailViewModel = viewModel(factory = PostDetailViewModel.Factory(app.repository))
+    val scope = rememberCoroutineScope()
 
-    var pendingSchedule by remember { mutableStateOf<Pair<Long, String>?>(null) }
+    var pendingSchedule by remember { mutableStateOf<PendingReminderSchedule?>(null) }
     val notifyPermLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         val pending = pendingSchedule
         pendingSchedule = null
         if (granted && pending != null) {
-            viewModel.scheduleReminderAt(pending.first, pending.second)
+            viewModel.scheduleReminderAt(pending.fireAt, pending.rule)
+            val toastRes = pending.toastOverrideResId ?: R.string.reminder_scheduled_toast
             Toast.makeText(
                 context,
-                context.getString(R.string.reminder_scheduled_toast),
+                context.getString(toastRes),
                 Toast.LENGTH_SHORT
             ).show()
         } else if (!granted && pending != null) {
@@ -127,7 +145,7 @@ fun PostDetailScreen(
         }
     }
 
-    val scheduleReminderAt: (Long, String) -> Unit = { fireAt, repeatRule ->
+    val scheduleReminderAt: (Long, String, Int?) -> Unit = { fireAt, repeatRule, toastOverrideResId ->
         if (fireAt <= System.currentTimeMillis() + 5000L) {
             Toast.makeText(
                 context,
@@ -141,13 +159,14 @@ fun PostDetailScreen(
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            pendingSchedule = fireAt to repeatRule
+            pendingSchedule = PendingReminderSchedule(fireAt, repeatRule, toastOverrideResId)
             notifyPermLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         } else {
             viewModel.scheduleReminderAt(fireAt, repeatRule)
+            val toastRes = toastOverrideResId ?: R.string.reminder_scheduled_toast
             Toast.makeText(
                 context,
-                context.getString(R.string.reminder_scheduled_toast),
+                context.getString(toastRes),
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -174,11 +193,17 @@ fun PostDetailScreen(
         )
     }
 
-    LaunchedEffect(postId) { viewModel.loadPost(postId) }
+    var detailOpenedAt by remember(postId) { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    LaunchedEffect(postId) {
+        viewModel.loadPost(postId)
+        detailOpenedAt = SystemClock.elapsedRealtime()
+    }
 
     val post by viewModel.post.collectAsState()
     val comments by viewModel.comments.collectAsState()
     var commentText by remember { mutableStateOf("") }
+    var lastCommentEditedAt by remember(postId) { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    var lastShakeReminderScheduledAt by remember(postId) { mutableLongStateOf(0L) }
     var imageViewer by remember { mutableStateOf<Pair<List<String>, Int>?>(null) }
     val detailListState = rememberLazyListState()
     var scrollToNewestCommentAfterSend by remember { mutableStateOf(false) }
@@ -193,6 +218,31 @@ fun PostDetailScreen(
             }
         }
     }
+
+    PostDetailShakeToReminderEffect(
+        canSchedule = post != null,
+        lastCommentEditedAtMark = lastCommentEditedAt,
+        detailOpenedAtMark = detailOpenedAt,
+        lastShakeReminderScheduledAtMark = lastShakeReminderScheduledAt,
+        onShakeReminder = {
+            scope.launch {
+                val settings = withContext(Dispatchers.IO) {
+                    UiPreferences.getShakeReminderSettings(app)
+                }
+                val fireAt = nextShakeReminderFireAtMillis(settings)
+                if (fireAt <= System.currentTimeMillis() + 5000L) {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.post_detail_remind_time_past),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@launch
+                }
+                lastShakeReminderScheduledAt = SystemClock.elapsedRealtime()
+                scheduleReminderAt(fireAt, ReminderRepeatRule.NONE, R.string.toast_shake_reminder_set)
+            }
+        }
+    )
 
     Box(modifier = modifier.fillMaxSize()) {
     // Use Scaffold: It is specifically designed to handle top bars and bottom bars
@@ -234,7 +284,10 @@ fun PostDetailScreen(
                     ) {
                         OutlinedTextField(
                             value = commentText,
-                            onValueChange = { commentText = it },
+                            onValueChange = {
+                                commentText = it
+                                lastCommentEditedAt = SystemClock.elapsedRealtime()
+                            },
                             placeholder = {
                                 Text(
                                     stringResource(R.string.post_detail_comment_hint),
@@ -351,7 +404,7 @@ private fun PostDetailCard(
     onPostImageClick: (Int) -> Unit,
     onCopyPost: () -> Unit,
     onDeletePost: () -> Unit,
-    onScheduleReminderAt: (Long, String) -> Unit,
+    onScheduleReminderAt: (Long, String, Int?) -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
     onOpenAppDetailsSettings: () -> Unit
 ) {
@@ -526,7 +579,7 @@ private fun PostDetailCard(
                     onDismissRequest = { showRemindPicker = false },
                     onScheduleAt = { fireAt, repeatRule ->
                         showRemindPicker = false
-                        onScheduleReminderAt(fireAt, repeatRule)
+                        onScheduleReminderAt(fireAt, repeatRule, null)
                     },
                     onOpenExactAlarmSettings = onOpenExactAlarmSettings,
                     onOpenAppDetailsSettings = onOpenAppDetailsSettings,

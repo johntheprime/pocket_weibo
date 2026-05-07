@@ -80,6 +80,7 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-052 | **首页列表 · 快捷提醒**：`PostCard` 在 **评论** 旁增加 **时钟（Schedule）** 入口，打开与详情一致的 **`ReminderPickerDialog`**，含通知权限与 **精确闹钟 / 电池** 引导；提醒快捷栏新增 **10 小时** 预设，以及 **今天 20:00**（若已过则 **次日 20:00**）按钮。 | Done |
 | F-053 | **原「消息」Tab → 图片流**：底栏 **图片**（`Image` 图标）；**仅展示带配图的微博**，大图纵向滚动优先；**作者、时间、正文**叠在图底部渐变上；**点按图片**切换叠层显隐以便纯看图；无转发/提醒/评论入口。移除 **`MessageScreen` / `MessageViewModel`** 与旧评论消息列表。 | Done |
 | F-054 | **图片流 · 缩放与居中**：每条配图以 **`ContentScale.Crop` + `TransformOrigin.Center`** 居中铺满；**双指捏合**缩放（约 **1×～4×**）、放大后可 **单指拖动**（位移钳制）；缩放时 **`nestedScroll`** 减少与外层列表抢竖滑；文字条仅在底部 **渐变+点击收起**，上方区域便于手势。 | Done |
+| F-055 | **详情 · 摇一摇设提醒**：微博详情页 **摇一摇**（与发帖页摇一摇发送同类的空闲/冷却逻辑）为当前帖 **安排一次系统提醒**：默认 **今天 20:00**，若该时刻已过则 **次日 09:00**；成功 Toast；**设置** 中可改 **晚间 / 早间** 时刻供后续摇动使用；复用与对话框 **提醒** 相同的权限与调度路径。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 

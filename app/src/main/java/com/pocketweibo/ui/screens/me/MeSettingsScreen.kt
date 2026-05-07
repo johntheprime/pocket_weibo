@@ -1,10 +1,12 @@
 package com.pocketweibo.ui.screens.me
 
+import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.OpenableColumns
+import android.text.format.DateFormat
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +61,7 @@ import com.pocketweibo.data.backup.AutoBackupCrypto
 import com.pocketweibo.data.backup.AutoDailyBackup
 import com.pocketweibo.data.backup.DayBackupSlot
 import com.pocketweibo.data.prefs.BackupPreferences
+import com.pocketweibo.data.prefs.ShakeReminderSettings
 import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.diagnostic.DiagnosticLog
 import com.pocketweibo.diagnostic.DiagnosticLogBuffer
@@ -74,9 +78,86 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.Calendar
 import java.util.Locale
 
 private const val RepoUrl = "https://github.com/johntheprime/pocket_weibo"
+
+@Composable
+private fun ShakeReminderSettingsSection() {
+    val context = LocalContext.current
+    val app = context.applicationContext as PocketWeiboApp
+    val scope = rememberCoroutineScope()
+    val settings by UiPreferences.shakeReminderSettingsFlow(app).collectAsState(initial = ShakeReminderSettings.Default)
+
+    fun formatLocalTime(hour: Int, minute: Int): String {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, hour)
+        cal.set(Calendar.MINUTE, minute)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        return DateFormat.getTimeFormat(context).format(cal.time)
+    }
+
+    Column(
+        modifier = Modifier.padding(vertical = 8.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.settings_shake_reminder_section_title),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium,
+            color = GrayDark,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Text(
+            text = stringResource(R.string.settings_shake_reminder_section_desc),
+            fontSize = 12.sp,
+            color = GrayMiddle,
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .padding(top = 4.dp, bottom = 4.dp)
+        )
+        MenuItem(
+            title = stringResource(R.string.settings_shake_reminder_evening_title),
+            subtitle = stringResource(
+                R.string.settings_shake_reminder_evening_subtitle,
+                formatLocalTime(settings.eveningHour, settings.eveningMinute)
+            ),
+            onClick = {
+                val act = context.findActivity() ?: return@MenuItem
+                TimePickerDialog(
+                    act,
+                    { _, h, m ->
+                        scope.launch { UiPreferences.setShakeReminderEvening(app, h, m) }
+                    },
+                    settings.eveningHour,
+                    settings.eveningMinute,
+                    DateFormat.is24HourFormat(act)
+                ).show()
+            }
+        )
+        Divider()
+        MenuItem(
+            title = stringResource(R.string.settings_shake_reminder_morning_title),
+            subtitle = stringResource(
+                R.string.settings_shake_reminder_morning_subtitle,
+                formatLocalTime(settings.morningHour, settings.morningMinute)
+            ),
+            onClick = {
+                val act = context.findActivity() ?: return@MenuItem
+                TimePickerDialog(
+                    act,
+                    { _, h, m ->
+                        scope.launch { UiPreferences.setShakeReminderMorning(app, h, m) }
+                    },
+                    settings.morningHour,
+                    settings.morningMinute,
+                    DateFormat.is24HourFormat(act)
+                ).show()
+            }
+        )
+    }
+}
 
 @Composable
 fun MeSettingsScreen(
@@ -141,6 +222,10 @@ fun MeSettingsScreen(
                 LanguagePreferenceSection(
                     onApplied = { context.findActivity()?.recreate() }
                 )
+            }
+            item {
+                Divider()
+                ShakeReminderSettingsSection()
             }
             item {
                 Divider()
