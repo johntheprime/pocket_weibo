@@ -161,7 +161,7 @@
     <string name="home_empty_filter_identity">No posts for this identity</string>
 
     <string name="photo_empty_title">No posts with images</string>
-    <string name="photo_empty_subtitle">Posts that include photos appear here, newest first. Tap the photo to hide or show the text overlay.</string>
+    <string name="photo_empty_subtitle">Posts with images appear here, newest first. Tap the photo to hide or show the text bar. Pinch with two fingers to zoom (centered), then drag with one finger to pan.</string>
     <string name="photo_feed_image_cd">Post image</string>
 
     <string name="post_detail_comment_hint">Write a comment…</string>

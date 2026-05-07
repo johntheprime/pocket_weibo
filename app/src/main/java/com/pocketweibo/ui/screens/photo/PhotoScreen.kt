@@ -3,8 +3,11 @@ package com.pocketweibo.ui.screens.photo
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,13 +24,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -49,6 +62,18 @@ import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
+
+private const val PhotoZoomMaxScale = 4f
+
+private fun clampPhotoPan(offset: Offset, scale: Float, widthPx: Float, heightPx: Float): Offset {
+    if (scale <= 1f || widthPx <= 0f || heightPx <= 0f) return Offset.Zero
+    val maxX = widthPx * (scale - 1f) / 2f
+    val maxY = heightPx * (scale - 1f) / 2f
+    return Offset(
+        offset.x.coerceIn(-maxX, maxX),
+        offset.y.coerceIn(-maxY, maxY)
+    )
+}
 
 @Composable
 fun PhotoScreen(modifier: Modifier = Modifier) {
@@ -98,86 +123,126 @@ private fun PhotoFeedCard(
     val context = LocalContext.current
     val resources = context.resources
     var overlayVisible by remember(post.id) { mutableStateOf(true) }
+    var scale by remember(post.id) { mutableFloatStateOf(1f) }
+    var offset by remember(post.id) { mutableStateOf(Offset.Zero) }
     val model = rememberFirstImageModel(post.imageUris)
     val displayName = identityDisplayName(post.identityName)
     val timeText = resources.formatRelativeTime(post.createdAt, RelativeTimePreset.FeedCard)
 
-    Box(
-        modifier = modifier
-            .height(imageHeight)
-            .clickable { overlayVisible = !overlayVisible }
+    BoxWithConstraints(
+        modifier = modifier.height(imageHeight)
     ) {
-        if (model != null) {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(model)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = stringResource(R.string.photo_feed_image_cd),
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF2A2A2A)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Image,
-                    contentDescription = null,
-                    tint = GrayMiddle,
-                    modifier = Modifier.size(48.dp)
-                )
+        val wPx = constraints.maxWidth.toFloat()
+        val hPx = constraints.maxHeight.toFloat()
+
+        val nestedScrollConnection = remember(scale) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                    if (scale > 1.02f && source == NestedScrollSource.Drag) {
+                        return available
+                    }
+                    return Offset.Zero
+                }
             }
         }
 
-        if (overlayVisible) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colorStops = arrayOf(
-                                0f to Color.Transparent,
-                                0.45f to Color.Black.copy(alpha = 0.12f),
-                                0.72f to Color.Black.copy(alpha = 0.5f),
-                                1f to Color.Black.copy(alpha = 0.78f)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection)
+                .clip(RectangleShape)
+        ) {
+            if (model != null) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(model)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = stringResource(R.string.photo_feed_image_cd),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            transformOrigin = TransformOrigin.Center
+                            scaleX = scale
+                            scaleY = scale
+                            translationX = offset.x
+                            translationY = offset.y
+                        }
+                        .pointerInput(post.id, wPx, hPx) {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                val newScale = (scale * zoom).coerceIn(1f, PhotoZoomMaxScale)
+                                scale = newScale
+                                offset = if (newScale <= 1f) {
+                                    Offset.Zero
+                                } else {
+                                    clampPhotoPan(offset + pan, newScale, wPx, hPx)
+                                }
+                            }
+                        }
+                        .pointerInput(post.id, overlayVisible) {
+                            detectTapGestures(onTap = { overlayVisible = !overlayVisible })
+                        }
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFF2A2A2A)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Image,
+                        contentDescription = null,
+                        tint = GrayMiddle,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+            }
+
+            if (overlayVisible && model != null) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                colorStops = arrayOf(
+                                    0f to Color.Transparent,
+                                    0.4f to Color.Black.copy(alpha = 0.35f),
+                                    1f to Color.Black.copy(alpha = 0.82f)
+                                )
                             )
                         )
-                    )
-            )
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = displayName,
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = timeText,
-                    color = Color.White.copy(alpha = 0.75f),
-                    fontSize = 12.sp,
-                    maxLines = 1
-                )
-                if (post.content.isNotBlank()) {
+                        .clickable { overlayVisible = false }
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 28.dp, bottom = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     Text(
-                        text = post.content,
+                        text = displayName,
                         color = Color.White,
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
-                        maxLines = 6,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Text(
+                        text = timeText,
+                        color = Color.White.copy(alpha = 0.75f),
+                        fontSize = 12.sp,
+                        maxLines = 1
+                    )
+                    if (post.content.isNotBlank()) {
+                        Text(
+                            text = post.content,
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp,
+                            maxLines = 6,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }
