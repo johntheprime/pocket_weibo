@@ -8,6 +8,7 @@ This file records **resolved requirements** and the **standard process** for eve
 
 | Date (UTC) | Requirement | Resolution | Verified |
 |-------------|---------------|------------|----------|
+| 2026-05-07 | **图片 Tab**：**竖长配图** 在流里被 **上下裁切**，不能完整浏览 | **根因**：固定行高 + **`ContentScale.Crop`** 为铺满宽度会裁掉过长部分。**修复**：按 **解码后 intrinsic 尺寸** 与 **卡片宽度** 计算行高（**min～max** 夹逼），改用 **`ContentScale.Fit`**，暗底填边；极竖长图在 **最大行高** 内仍 **整图可见**。同版 **F-056** 双击还原缩放。版本 **3.51.0 (177)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-07 | **图片 Tab**：`LazyColumn` **竖滑不如加缩放前顺滑**（手指从 **配图** 起滑时尤甚） | **根因**：`detectTransformGestures` 在 **单指** 移动超过 touch slop 后即 **consume** 位移，**配图上的竖滑** 无法交给外层列表。**修复**：`PhotoScreen` 使用 **`detectPhotoFeedTransformGestures`**：在 **约 1×** 时仅当 **捏合 / 旋转 / 双指拖动** 过 slop 才接管；**已放大** 时与原先一致（单指可 **拖移图**）。保留 **`nestedScroll`** 在放大时减少列表抢滑。版本 **3.50.1 (176)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-06 | **CI**：`sdkmanager` 中 **platform / build-tools 版本** 写死，易与 **`app/build.gradle.kts`** 的 **compileSdk** 漂移 | **`.github/workflows/build-apk.yml`**：在 **`build` job** 设 **`ANDROID_SDK_COMPILE_API`**、**`ANDROID_SDK_BUILD_TOOLS`**，`sdkmanager` 引用环境变量；工作流头注释说明与 **compileSdk** 对齐。版本 **3.42.1 (167)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-05 | **发微博**：正文过长时 **不随键盘上移**，内容被键盘挡住、不便编辑 | **`ComposeScreen`** 根 **`Surface`** 增加 **`imePadding()`**；正文与身份/配图卡片区放入 **`Modifier.weight(1f).verticalScroll`**，底部图片/相机/@ **工具栏** 固定在其下，键盘弹出时可 **滚动查看全文**。版本 **3.38.4 (159)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |

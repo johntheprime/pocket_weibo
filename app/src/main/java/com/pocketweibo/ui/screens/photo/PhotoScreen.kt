@@ -52,10 +52,13 @@ import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.PI
@@ -83,6 +86,23 @@ private fun clampPhotoPan(offset: Offset, scale: Float, widthPx: Float, heightPx
         offset.x.coerceIn(-maxX, maxX),
         offset.y.coerceIn(-maxY, maxY)
     )
+}
+
+/** Height for one feed row: match image aspect at full width, clamped so the list stays usable. */
+private fun cardHeightForImage(
+    boxWidthPx: Float,
+    intrinsic: IntSize?,
+    minH: Dp,
+    maxH: Dp,
+    density: Density,
+): Dp {
+    if (intrinsic == null || intrinsic.width <= 0 || intrinsic.height <= 0) {
+        return minH
+    }
+    val idealPx = boxWidthPx * intrinsic.height / intrinsic.width.toFloat()
+    val minPx = with(density) { minH.toPx() }
+    val maxPx = with(density) { maxH.toPx() }
+    return with(density) { idealPx.coerceIn(minPx, maxPx).toDp() }
 }
 
 /**
@@ -185,8 +205,9 @@ fun PhotoScreen(modifier: Modifier = Modifier) {
             .sortedByDescending { it.createdAt }
     }
     val screenHeightDp = LocalConfiguration.current.screenHeightDp
-    val cardHeight = remember(screenHeightDp) {
-        (screenHeightDp * 0.56f).dp.coerceIn(240.dp, 540.dp)
+    val minPhotoHeight = 240.dp
+    val maxPhotoHeight = remember(screenHeightDp) {
+        (screenHeightDp * 0.72f).dp.coerceIn(400.dp, 720.dp)
     }
 
     Column(
@@ -203,7 +224,8 @@ fun PhotoScreen(modifier: Modifier = Modifier) {
                 items(photoPosts, key = { it.id }) { post ->
                     PhotoFeedCard(
                         post = post,
-                        imageHeight = cardHeight,
+                        minImageHeight = minPhotoHeight,
+                        maxImageHeight = maxPhotoHeight,
                         modifier = Modifier.fillMaxWidth()
                     )
                     Divider(thickness = 0.5.dp, color = Color(0xFFE8E8E8))
@@ -216,23 +238,27 @@ fun PhotoScreen(modifier: Modifier = Modifier) {
 @Composable
 private fun PhotoFeedCard(
     post: PostWithIdentity,
-    imageHeight: Dp,
+    minImageHeight: Dp,
+    maxImageHeight: Dp,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val resources = context.resources
+    val density = LocalDensity.current
     var overlayVisible by remember(post.id) { mutableStateOf(true) }
     var scale by remember(post.id) { mutableFloatStateOf(1f) }
     var offset by remember(post.id) { mutableStateOf(Offset.Zero) }
+    var intrinsicSize by remember(post.id) { mutableStateOf<IntSize?>(null) }
     val model = rememberFirstImageModel(post.imageUris)
     val displayName = identityDisplayName(post.identityName)
     val timeText = resources.formatRelativeTime(post.createdAt, RelativeTimePreset.FeedCard)
+    val imageCdBase = stringResource(R.string.photo_feed_image_cd)
+    val resetZoomA11y = stringResource(R.string.photo_feed_reset_zoom_a11y)
 
-    BoxWithConstraints(
-        modifier = modifier.height(imageHeight)
-    ) {
-        val wPx = constraints.maxWidth.toFloat()
-        val hPx = constraints.maxHeight.toFloat()
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val wPx = constraints.maxWidth.toFloat().coerceAtLeast(1f)
+        val cardHeight = cardHeightForImage(wPx, intrinsicSize, minImageHeight, maxImageHeight, density)
+        val hPx = with(density) { cardHeight.toPx() }
 
         val nestedScrollConnection = remember(scale) {
             object : NestedScrollConnection {
@@ -247,9 +273,11 @@ private fun PhotoFeedCard(
 
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .height(cardHeight)
                 .nestedScroll(nestedScrollConnection)
                 .clip(RectangleShape)
+                .background(Color(0xFF2A2A2A))
         ) {
             if (model != null) {
                 AsyncImage(
@@ -257,8 +285,20 @@ private fun PhotoFeedCard(
                         .data(model)
                         .crossfade(true)
                         .build(),
-                    contentDescription = stringResource(R.string.photo_feed_image_cd),
-                    contentScale = ContentScale.Crop,
+                    contentDescription = if (scale > 1.02f) {
+                        "$imageCdBase $resetZoomA11y"
+                    } else {
+                        imageCdBase
+                    },
+                    contentScale = ContentScale.Fit,
+                    onSuccess = { state ->
+                        val d = state.result.drawable
+                        val iw = d.intrinsicWidth
+                        val ih = d.intrinsicHeight
+                        if (iw > 0 && ih > 0) {
+                            intrinsicSize = IntSize(iw, ih)
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
@@ -281,8 +321,16 @@ private fun PhotoFeedCard(
                                 }
                             }
                         }
-                        .pointerInput(post.id, overlayVisible) {
-                            detectTapGestures(onTap = { overlayVisible = !overlayVisible })
+                        .pointerInput(post.id, overlayVisible, scale) {
+                            detectTapGestures(
+                                onDoubleTap = {
+                                    if (scale > 1.02f) {
+                                        scale = 1f
+                                        offset = Offset.Zero
+                                    }
+                                },
+                                onTap = { overlayVisible = !overlayVisible },
+                            )
                         }
                 )
             } else {
