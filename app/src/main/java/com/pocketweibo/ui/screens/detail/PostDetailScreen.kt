@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -91,6 +92,7 @@ import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PostDetailScreen(
@@ -178,6 +180,19 @@ fun PostDetailScreen(
     val comments by viewModel.comments.collectAsState()
     var commentText by remember { mutableStateOf("") }
     var imageViewer by remember { mutableStateOf<Pair<List<String>, Int>?>(null) }
+    val detailListState = rememberLazyListState()
+    var scrollToNewestCommentAfterSend by remember { mutableStateOf(false) }
+
+    LaunchedEffect(comments.size, comments.firstOrNull()?.id) {
+        if (scrollToNewestCommentAfterSend && comments.isNotEmpty()) {
+            scrollToNewestCommentAfterSend = false
+            delay(48)
+            val newestCommentIndex = 2
+            if (detailListState.layoutInfo.totalItemsCount > newestCommentIndex) {
+                runCatching { detailListState.scrollToItem(newestCommentIndex) }
+            }
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
     // Use Scaffold: It is specifically designed to handle top bars and bottom bars
@@ -240,6 +255,7 @@ fun PostDetailScreen(
                         IconButton(
                             onClick = {
                                 if (commentText.isNotBlank()) {
+                                    scrollToNewestCommentAfterSend = true
                                     viewModel.addComment(commentText)
                                     commentText = ""
                                 }
@@ -259,6 +275,7 @@ fun PostDetailScreen(
     ) { innerPadding ->
         // The innerPadding automatically accounts for the topBar and the bottomBar (including keyboard)
         LazyColumn(
+            state = detailListState,
             modifier = Modifier
                 .fillMaxSize()
                 .background(Background)

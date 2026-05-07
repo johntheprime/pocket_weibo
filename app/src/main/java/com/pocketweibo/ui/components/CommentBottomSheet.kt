@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -29,6 +30,7 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +52,7 @@ import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
 import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
+import kotlinx.coroutines.delay
 
 private const val COMMENT_DELETE_WINDOW_MS = 48L * 60L * 60L * 1000L
 
@@ -71,7 +74,17 @@ fun CommentBottomSheet(
     modifier: Modifier = Modifier
 ) {
     var commentText by remember { mutableStateOf("") }
-    
+    val commentListState = rememberLazyListState()
+    var scrollToNewestAfterSend by remember { mutableStateOf(false) }
+
+    LaunchedEffect(comments.size, comments.firstOrNull()?.id) {
+        if (scrollToNewestAfterSend && comments.isNotEmpty()) {
+            scrollToNewestAfterSend = false
+            delay(48)
+            runCatching { commentListState.scrollToItem(0) }
+        }
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -125,6 +138,7 @@ fun CommentBottomSheet(
                 }
             } else {
                 LazyColumn(
+                    state = commentListState,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
@@ -159,6 +173,7 @@ fun CommentBottomSheet(
                 IconButton(
                     onClick = {
                         if (commentText.isNotBlank()) {
+                            scrollToNewestAfterSend = true
                             onSendComment(commentText)
                             commentText = ""
                         }
