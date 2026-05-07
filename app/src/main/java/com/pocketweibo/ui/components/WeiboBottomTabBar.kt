@@ -14,11 +14,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
@@ -38,7 +38,7 @@ import com.pocketweibo.ui.theme.TabUnselected
 
 enum class MainTab {
     HOME,
-    MESSAGE,
+    PHOTO,
     PLUS,
     DISCOVER,
     ME
@@ -48,7 +48,7 @@ enum class MainTab {
 private fun MainTab.tabLabel(): String = stringResource(
     when (this) {
         MainTab.HOME -> R.string.tab_home
-        MainTab.MESSAGE -> R.string.tab_message
+        MainTab.PHOTO -> R.string.tab_photo
         MainTab.PLUS -> R.string.tab_compose_cd
         MainTab.DISCOVER -> R.string.tab_discover
         MainTab.ME -> R.string.tab_me
@@ -78,11 +78,11 @@ fun WeiboBottomTabBar(
             onClick = onHomeTabClick
         )
         TabItem(
-            title = MainTab.MESSAGE.tabLabel(),
-            selectedIcon = Icons.Filled.Email,
-            unselectedIcon = Icons.Outlined.Email,
-            isSelected = selectedTab == MainTab.MESSAGE,
-            onClick = { onTabSelected(MainTab.MESSAGE) }
+            title = MainTab.PHOTO.tabLabel(),
+            selectedIcon = Icons.Filled.Image,
+            unselectedIcon = Icons.Outlined.Image,
+            isSelected = selectedTab == MainTab.PHOTO,
+            onClick = { onTabSelected(MainTab.PHOTO) }
         )
 
         Box(

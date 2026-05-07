@@ -32,7 +32,7 @@ import com.pocketweibo.ui.screens.identity.IdentityDetailScreen
 import com.pocketweibo.ui.screens.identity.IdentityListScreen
 import com.pocketweibo.ui.screens.me.MeScreen
 import com.pocketweibo.ui.screens.me.MeSettingsScreen
-import com.pocketweibo.ui.screens.message.MessageScreen
+import com.pocketweibo.ui.screens.photo.PhotoScreen
 import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.ui.ComposeIntentViewModel
 import com.pocketweibo.ui.theme.PocketWeiboTheme
@@ -221,7 +221,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             },
                             modifier = Modifier.padding(paddingValues)
                         )
-                        MainTab.MESSAGE -> MessageScreen(modifier = Modifier.padding(paddingValues))
+                        MainTab.PHOTO -> PhotoScreen(modifier = Modifier.padding(paddingValues))
                         MainTab.DISCOVER -> DiscoverScreen(
                             onPostClick = { postId -> postDetailId = postId },
                             trendingListState = discoverTrendingListState,

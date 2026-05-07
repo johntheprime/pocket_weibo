@@ -4,13 +4,13 @@
     <string name="exit_hint">Press back again to exit</string>
 
     <string name="tab_home">Home</string>
-    <string name="tab_message">Messages</string>
+    <string name="tab_photo">Photos</string>
     <string name="tab_discover">Discover</string>
     <string name="tab_me">Me</string>
     <string name="tab_compose_cd">New post</string>
 
     <string name="title_home">Home</string>
-    <string name="title_message">Messages</string>
+    <string name="title_photo">Photos</string>
     <string name="title_discover">Discover</string>
     <string name="title_me">Me</string>
     <string name="title_settings">Settings</string>
@@ -160,17 +160,9 @@
     <string name="home_empty_search">No posts match your search</string>
     <string name="home_empty_filter_identity">No posts for this identity</string>
 
-    <string name="message_tab_received">Received</string>
-    <string name="message_tab_sent">Sent</string>
-    <string name="message_need_identity_title">Choose an identity first</string>
-    <string name="message_need_identity_subtitle">In Me, pick an identity and set it as active. Messages will only show comments tied to that identity.</string>
-    <string name="message_scope_banner">Showing comments for \"%1$s\" only</string>
-    <string name="message_compose_cd">Compose</string>
-    <string name="message_empty_received">No received comments</string>
-    <string name="message_empty_sent">No sent comments</string>
-    <string name="message_empty_hint">Interactions from your identities appear here</string>
-    <string name="message_preview_received">Commented on your post: %1$s</string>
-    <string name="message_preview_sent">You commented on: %1$s</string>
+    <string name="photo_empty_title">No posts with images</string>
+    <string name="photo_empty_subtitle">Posts that include photos appear here, newest first. Tap the photo to hide or show the text overlay.</string>
+    <string name="photo_feed_image_cd">Post image</string>
 
     <string name="post_detail_comment_hint">Write a comment…</string>
     <string name="post_detail_send_cd">Send</string>

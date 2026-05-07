@@ -4,13 +4,13 @@
     <string name="exit_hint">再按一次返回键退出</string>
 
     <string name="tab_home">首页</string>
-    <string name="tab_message">消息</string>
+    <string name="tab_photo">图片</string>
     <string name="tab_discover">发现</string>
     <string name="tab_me">我</string>
     <string name="tab_compose_cd">发微博</string>
 
     <string name="title_home">首页</string>
-    <string name="title_message">消息</string>
+    <string name="title_photo">图片</string>
     <string name="title_discover">发现</string>
     <string name="title_me">我</string>
     <string name="title_settings">设置</string>
@@ -160,17 +160,9 @@
     <string name="home_empty_search">没有匹配的动态</string>
     <string name="home_empty_filter_identity">该身份下暂无微博</string>
 
-    <string name="message_tab_received">收到的评论</string>
-    <string name="message_tab_sent">发出的评论</string>
-    <string name="message_need_identity_title">请先选择一个身份</string>
-    <string name="message_need_identity_subtitle">在「我」中管理身份并设为当前后，消息页会只显示与该身份相关的评论。</string>
-    <string name="message_scope_banner">仅显示与「%1$s」相关的评论</string>
-    <string name="message_compose_cd">发起聊天</string>
-    <string name="message_empty_received">暂无收到的评论</string>
-    <string name="message_empty_sent">暂无发出的评论</string>
-    <string name="message_empty_hint">来自各个身份的互动会在这里显示</string>
-    <string name="message_preview_received">评论了你的微博: %1$s</string>
-    <string name="message_preview_sent">你评论了: %1$s</string>
+    <string name="photo_empty_title">暂无带图微博</string>
+    <string name="photo_empty_subtitle">发布带配图的微博后，会按时间顺序显示在这里；点按图片可隐藏或显示文字叠层。</string>
+    <string name="photo_feed_image_cd">微博配图</string>
 
     <string name="post_detail_comment_hint">写评论…</string>
     <string name="post_detail_send_cd">发送</string>
