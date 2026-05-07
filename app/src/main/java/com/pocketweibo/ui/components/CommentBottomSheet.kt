@@ -98,8 +98,10 @@ fun CommentBottomSheet(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            if (voiceRecorder.startRecording()) {
-                isRecordingVoice = true
+            voiceRecorder.startRecordingOnNextMainFrame { ok ->
+                if (ok) {
+                    isRecordingVoice = true
+                }
             }
         } else {
             Toast.makeText(
@@ -240,8 +242,12 @@ fun CommentBottomSheet(
                             ) != PackageManager.PERMISSION_GRANTED -> {
                                 recordAudioLauncher.launch(Manifest.permission.RECORD_AUDIO)
                             }
-                            voiceRecorder.startRecording() -> {
-                                isRecordingVoice = true
+                            else -> {
+                                voiceRecorder.startRecordingOnNextMainFrame { ok ->
+                                    if (ok) {
+                                        isRecordingVoice = true
+                                    }
+                                }
                             }
                         }
                     }
