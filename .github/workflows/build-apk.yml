@@ -6,6 +6,10 @@
 # repository secrets so every published APK shares the **same** signature and upgrades in place
 # as long as `versionCode` increases (see `app/build.gradle.kts`).
 #
+# **SDK install versions:** The `build` job sets `ANDROID_SDK_COMPILE_API` and
+# `ANDROID_SDK_BUILD_TOOLS` (used by `sdkmanager`). Keep them aligned with `compileSdk` and the
+# build-tools line expected for that API in `app/build.gradle.kts`.
+#
 # **Secrets** (repo Settings → Secrets and variables → Actions):
 #   ANDROID_KEYSTORE_BASE64 — base64 of a PKCS12 or JKS keystore file (generate once, reuse forever)
 #   KEYSTORE_PASSWORD — keystore password
@@ -54,6 +58,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK_COMPILE_API: "34"
+      ANDROID_SDK_BUILD_TOOLS: "34.0.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -108,10 +115,10 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install SDK packages (API 34)
+      - name: Install SDK packages (match app compileSdk)
         run: |
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+          sdkmanager "platforms;android-${ANDROID_SDK_COMPILE_API}" "build-tools;${ANDROID_SDK_BUILD_TOOLS}" "platform-tools"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4

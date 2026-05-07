@@ -8,6 +8,7 @@ This file records **resolved requirements** and the **standard process** for eve
 
 | Date (UTC) | Requirement | Resolution | Verified |
 |-------------|---------------|------------|----------|
+| 2026-05-06 | **CI**：`sdkmanager` 中 **platform / build-tools 版本** 写死，易与 **`app/build.gradle.kts`** 的 **compileSdk** 漂移 | **`.github/workflows/build-apk.yml`**：在 **`build` job** 设 **`ANDROID_SDK_COMPILE_API`**、**`ANDROID_SDK_BUILD_TOOLS`**，`sdkmanager` 引用环境变量；工作流头注释说明与 **compileSdk** 对齐。版本 **3.42.1 (167)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-05 | **发微博**：正文过长时 **不随键盘上移**，内容被键盘挡住、不便编辑 | **`ComposeScreen`** 根 **`Surface`** 增加 **`imePadding()`**；正文与身份/配图卡片区放入 **`Modifier.weight(1f).verticalScroll`**，底部图片/相机/@ **工具栏** 固定在其下，键盘弹出时可 **滚动查看全文**。版本 **3.38.4 (159)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-05 | **删除身份无 UI 入口**：列表项传入 **`onDelete`** 却从未调用，用户无法删除身份 | **`IdentityListItem`** 行尾增加 **`IconButton`(删除)**，确认框不变；**`IdentityDetailScreen`** 在已有身份时顶栏 **⋮** 菜单 **删除身份** + 同一确认文案。更新 **`identity_delete_message`** 说明微博与评论保留；**`identity_delete_cd` / `identity_detail_more_cd`**。`FEATURE.md` **F-040** 补入口说明。版本 **3.38.3 (158)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-05 | **设置 · 导出数据**：备份成功后 **导出对话框应自动关闭** | 在 **`MeSettingsScreen`** 导出协程成功路径（分享面板已唤起）后设置 **`showExportDialog = false`**；失败时 **`toast_export_fail`**（中英）且不关对话框。版本 **3.38.2 (157)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
