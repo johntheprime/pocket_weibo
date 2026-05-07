@@ -66,6 +66,7 @@ import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.util.identityDisplayName
+import com.pocketweibo.ui.util.postOrCommentBodyForDisplay
 
 @Composable
 fun DiscoverScreen(
@@ -596,6 +597,8 @@ private fun CommentSearchItem(
     var showSelectableCopy by remember { mutableStateOf(false) }
     val openPostCd = stringResource(R.string.discover_comment_open_post_cd)
     val commentAuthor = identityDisplayName(row.commentAuthorName)
+    val voiceOnlyLabel = stringResource(R.string.comment_body_voice_only)
+    val bodyDisplay = postOrCommentBodyForDisplay(row.content, row.audioPath, voiceOnlyLabel)
     val postLine = stringResource(
         R.string.discover_comment_parent_post_line,
         row.postContent.trim().let { t ->
@@ -642,7 +645,7 @@ private fun CommentSearchItem(
                         modifier = Modifier.padding(top = 2.dp)
                     )
                     Text(
-                        text = row.content,
+                        text = bodyDisplay,
                         fontSize = 13.sp,
                         color = GrayDark,
                         maxLines = 3,
@@ -662,7 +665,7 @@ private fun CommentSearchItem(
         }
         if (showSelectableCopy) {
             SelectableCopyDialog(
-                body = row.content,
+                body = bodyDisplay,
                 onDismiss = { showSelectableCopy = false },
                 title = null
             )

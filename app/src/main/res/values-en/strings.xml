@@ -120,6 +120,14 @@
 
     <string name="post_list_image_badge">Photo</string>
     <string name="post_list_image_cd">Contains images; open the post to view</string>
+    <string name="post_list_audio_cd">Contains voice</string>
+    <string name="post_body_voice_only">Voice post</string>
+    <string name="comment_body_voice_only">Voice comment</string>
+    <string name="post_audio_badge">Voice</string>
+    <string name="post_audio_play_cd">Play voice</string>
+    <string name="post_audio_pause_cd">Pause playback</string>
+    <string name="post_audio_play">Play</string>
+    <string name="post_audio_pause">Pause</string>
 
     <string name="discover_search_identity_title">Search identities</string>
     <string name="discover_search_identity_desc">Type a name, e.g. Su Shi, Shakespeare</string>
@@ -244,6 +252,15 @@
     <string name="compose_remove_image_cd">Remove</string>
     <string name="compose_label_image">Image</string>
     <string name="compose_label_camera">Camera</string>
+    <string name="compose_label_voice">Voice</string>
+    <string name="compose_voice_cd">Record voice; tap again to stop</string>
+    <string name="compose_voice_recording">Recording…</string>
+    <string name="compose_voice_tap_stop">Tap to stop</string>
+    <string name="compose_voice_remove_cd">Remove voice draft</string>
+    <string name="compose_voice_ready">Voice attached; it will publish when you send</string>
+    <string name="toast_compose_voice_too_short">Recording too short</string>
+    <string name="toast_compose_voice_max_duration">Maximum recording length reached</string>
+    <string name="toast_record_audio_denied">Microphone permission is required to record</string>
     <string name="post_image_cd">Post image</string>
     <string name="post_image_detail_cd">Post image, single tap for fullscreen preview</string>
     <string name="post_image_viewer_cd">Preview: double-tap to zoom in or out at the tap point, single tap to close</string>
@@ -348,6 +365,7 @@
     <string name="md_field_work">Notable work</string>
     <string name="md_field_bio">Bio</string>
     <string name="md_field_attachments">Attached images</string>
+    <string name="md_field_voice_attachment">Voice attachment</string>
     <string name="md_field_likes">Likes</string>
     <string name="md_field_comments">Comments</string>
     <string name="md_field_posted_at">Posted at</string>

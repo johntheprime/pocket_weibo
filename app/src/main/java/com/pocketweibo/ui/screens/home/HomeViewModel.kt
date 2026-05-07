@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.pocketweibo.data.local.dao.CommentWithIdentity
-import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.repository.WeiboRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.io.File
 
 class HomeViewModel(private val repository: WeiboRepository) : ViewModel() {
 
@@ -45,33 +45,21 @@ class HomeViewModel(private val repository: WeiboRepository) : ViewModel() {
         _comments.value = emptyList()
     }
     
-    fun addComment(postId: Long, content: String) {
+    fun addComment(postId: Long, content: String, preparedVoice: File? = null) {
         viewModelScope.launch {
             val identity = repository.activeIdentity.first() ?: return@launch
-            if (content.isBlank()) return@launch
-            repository.insertComment(
-                CommentEntity(
-                    postId = postId,
-                    identityId = identity.id,
-                    content = content
-                )
+            repository.insertCommentWithOptionalVoice(
+                postId = postId,
+                identityId = identity.id,
+                text = content,
+                preparedVoice = preparedVoice,
             )
         }
     }
     
-    fun deleteComment(commentId: Long, postId: Long) {
+    fun deleteComment(commentId: Long) {
         viewModelScope.launch {
-            repository.deleteComment(
-                CommentEntity(
-                    id = commentId,
-                    postId = postId,
-                    identityId = null,
-                    content = ""
-                )
-            )
-            repository.getCommentsByPost(postId).collect { commentList ->
-                _comments.value = commentList
-            }
+            repository.deleteComment(commentId)
         }
     }
     

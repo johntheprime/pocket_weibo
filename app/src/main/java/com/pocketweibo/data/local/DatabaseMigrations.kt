@@ -154,4 +154,16 @@ object DatabaseMigrations {
             db.execSQL("PRAGMA foreign_keys=ON")
         }
     }
+
+    val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE posts ADD COLUMN audioPath TEXT NOT NULL DEFAULT ''")
+        }
+    }
+
+    val MIGRATION_9_10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE comments ADD COLUMN audioPath TEXT NOT NULL DEFAULT ''")
+        }
+    }
 }

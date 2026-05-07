@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.data.local.dao.PostWithIdentity
-import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.repository.WeiboRepository
 import com.pocketweibo.diagnostic.DiagnosticLog
@@ -16,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.io.File
 
 class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel() {
 
@@ -45,17 +45,15 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
         }
     }
     
-    fun addComment(content: String) {
+    fun addComment(content: String, preparedVoice: File? = null) {
         val currentPost = _post.value ?: return
         viewModelScope.launch {
             val identity = repository.activeIdentity.first() ?: return@launch
-            if (content.isBlank()) return@launch
-            repository.insertComment(
-                CommentEntity(
-                    postId = currentPost.id,
-                    identityId = identity.id,
-                    content = content
-                )
+            repository.insertCommentWithOptionalVoice(
+                postId = currentPost.id,
+                identityId = identity.id,
+                text = content,
+                preparedVoice = preparedVoice,
             )
         }
     }

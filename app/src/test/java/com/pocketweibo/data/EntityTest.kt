@@ -137,6 +137,7 @@ class CommentEntityTest {
             content = "Nice post!"
         )
         assertEquals("Nice post!", comment.content)
+        assertEquals("", comment.audioPath)
         assertEquals(1L, comment.postId)
         assertEquals(2L, comment.identityId)
     }

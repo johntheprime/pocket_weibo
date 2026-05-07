@@ -20,8 +20,10 @@ import com.pocketweibo.data.local.entity.Gender
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.local.entity.PostReminderEntity
+import com.pocketweibo.data.media.CommentAttachmentStorage
 import com.pocketweibo.data.media.IdentityAvatarStorage
 import com.pocketweibo.data.media.PostAttachmentStorage
+import com.pocketweibo.data.media.PostVoice
 import com.pocketweibo.reminder.PostReminderAlarmScheduler
 import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.R
@@ -171,20 +173,33 @@ class WeiboRepository(
     suspend fun insertPostWithPreparedGallery(
         identityId: Long,
         content: String,
-        preparedFiles: List<File>
+        preparedFiles: List<File>,
+        preparedVoice: File? = null,
     ): Long {
         val base = PostEntity(
             identityId = identityId,
             content = content.trim(),
             imageUris = "",
+            audioPath = "",
             extrasJson = "{}"
         )
         val newId = postDao.insert(base)
+        var imageJson = ""
         if (preparedFiles.isNotEmpty()) {
-            val json = PostAttachmentStorage.movePreparedFilesIntoPost(context, newId, preparedFiles)
-            if (json.isNotEmpty()) {
-                postDao.update(base.copy(id = newId, imageUris = json))
-            }
+            imageJson = PostAttachmentStorage.movePreparedFilesIntoPost(context, newId, preparedFiles)
+        }
+        var audioRel = ""
+        if (preparedVoice != null) {
+            audioRel = PostAttachmentStorage.movePreparedVoiceIntoPost(context, newId, preparedVoice)
+        }
+        if (imageJson.isNotEmpty() || audioRel.isNotEmpty()) {
+            val cur = postDao.getPostEntityById(newId)!!
+            postDao.update(
+                cur.copy(
+                    imageUris = imageJson.ifEmpty { cur.imageUris },
+                    audioPath = audioRel.ifEmpty { cur.audioPath },
+                )
+            )
         }
         return newId
     }
@@ -193,6 +208,9 @@ class WeiboRepository(
 
     suspend fun deletePost(post: PostEntity) {
         cancelPostRemindersInternal(post.id)
+        for (cid in commentDao.listCommentIdsForPost(post.id)) {
+            CommentAttachmentStorage.deleteForComment(context, cid)
+        }
         PostAttachmentStorage.deleteAllForPost(context, post.id)
         postDao.delete(post)
     }
@@ -270,9 +288,49 @@ class WeiboRepository(
         return newId
     }
 
-    suspend fun deleteComment(comment: CommentEntity) {
-        commentDao.delete(comment)
-        postDao.decrementCommentCount(comment.postId)
+    /**
+     * Adds a comment; [text] may be blank when [preparedVoice] is set (stored as [PostVoice.STORED_PLACEHOLDER]).
+     * Returns new row id, or **-1** when nothing to insert or voice file could not be saved.
+     */
+    suspend fun insertCommentWithOptionalVoice(
+        postId: Long,
+        identityId: Long,
+        text: String,
+        preparedVoice: File?,
+        replyingToCommentId: Long? = null,
+    ): Long {
+        val trimmed = text.trim()
+        val hasVoice = preparedVoice != null && preparedVoice.isFile && preparedVoice.length() > 0L
+        if (trimmed.isEmpty() && !hasVoice) return -1L
+        val content = if (hasVoice && trimmed.isEmpty()) PostVoice.STORED_PLACEHOLDER else trimmed
+        val newId = commentDao.insert(
+            CommentEntity(
+                postId = postId,
+                identityId = identityId,
+                content = content,
+                replyingToCommentId = replyingToCommentId,
+            )
+        )
+        postDao.incrementCommentCount(postId)
+        if (hasVoice) {
+            val rel = CommentAttachmentStorage.movePreparedVoiceIntoComment(context, newId, preparedVoice!!)
+            if (rel.isEmpty()) {
+                val inserted = commentDao.getEntityById(newId)!!
+                commentDao.delete(inserted)
+                postDao.decrementCommentCount(postId)
+                return -1L
+            }
+            val cur = commentDao.getEntityById(newId)!!
+            commentDao.update(cur.copy(audioPath = rel))
+        }
+        return newId
+    }
+
+    suspend fun deleteComment(commentId: Long) {
+        val entity = commentDao.getEntityById(commentId) ?: return
+        CommentAttachmentStorage.deleteForComment(context, commentId)
+        commentDao.delete(entity)
+        postDao.decrementCommentCount(entity.postId)
     }
 
     suspend fun likeComment(commentId: Long, identityId: Long) {
@@ -352,6 +410,7 @@ class WeiboRepository(
                 if (post.identityId != null) put("identityId", post.identityId) else put("identityId", JSONObject.NULL)
                 put("content", post.content)
                 put("imageUris", post.imageUris)
+                put("audioPath", post.audioPath)
                 put("extrasJson", post.extrasJson)
                 put("createdAt", post.createdAt)
                 put("likeCount", post.likeCount)
@@ -369,7 +428,11 @@ class WeiboRepository(
                 put("postId", comment.postId)
                 if (comment.identityId != null) put("identityId", comment.identityId) else put("identityId", JSONObject.NULL)
                 put("content", comment.content)
+                put("audioPath", comment.audioPath)
                 put("createdAt", comment.createdAt)
+                put("replyingToCommentId", comment.replyingToCommentId ?: JSONObject.NULL)
+                put("likeCount", comment.likeCount)
+                put("likedBy", comment.likedBy)
             }
             commentsArray.put(commentJson)
         }
@@ -441,6 +504,7 @@ class WeiboRepository(
                 put("postId", comment.postId)
                 if (comment.identityId != null) put("identityId", comment.identityId) else put("identityId", JSONObject.NULL)
                 put("content", comment.content)
+                put("audioPath", comment.audioPath)
                 put("createdAt", comment.createdAt)
                 put("replyingToCommentId", comment.replyingToCommentId ?: JSONObject.NULL)
                 put("likeCount", comment.likeCount)
@@ -467,7 +531,8 @@ class WeiboRepository(
     }
 
     /**
-     * Writes `data.json` plus files under [PostAttachmentStorage.REL_ROOT] into a ZIP under cache.
+     * Writes `data.json` plus files under [PostAttachmentStorage.REL_ROOT],
+     * [CommentAttachmentStorage.REL_ROOT], and custom avatars into a ZIP under cache.
      * Re-import via Settings → Import (merge or replace).
      */
     suspend fun exportAllDataZip(): File = withContext(Dispatchers.IO) {
@@ -489,6 +554,15 @@ class WeiboRepository(
                         zos.closeEntry()
                     }
                 }
+                val audio = post.audioPath.trim()
+                if (audio.isNotEmpty()) {
+                    val af = PostAttachmentStorage.fileForRelativePath(context, audio)
+                    if (af.isFile) {
+                        zos.putNextEntry(ZipEntry(audio.replace(File.separatorChar, '/')))
+                        af.inputStream().use { input -> input.copyTo(zos) }
+                        zos.closeEntry()
+                    }
+                }
             }
             val identitiesZip = identityDao.getAllIdentities().first()
             for (ident in identitiesZip) {
@@ -498,6 +572,16 @@ class WeiboRepository(
                 if (f.isFile) {
                     zos.putNextEntry(ZipEntry(rel.replace(File.separatorChar, '/')))
                     f.inputStream().use { input -> input.copyTo(zos) }
+                    zos.closeEntry()
+                }
+            }
+            for (c in commentDao.listAllForBackup()) {
+                val rel = c.audioPath.trim()
+                if (rel.isEmpty()) continue
+                val cf = CommentAttachmentStorage.fileForRelativePath(context, rel)
+                if (cf.isFile) {
+                    zos.putNextEntry(ZipEntry(rel.replace(File.separatorChar, '/')))
+                    cf.inputStream().use { input -> input.copyTo(zos) }
                     zos.closeEntry()
                 }
             }
@@ -542,6 +626,9 @@ class WeiboRepository(
             val attachmentCount = PostAttachmentStorage.parseStoredPaths(post.imageUris).size
             if (attachmentCount > 0) {
                 sb.appendLine("- ${r.getString(R.string.md_field_attachments)}: $attachmentCount")
+            }
+            if (post.audioPath.isNotBlank()) {
+                sb.appendLine("- ${r.getString(R.string.md_field_voice_attachment)}")
             }
             sb.appendLine("- ${r.getString(R.string.md_field_likes)}: ${post.likeCount}")
             sb.appendLine("- ${r.getString(R.string.md_field_comments)}: ${post.commentCount}")
@@ -603,6 +690,11 @@ class WeiboRepository(
                         name == "data.json" -> Unit
                         name.startsWith("${PostAttachmentStorage.REL_ROOT}/") -> {
                             val out = PostAttachmentStorage.fileForRelativePath(context, name)
+                            out.parentFile?.mkdirs()
+                            out.writeBytes(content)
+                        }
+                        name.startsWith("${CommentAttachmentStorage.REL_ROOT}/") -> {
+                            val out = CommentAttachmentStorage.fileForRelativePath(context, name)
                             out.parentFile?.mkdirs()
                             out.writeBytes(content)
                         }
@@ -767,34 +859,44 @@ class WeiboRepository(
                                 postJson,
                                 id = 0L,
                                 imageUrisOverride = if (stripImages) "" else null,
+                                audioPathOverride = if (stripImages) "" else null,
                                 identityId = newIdentityId,
                                 useIdentityFromJson = false
                             )
                         )
                         postOldToNew[oldPostId] = newPostId
                         if (mergeAttachmentStaging != null) {
-                            val merged = mergeStagingAttachments(
+                            val mergedImages = mergeStagingAttachments(
                                 mergeAttachmentStaging,
                                 oldPostId,
                                 newPostId,
                                 postJson.optString("imageUris", "")
                             )
-                            if (merged.isNotEmpty()) {
-                                val current = postFromJson(
-                                    postJson,
-                                    id = newPostId,
-                                    identityId = newIdentityId,
-                                    useIdentityFromJson = false
+                            val mergedAudio = mergeStagingAudio(
+                                mergeAttachmentStaging,
+                                oldPostId,
+                                newPostId,
+                                postJson.optString("audioPath", "")
+                            )
+                            if (mergedImages.isNotEmpty() || mergedAudio.isNotEmpty()) {
+                                val current = postDao.getPostEntityById(newPostId)!!
+                                postDao.update(
+                                    current.copy(
+                                        imageUris = mergedImages.ifEmpty { current.imageUris },
+                                        audioPath = mergedAudio.ifEmpty { current.audioPath },
+                                    )
                                 )
-                                postDao.update(current.copy(imageUris = merged))
                             }
                         }
                     }
                 }
                 if (json.has("comments")) {
                     val commentsArray = json.getJSONArray("comments")
-                    for (i in 0 until commentsArray.length()) {
-                        val commentJson = commentsArray.getJSONObject(i)
+                    val sorted = (0 until commentsArray.length())
+                        .map { commentsArray.getJSONObject(it) }
+                        .sortedBy { it.getLong("createdAt") }
+                    val commentOldToNew = mutableMapOf<Long, Long>()
+                    for (commentJson in sorted) {
                         val oldPostId = commentJson.getLong("postId")
                         val newPostId = postOldToNew[oldPostId] ?: continue
                         val newIdentityId: Long? = if (commentJson.isNull("identityId")) {
@@ -802,15 +904,39 @@ class WeiboRepository(
                         } else {
                             identityOldToNew[commentJson.getLong("identityId")]
                         }
-                        commentDao.insert(
+                        val oldCommentId = commentJson.getLong("id")
+                        val oldReplying = when {
+                            !commentJson.has("replyingToCommentId") ||
+                                commentJson.isNull("replyingToCommentId") -> null
+                            else -> commentJson.getLong("replyingToCommentId")
+                        }
+                        val newReplying = oldReplying?.let { commentOldToNew[it] }
+                        val stripAudio = mergeAttachmentStaging != null
+                        val newCommentId = commentDao.insert(
                             commentFromJson(
                                 commentJson,
                                 id = 0L,
                                 postId = newPostId,
                                 identityId = newIdentityId,
-                                useFixedPostAndIdentity = true
+                                useFixedPostAndIdentity = true,
+                                replyingToCommentId = newReplying,
+                                useExplicitReplying = true,
+                                audioPathOverride = if (stripAudio) "" else null,
                             )
                         )
+                        commentOldToNew[oldCommentId] = newCommentId
+                        if (mergeAttachmentStaging != null) {
+                            val mergedAudio = mergeStagingCommentAudio(
+                                mergeAttachmentStaging,
+                                oldCommentId,
+                                newCommentId,
+                                commentJson.optString("audioPath", ""),
+                            )
+                            if (mergedAudio.isNotEmpty()) {
+                                val cur = commentDao.getEntityById(newCommentId)!!
+                                commentDao.update(cur.copy(audioPath = mergedAudio))
+                            }
+                        }
                     }
                 }
             }
@@ -856,6 +982,7 @@ class WeiboRepository(
         postJson: JSONObject,
         id: Long,
         imageUrisOverride: String? = null,
+        audioPathOverride: String? = null,
         identityId: Long? = null,
         useIdentityFromJson: Boolean = true
     ): PostEntity {
@@ -872,12 +999,40 @@ class WeiboRepository(
             identityId = resolvedIdentityId,
             content = postJson.optString("content", ""),
             imageUris = imageUrisOverride ?: postJson.optString("imageUris", ""),
+            audioPath = audioPathOverride ?: postJson.optString("audioPath", ""),
             extrasJson = postJson.optString("extrasJson", "{}"),
             createdAt = postJson.getLong("createdAt"),
             likeCount = postJson.optInt("likeCount", 0),
             commentCount = postJson.optInt("commentCount", 0),
             isLiked = postJson.optBoolean("isLiked", false)
         )
+    }
+
+    private fun mergeStagingAudio(
+        stagingRoot: File,
+        oldPostId: Long,
+        newPostId: Long,
+        audioPath: String,
+    ): String {
+        val t = audioPath.trim().replace('\\', '/').trimStart('/')
+        if (t.isEmpty()) return ""
+        val prefix = "${PostAttachmentStorage.REL_ROOT}/$oldPostId/"
+        val newPrefix = "${PostAttachmentStorage.REL_ROOT}/$newPostId/"
+        val newRel = if (t.startsWith(prefix)) {
+            newPrefix + t.removePrefix(prefix)
+        } else {
+            t
+        }
+        val src = File(stagingRoot, t)
+        if (!src.isFile) return ""
+        val dst = PostAttachmentStorage.fileForRelativePath(context, newRel)
+        dst.parentFile?.mkdirs()
+        return try {
+            src.copyTo(dst, overwrite = true)
+            if (dst.isFile && dst.length() > 0L) newRel else ""
+        } catch (_: Exception) {
+            ""
+        }
     }
 
     private fun mergeStagingAttachments(
@@ -908,12 +1063,42 @@ class WeiboRepository(
         return if (kept.isEmpty()) "" else PostAttachmentStorage.serializePaths(kept)
     }
 
+    private fun mergeStagingCommentAudio(
+        stagingRoot: File,
+        oldCommentId: Long,
+        newCommentId: Long,
+        audioPath: String,
+    ): String {
+        val t = audioPath.trim().replace('\\', '/').trimStart('/')
+        if (t.isEmpty()) return ""
+        val prefix = "${CommentAttachmentStorage.REL_ROOT}/$oldCommentId/"
+        val newPrefix = "${CommentAttachmentStorage.REL_ROOT}/$newCommentId/"
+        val newRel = if (t.startsWith(prefix)) {
+            newPrefix + t.removePrefix(prefix)
+        } else {
+            t
+        }
+        val src = File(stagingRoot, t)
+        if (!src.isFile) return ""
+        val dst = CommentAttachmentStorage.fileForRelativePath(context, newRel)
+        dst.parentFile?.mkdirs()
+        return try {
+            src.copyTo(dst, overwrite = true)
+            if (dst.isFile && dst.length() > 0L) newRel else ""
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
     private fun commentFromJson(
         commentJson: JSONObject,
         id: Long,
         postId: Long? = null,
         identityId: Long? = null,
-        useFixedPostAndIdentity: Boolean = false
+        useFixedPostAndIdentity: Boolean = false,
+        replyingToCommentId: Long? = null,
+        useExplicitReplying: Boolean = false,
+        audioPathOverride: String? = null,
     ): CommentEntity {
         val resolvedPostId = if (useFixedPostAndIdentity) postId!! else commentJson.getLong("postId")
         val resolvedIdentityId = if (useFixedPostAndIdentity) {
@@ -924,15 +1109,21 @@ class WeiboRepository(
                 else -> commentJson.getLong("identityId")
             }
         }
-        val replying = when {
-            !commentJson.has("replyingToCommentId") || commentJson.isNull("replyingToCommentId") -> null
-            else -> commentJson.getLong("replyingToCommentId")
+        val replying = if (useExplicitReplying) {
+            replyingToCommentId
+        } else {
+            when {
+                !commentJson.has("replyingToCommentId") || commentJson.isNull("replyingToCommentId") -> null
+                else -> commentJson.getLong("replyingToCommentId")
+            }
         }
+        val audioPath = audioPathOverride ?: commentJson.optString("audioPath", "")
         return CommentEntity(
             id = id,
             postId = resolvedPostId,
             identityId = resolvedIdentityId,
-            content = commentJson.getString("content"),
+            content = commentJson.optString("content", ""),
+            audioPath = audioPath,
             createdAt = commentJson.getLong("createdAt"),
             replyingToCommentId = replying,
             likeCount = commentJson.optInt("likeCount", 0),
@@ -945,6 +1136,7 @@ class WeiboRepository(
         postDao.deleteAll()
         identityDao.deleteAll()
         PostAttachmentStorage.deleteEntireAttachmentTree(context)
+        CommentAttachmentStorage.deleteEntireTree(context)
         IdentityAvatarStorage.deleteEntireTree(context)
     }
 

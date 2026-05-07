@@ -28,6 +28,9 @@ object PostAttachmentStorage {
 
     const val REL_ROOT = "post_attachments"
 
+    /** Single AAC voice file name inside each post directory. */
+    const val VOICE_FILENAME = "voice.m4a"
+
     private const val COMPOSE_PREP_SUBDIR = "compose_prepare"
 
     /** Only compress when the copy from the picker exceeds this size (keeps modest photos untouched). */
@@ -136,6 +139,21 @@ object PostAttachmentStorage {
                 ""
             } else {
                 serializePaths(relativePaths)
+            }
+        }
+
+    /** Moves a recorded voice file into [REL_ROOT]/[postId]/[VOICE_FILENAME]. Deletes [src] after success. */
+    suspend fun movePreparedVoiceIntoPost(context: Context, postId: Long, src: File): String =
+        withContext(Dispatchers.IO) {
+            if (!src.isFile || src.length() == 0L) return@withContext ""
+            val postDir = File(rootDir(context), postId.toString())
+            postDir.mkdirs()
+            val dest = File(postDir, VOICE_FILENAME)
+            moveOrReplaceFile(src, dest)
+            if (dest.isFile && dest.length() > 0L) {
+                "$REL_ROOT/$postId/${dest.name}"
+            } else {
+                ""
             }
         }
 

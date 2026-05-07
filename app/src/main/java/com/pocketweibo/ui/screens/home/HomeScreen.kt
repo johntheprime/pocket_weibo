@@ -416,11 +416,11 @@ fun HomeScreen(
                 comments = comments,
                 activeIdentityId = activeIdentity?.id,
                 onDismiss = { viewModel.closeComments() },
-                onSendComment = { content ->
-                    viewModel.addComment(selectedPostId!!, content)
+                onSendComment = { content, voiceFile ->
+                    viewModel.addComment(selectedPostId!!, content, voiceFile)
                 },
                 onDeleteComment = { commentId ->
-                    viewModel.deleteComment(commentId, selectedPostId!!)
+                    viewModel.deleteComment(commentId)
                 }
             )
         }

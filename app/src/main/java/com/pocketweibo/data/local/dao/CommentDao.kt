@@ -12,10 +12,12 @@ data class CommentWithIdentity(
     val identityAvatarResName: String?,
     val identityCustomAvatarUri: String?,
     val content: String,
+    val audioPath: String,
     val createdAt: Long,
     val replyingToCommentId: Long?,
     val replyingToIdentityName: String?,
     val likeCount: Int,
+    val likedBy: String,
     val isLikedByMe: Boolean
 )
 
@@ -24,6 +26,7 @@ data class CommentSearchRow(
     val id: Long,
     val postId: Long,
     val content: String,
+    val audioPath: String,
     val createdAt: Long,
     val commentAuthorName: String?,
     val postContent: String,
@@ -36,10 +39,11 @@ interface CommentDao {
         SELECT c.id, c.postId, c.identityId, i.name as identityName, 
                i.avatarResName as identityAvatarResName,
                i.customAvatarUri as identityCustomAvatarUri,
-               c.content, c.createdAt,
+               c.content, c.audioPath, c.createdAt,
                c.replyingToCommentId, 
                (SELECT i2.name FROM comments c2 LEFT JOIN identities i2 ON c2.identityId = i2.id WHERE c2.id = c.replyingToCommentId) as replyingToIdentityName,
                c.likeCount,
+               c.likedBy,
                CASE WHEN c.likedBy LIKE '%' || :currentIdentityId || '%' THEN 1 ELSE 0 END as isLikedByMe
         FROM comments c
         LEFT JOIN identities i ON c.identityId = i.id
@@ -52,10 +56,12 @@ interface CommentDao {
         SELECT c.id, c.postId, c.identityId, i.name as identityName, 
                i.avatarResName as identityAvatarResName,
                i.customAvatarUri as identityCustomAvatarUri,
-               c.content, c.createdAt,
+               c.content, c.audioPath, c.createdAt,
                c.replyingToCommentId, 
                (SELECT i2.name FROM comments c2 LEFT JOIN identities i2 ON c2.identityId = i2.id WHERE c2.id = c.replyingToCommentId) as replyingToIdentityName,
-               c.likeCount, 0 as isLikedByMe
+               c.likeCount,
+               c.likedBy,
+               0 as isLikedByMe
         FROM comments c
         LEFT JOIN identities i ON c.identityId = i.id
         WHERE c.postId = :postId
@@ -65,6 +71,15 @@ interface CommentDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(comment: CommentEntity): Long
+
+    @Update
+    suspend fun update(comment: CommentEntity)
+
+    @Query("SELECT * FROM comments WHERE id = :id LIMIT 1")
+    suspend fun getEntityById(id: Long): CommentEntity?
+
+    @Query("SELECT id FROM comments WHERE postId = :postId")
+    suspend fun listCommentIdsForPost(postId: Long): List<Long>
 
     @Delete
     suspend fun delete(comment: CommentEntity)
@@ -86,7 +101,7 @@ interface CommentDao {
 
     @Query(
         """
-        SELECT c.id AS id, c.postId AS postId, c.content AS content, c.createdAt AS createdAt,
+        SELECT c.id AS id, c.postId AS postId, c.content AS content, c.audioPath AS audioPath, c.createdAt AS createdAt,
                ci.name AS commentAuthorName, p.content AS postContent, pi.name AS postAuthorName
         FROM comments c
         LEFT JOIN identities ci ON c.identityId = ci.id

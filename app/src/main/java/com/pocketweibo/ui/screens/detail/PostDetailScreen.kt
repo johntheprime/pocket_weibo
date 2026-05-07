@@ -13,6 +13,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import java.io.File
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,12 +35,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
@@ -48,12 +47,11 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -74,6 +72,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.pocketweibo.data.media.VoiceRecordingController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
@@ -82,12 +81,15 @@ import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.data.prefs.nextShakeReminderFireAtMillis
 import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.ui.components.Avatar
+import com.pocketweibo.ui.components.CommentVoiceComposerBar
+import com.pocketweibo.ui.components.PostAudioPlayerBar
 import com.pocketweibo.ui.components.PostImageFullscreenViewer
 import com.pocketweibo.ui.components.PostImageGallery
 import com.pocketweibo.ui.components.SelectablePostBody
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
+import com.pocketweibo.ui.util.postOrCommentBodyForDisplay
 import com.pocketweibo.ui.util.findActivity
 import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.formatReminderFireToastTime
@@ -96,7 +98,6 @@ import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.ui.reminder.ReminderPickerDialog
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
-import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
 import kotlinx.coroutines.Dispatchers
@@ -109,6 +110,8 @@ private data class PendingReminderSchedule(
     val rule: String,
     val toastTextOverride: String?,
 )
+
+private const val COMMENT_VOICE_MAX_RECORD_MS = 120_000L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -124,6 +127,33 @@ fun PostDetailScreen(
     val scope = rememberCoroutineScope()
 
     var pendingSchedule by remember { mutableStateOf<PendingReminderSchedule?>(null) }
+    val voiceRecorder = remember { VoiceRecordingController(context.applicationContext) }
+    var preparedVoiceFile by remember { mutableStateOf<File?>(null) }
+    var isRecordingVoice by remember { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            voiceRecorder.release()
+            preparedVoiceFile?.delete()
+        }
+    }
+
+    val recordAudioLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            if (voiceRecorder.startRecording()) {
+                isRecordingVoice = true
+            }
+        } else {
+            Toast.makeText(
+                context,
+                context.getString(R.string.toast_record_audio_denied),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     val notifyPermLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -214,6 +244,22 @@ fun PostDetailScreen(
         }
     }
 
+    LaunchedEffect(isRecordingVoice) {
+        if (!isRecordingVoice) return@LaunchedEffect
+        delay(COMMENT_VOICE_MAX_RECORD_MS)
+        if (!voiceRecorder.isActive) return@LaunchedEffect
+        val file = voiceRecorder.stopRecording(finishedByMaxDuration = true) { }
+        isRecordingVoice = false
+        Toast.makeText(
+            context,
+            context.getString(R.string.toast_compose_voice_max_duration),
+            Toast.LENGTH_SHORT
+        ).show()
+        if (file != null) {
+            preparedVoiceFile = file
+        }
+    }
+
     PostDetailShakeToReminderEffect(
         canSchedule = post != null,
         lastCommentEditedAtMark = lastCommentEditedAt,
@@ -275,50 +321,58 @@ fun PostDetailScreen(
             ) {
                 Column {
                     Divider(thickness = 0.5.dp)
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.Bottom
-                    ) {
-                        OutlinedTextField(
-                            value = commentText,
-                            onValueChange = {
-                                commentText = it
-                                lastCommentEditedAt = SystemClock.elapsedRealtime()
-                            },
-                            placeholder = {
-                                Text(
-                                    stringResource(R.string.post_detail_comment_hint),
-                                    fontSize = 14.sp,
-                                    color = GrayMiddle
-                                )
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = WeiboOrange,
-                                unfocusedBorderColor = GrayLight,
-                                focusedContainerColor = Color(0xFFF8F8F8),
-                                unfocusedContainerColor = Color(0xFFF8F8F8)
-                            ),
-                            maxLines = 4
-                        )
-                        IconButton(
-                            onClick = {
-                                if (commentText.isNotBlank()) {
-                                    scrollToNewestCommentAfterSend = true
-                                    viewModel.addComment(commentText)
-                                    commentText = ""
+                    val canSendComment = commentText.isNotBlank() || preparedVoiceFile != null
+                    CommentVoiceComposerBar(
+                        text = commentText,
+                        onTextChange = {
+                            commentText = it
+                            lastCommentEditedAt = SystemClock.elapsedRealtime()
+                        },
+                        commentHint = stringResource(R.string.post_detail_comment_hint),
+                        preparedVoice = preparedVoiceFile != null,
+                        voiceReadyLabel = stringResource(R.string.compose_voice_ready),
+                        onClearVoiceDraft = {
+                            preparedVoiceFile?.delete()
+                            preparedVoiceFile = null
+                        },
+                        isRecording = isRecordingVoice,
+                        onMicClick = {
+                            if (isRecordingVoice) {
+                                val file = voiceRecorder.stopRecording(finishedByMaxDuration = false) {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.toast_compose_voice_too_short),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
-                            },
-                            enabled = commentText.isNotBlank()
-                        ) {
-                            Icon(
-                                Icons.Default.Send,
-                                stringResource(R.string.post_detail_send_cd),
-                                tint = if (commentText.isNotBlank()) WeiboOrange else GrayMiddle
-                            )
-                        }
-                    }
+                                isRecordingVoice = false
+                                if (file != null) preparedVoiceFile = file
+                            } else {
+                                when {
+                                    ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.RECORD_AUDIO
+                                    ) != PackageManager.PERMISSION_GRANTED -> {
+                                        recordAudioLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                    }
+                                    voiceRecorder.startRecording() -> {
+                                        isRecordingVoice = true
+                                    }
+                                }
+                            }
+                        },
+                        micContentDescription = stringResource(R.string.compose_voice_cd),
+                        sendContentDescription = stringResource(R.string.post_detail_send_cd),
+                        sendEnabled = canSendComment,
+                        onSend = {
+                            if (!canSendComment) return@CommentVoiceComposerBar
+                            scrollToNewestCommentAfterSend = true
+                            viewModel.addComment(commentText, preparedVoiceFile)
+                            commentText = ""
+                            preparedVoiceFile = null
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
                 }
             }
         }
@@ -615,6 +669,7 @@ private fun CommentsHeader(
     comments: List<CommentWithIdentity>
 ) {
     val context = LocalContext.current
+    val voiceOnlyLabel = stringResource(R.string.comment_body_voice_only)
     val header = stringResource(R.string.comments_header)
     val copyAllCd = stringResource(R.string.comments_copy_all_cd)
     Surface(
@@ -650,7 +705,10 @@ private fun CommentsHeader(
                     onClick = {
                         val text = comments
                             .sortedBy { it.createdAt }
-                            .mapIndexed { index, c -> "${index + 1}. ${c.content.trim()}" }
+                            .mapIndexed { index, c ->
+                                val line = postOrCommentBodyForDisplay(c.content, c.audioPath, voiceOnlyLabel).trim()
+                                "${index + 1}. $line"
+                            }
                             .joinToString(separator = "\n\n")
                         context.copyPlainToClipboard(
                             label = context.getString(R.string.clipboard_label_all_comments),
@@ -680,13 +738,15 @@ private fun CommentCard(comment: CommentWithIdentity) {
     val clipLabel = stringResource(R.string.clipboard_label_comment)
     val copiedToast = stringResource(R.string.toast_comment_copied)
     val displayName = identityDisplayName(comment.identityName)
+    val voiceOnlyLabel = stringResource(R.string.comment_body_voice_only)
+    val bodyDisplay = postOrCommentBodyForDisplay(comment.content, comment.audioPath, voiceOnlyLabel)
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = {},
                 onLongClick = {
-                    context.copyPlainToClipboard(clipLabel, comment.content, toast = copiedToast)
+                    context.copyPlainToClipboard(clipLabel, bodyDisplay, toast = copiedToast)
                 }
             ),
         color = Color.White
@@ -725,12 +785,19 @@ private fun CommentCard(comment: CommentWithIdentity) {
                         )
                     }
                     Text(
-                        text = comment.content,
+                        text = bodyDisplay,
                         fontSize = 14.sp,
                         color = GrayDark,
                         lineHeight = 20.sp,
                         modifier = Modifier.padding(top = 6.dp)
                     )
+                    if (comment.audioPath.isNotBlank()) {
+                        PostAudioPlayerBar(
+                            relativeAudioPath = comment.audioPath,
+                            modifier = Modifier.padding(top = 8.dp),
+                            compact = true,
+                        )
+                    }
                 }
             }
         }

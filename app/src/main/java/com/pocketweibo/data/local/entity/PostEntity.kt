@@ -23,6 +23,8 @@ data class PostEntity(
     val identityId: Long?,
     val content: String,
     val imageUris: String = "",
+    /** Single voice clip relative to [Context.getFilesDir], e.g. `post_attachments/12/voice.m4a`. */
+    val audioPath: String = "",
     /** Reserved for future fields (e.g. audience); keep JSON object shape. */
     val extrasJson: String = "{}",
     val createdAt: Long = System.currentTimeMillis(),
