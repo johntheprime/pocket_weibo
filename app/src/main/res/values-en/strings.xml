@@ -272,10 +272,10 @@
     <string name="compose_preparing_images">Processing images…</string>
     <string name="compose_per_post_original_title">Original files for this post</string>
     <string name="compose_remind_title">Set a reminder for this post</string>
-    <string name="compose_remind_after_publish_hint">After you pick a time, the reminder is scheduled when you tap Send and the post is published successfully.</string>
-    <string name="compose_reminder_saved_for_publish">Reminder saved; it will be scheduled after you publish</string>
+    <string name="compose_remind_after_publish_hint">After you pick a time, this post is published and the reminder is scheduled.</string>
+    <string name="compose_reminder_saved_for_publish">Reminder time saved; add text or images, choose an identity, then tap Send</string>
     <string name="compose_label_remind">Reminder</string>
-    <string name="compose_remind_cd">Set a system reminder for this post after it is published</string>
+    <string name="compose_remind_cd">Set a system reminder for this post; choosing a time publishes immediately</string>
     <string name="compose_no_identity_hint">Add an identity on the Me tab first</string>
     <string name="compose_double_tap_blank_cd">Blank area below the draft; double-tap to send (works alongside shake to send)</string>
 

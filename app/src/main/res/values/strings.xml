@@ -272,10 +272,10 @@
     <string name="compose_preparing_images">正在处理图片…</string>
     <string name="compose_per_post_original_title">本帖原图（不压缩）</string>
     <string name="compose_remind_title">为这条微博设置提醒</string>
-    <string name="compose_remind_after_publish_hint">选择时间后，将在你点击「发送」并成功发布后为该条微博设置系统提醒。</string>
-    <string name="compose_reminder_saved_for_publish">已记录提醒时间，发送成功后将设置闹钟</string>
+    <string name="compose_remind_after_publish_hint">选择时间后会立即发布这条微博，并为该帖设置系统提醒。</string>
+    <string name="compose_reminder_saved_for_publish">已记录提醒时间；请填写正文或配图并选择身份后点「发送」</string>
     <string name="compose_label_remind">提醒</string>
-    <string name="compose_remind_cd">为发布后的这条微博设置系统提醒</string>
+    <string name="compose_remind_cd">为这条微博设置系统提醒；选好时间后会立即发布</string>
     <string name="compose_no_identity_hint">请先在「我」页面添加身份</string>
     <string name="compose_double_tap_blank_cd">正文下方空白区域；连点两下可发送（与摇一摇发送可同时使用）</string>
 

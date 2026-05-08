@@ -746,11 +746,21 @@ fun ComposeScreen(
                         ).show()
                     } else {
                         pendingComposeReminder = fireAt to rule
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.compose_reminder_saved_for_publish),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showRemindPicker = false
+                        val canPublishNow =
+                            selectedIdentity != null &&
+                                (content.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
+                                !isSending &&
+                                !isPreparingImages
+                        if (canPublishNow) {
+                            performSend()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.compose_reminder_saved_for_publish),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 },
                 onOpenExactAlarmSettings = openExactAlarmSettings,
