@@ -77,6 +77,7 @@ import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
 
 private const val PhotoZoomMaxScale = 4f
+private const val PhotoDoubleTapZoomScale = 2f
 
 private fun clampPhotoPan(offset: Offset, scale: Float, widthPx: Float, heightPx: Float): Offset {
     if (scale <= 1f || widthPx <= 0f || heightPx <= 0f) return Offset.Zero
@@ -254,6 +255,7 @@ private fun PhotoFeedCard(
     val timeText = resources.formatRelativeTime(post.createdAt, RelativeTimePreset.FeedCard)
     val imageCdBase = stringResource(R.string.photo_feed_image_cd)
     val resetZoomA11y = stringResource(R.string.photo_feed_reset_zoom_a11y)
+    val zoomInA11y = stringResource(R.string.photo_feed_double_tap_zoom_in_a11y)
 
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val wPx = constraints.maxWidth.toFloat().coerceAtLeast(1f)
@@ -288,7 +290,7 @@ private fun PhotoFeedCard(
                     contentDescription = if (scale > 1.02f) {
                         "$imageCdBase $resetZoomA11y"
                     } else {
-                        imageCdBase
+                        "$imageCdBase $zoomInA11y"
                     },
                     contentScale = ContentScale.Fit,
                     onSuccess = { state ->
@@ -321,12 +323,23 @@ private fun PhotoFeedCard(
                                 }
                             }
                         }
-                        .pointerInput(post.id, overlayVisible, scale) {
+                        .pointerInput(post.id, overlayVisible, scale, wPx, hPx) {
                             detectTapGestures(
-                                onDoubleTap = {
+                                onDoubleTap = { tapOffset ->
                                     if (scale > 1.02f) {
                                         scale = 1f
                                         offset = Offset.Zero
+                                    } else {
+                                        val center = Offset(wPx * 0.5f, hPx * 0.5f)
+                                        val targetScale =
+                                            PhotoDoubleTapZoomScale.coerceIn(1f, PhotoZoomMaxScale)
+                                        scale = targetScale
+                                        offset = clampPhotoPan(
+                                            center - tapOffset,
+                                            targetScale,
+                                            wPx,
+                                            hPx,
+                                        )
                                     }
                                 },
                                 onTap = { overlayVisible = !overlayVisible },
