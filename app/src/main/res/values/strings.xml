@@ -252,7 +252,6 @@
     <string name="compose_remove_image_cd">删除</string>
     <string name="compose_label_image">图片</string>
     <string name="compose_label_camera">拍照</string>
-    <string name="compose_label_voice">语音</string>
     <string name="compose_voice_cd">录制语音；再次点击结束录制</string>
     <string name="compose_voice_recording">正在录音…</string>
     <string name="compose_voice_tap_stop">点击结束</string>

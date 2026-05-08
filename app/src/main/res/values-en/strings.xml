@@ -252,7 +252,6 @@
     <string name="compose_remove_image_cd">Remove</string>
     <string name="compose_label_image">Image</string>
     <string name="compose_label_camera">Camera</string>
-    <string name="compose_label_voice">Voice</string>
     <string name="compose_voice_cd">Record voice; tap again to stop</string>
     <string name="compose_voice_recording">Recording…</string>
     <string name="compose_voice_tap_stop">Tap to stop</string>

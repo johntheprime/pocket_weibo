@@ -8,6 +8,7 @@ This file records **resolved requirements** and the **standard process** for eve
 
 | Date (UTC) | Requirement | Resolution | Verified |
 |-------------|---------------|------------|----------|
+| 2026-05-08 | **写微博**：去掉 **语音 / 麦克风** 入口，发帖仅支持 **文字与配图**（双拍空白、摇一摇发送等逻辑同步不含语音）；**评论语音不变**。 | **`ComposeScreen`**：移除底栏麦克风、`VoiceRecordingController`、待发语音 UI 及发帖流程中的语音附件；`DisposableEffect` 仅清理临时图片。版本 **3.53.1 (183)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-07 | **评论语音**：开始录音后 **无界面提示**、过程中看不出在录 | **`CommentVoiceComposerBar`**：录音中显示 **浅红脉冲横幅**（「正在录音…」「点击结束」+ 三点动画）、麦克风 **圆形底 + 强调色**；`preparedVoice` 与录音中互斥展示；横幅 **`comment_voice_recording_semantics`**。版本 **3.52.2 (181)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-07 | **评论 / 写微博语音**：界面像在录音，但 **保存后无声音**；启动偏慢 | **根因**：`VoiceRecordingController.stopRecording` 要求 **≥700 ms 且 ≥4 KiB**；短句或刚停时 **M4A 未写完** 常被误判丢弃。另：权限弹窗返回后 **同一帧** 调 `MediaRecorder.start` 在部分机型上不可靠。**修复**：降至 **≥420 ms、≥512 B**；`stop` 后 **短轮询** 等文件落盘；显式 **单声道 / 44.1 kHz / 96 kbps**；`MODE_IN_COMMUNICATION` 路由；**`startRecordingOnNextMainFrame`**（主线程下一帧）用于授权回调与再次点麦。版本 **3.52.1 (180)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-07 | **图片 Tab**：**竖长配图** 在流里被 **上下裁切**，不能完整浏览 | **根因**：固定行高 + **`ContentScale.Crop`** 为铺满宽度会裁掉过长部分。**修复**：按 **解码后 intrinsic 尺寸** 与 **卡片宽度** 计算行高（**min～max** 夹逼），改用 **`ContentScale.Fit`**，暗底填边；极竖长图在 **最大行高** 内仍 **整图可见**。同版 **F-056** 双击还原缩放。版本 **3.51.0 (177)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |

@@ -33,7 +33,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -82,8 +81,6 @@ import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.media.PostAttachmentStorage
-import com.pocketweibo.data.media.PostVoice
-import com.pocketweibo.data.media.VoiceRecordingController
 import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.reminder.ReminderPickerDialog
 import com.pocketweibo.ui.theme.Background
@@ -97,8 +94,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
-
-private const val COMPOSE_VOICE_MAX_RECORD_MS = 120_000L
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -126,9 +121,6 @@ fun ComposeScreen(
     var content by remember { mutableStateOf("") }
     var showIdentityPicker by remember { mutableStateOf(false) }
     var preparedImageFiles by remember { mutableStateOf(listOf<File>()) }
-    val voiceRecorder = remember { VoiceRecordingController(context.applicationContext) }
-    var preparedVoiceFile by remember { mutableStateOf<File?>(null) }
-    var isRecordingVoice by remember { mutableStateOf(false) }
     var isPreparingImages by remember { mutableStateOf(false) }
     var isSending by remember { mutableStateOf(false) }
     var useOriginalForThisPost by remember { mutableStateOf(false) }
@@ -165,24 +157,6 @@ fun ComposeScreen(
         }
     }
 
-    val recordAudioLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            voiceRecorder.startRecordingOnNextMainFrame { ok ->
-                if (ok) {
-                    isRecordingVoice = true
-                }
-            }
-        } else {
-            Toast.makeText(
-                context,
-                context.getString(R.string.toast_record_audio_denied),
-                Toast.LENGTH_SHORT
-            ).show()
-        }
-    }
-
     val openExactAlarmSettings: () -> Unit = {
         if (Build.VERSION.SDK_INT >= 31) {
             runCatching {
@@ -208,33 +182,14 @@ fun ComposeScreen(
         if (preparedImageFiles.isEmpty()) useOriginalForThisPost = false
     }
 
-    LaunchedEffect(isRecordingVoice) {
-        if (!isRecordingVoice) return@LaunchedEffect
-        delay(COMPOSE_VOICE_MAX_RECORD_MS)
-        if (!voiceRecorder.isActive) return@LaunchedEffect
-        val file = voiceRecorder.stopRecording(finishedByMaxDuration = true) { }
-        isRecordingVoice = false
-        Toast.makeText(
-            context,
-            context.getString(R.string.toast_compose_voice_max_duration),
-            Toast.LENGTH_SHORT
-        ).show()
-        if (file != null) {
-            preparedVoiceFile = file
-        }
-    }
-
     var lastContentEditedAt by remember { mutableStateOf(SystemClock.elapsedRealtime()) }
     val composeOpenedAt = remember { SystemClock.elapsedRealtime() }
     var lastPostedAt by remember { mutableStateOf(0L) }
 
     val preparedSnapshot by rememberUpdatedState(preparedImageFiles)
-    val voiceDraftSnapshot by rememberUpdatedState(preparedVoiceFile)
     DisposableEffect(Unit) {
         onDispose {
             preparedSnapshot.forEach { f -> if (f.exists()) f.delete() }
-            voiceRecorder.release()
-            voiceDraftSnapshot?.delete()
         }
     }
 
@@ -372,26 +327,21 @@ fun ComposeScreen(
 
     fun performSend() {
         if (selectedIdentity == null) return
-        if (!content.isNotBlank() && preparedImageFiles.isEmpty() && preparedVoiceFile == null) return
+        if (!content.isNotBlank() && preparedImageFiles.isEmpty()) return
         if (isSending || isPreparingImages) return
         isSending = true
         lastPostedAt = SystemClock.elapsedRealtime()
         val identityId = selectedIdentity!!.id
         val text = content
         val filesToSend = preparedImageFiles.toList()
-        val voiceFile = preparedVoiceFile
         scope.launch {
             try {
                 val reminderSpec = pendingComposeReminder
                 pendingComposeReminder = null
-                val trimmed = text.trim()
-                val bodyForPost =
-                    if (trimmed.isEmpty() && voiceFile != null) PostVoice.STORED_PLACEHOLDER else text
                 val newPostId = app.repository.insertPostWithPreparedGallery(
                     identityId = identityId,
-                    content = bodyForPost,
+                    content = text,
                     preparedFiles = filesToSend,
-                    preparedVoice = voiceFile,
                 )
                 if (reminderSpec != null) {
                     val (fireAt, rule) = reminderSpec
@@ -421,7 +371,6 @@ fun ComposeScreen(
                 }
                 app.repository.clearDraft()
                 preparedImageFiles = emptyList()
-                preparedVoiceFile = null
                 onPostPublished()
                 onDismiss()
             } finally {
@@ -431,7 +380,7 @@ fun ComposeScreen(
     }
 
     val canQuickSend =
-        (content.isNotBlank() || preparedImageFiles.isNotEmpty() || preparedVoiceFile != null) &&
+        (content.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
             selectedIdentity != null &&
             !isSending &&
             !isPreparingImages
@@ -439,7 +388,7 @@ fun ComposeScreen(
     val performSendAction by rememberUpdatedState(newValue = { performSend() })
 
     ShakeToSendEffect(
-        canSend = (content.isNotBlank() || preparedImageFiles.isNotEmpty() || preparedVoiceFile != null) &&
+        canSend = (content.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
             selectedIdentity != null &&
             !isSending &&
             !isPreparingImages,
@@ -496,7 +445,7 @@ fun ComposeScreen(
 
                 Button(
                     onClick = { performSend() },
-                    enabled = (content.isNotBlank() || preparedImageFiles.isNotEmpty() || preparedVoiceFile != null) &&
+                    enabled = (content.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
                         selectedIdentity != null &&
                         !isSending &&
                         !isPreparingImages,
@@ -720,31 +669,6 @@ fun ComposeScreen(
                                 }
                             }
                         }
-                        if (preparedVoiceFile != null) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.compose_voice_ready),
-                                    fontSize = 13.sp,
-                                    color = GrayMiddle,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                IconButton(onClick = {
-                                    preparedVoiceFile?.delete()
-                                    preparedVoiceFile = null
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = stringResource(R.string.compose_voice_remove_cd),
-                                        tint = WeiboOrange,
-                                    )
-                                }
-                            }
-                        }
                     }
                 }
                 Box(
@@ -783,41 +707,6 @@ fun ComposeScreen(
                             startComposeCameraCapture()
                         } else {
                             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                        }
-                    }
-                )
-                ActionButton(
-                    icon = Icons.Default.Mic,
-                    label = stringResource(R.string.compose_label_voice),
-                    contentDescription = stringResource(R.string.compose_voice_cd),
-                    tint = if (isRecordingVoice) Color.Red else WeiboOrange,
-                    onClick = {
-                        if (isRecordingVoice) {
-                            val file = voiceRecorder.stopRecording(finishedByMaxDuration = false) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.toast_compose_voice_too_short),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                            isRecordingVoice = false
-                            if (file != null) preparedVoiceFile = file
-                        } else {
-                            when {
-                                ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.RECORD_AUDIO
-                                ) != PackageManager.PERMISSION_GRANTED -> {
-                                    recordAudioLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                }
-                                else -> {
-                                    voiceRecorder.startRecordingOnNextMainFrame { ok ->
-                                        if (ok) {
-                                            isRecordingVoice = true
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                 )
