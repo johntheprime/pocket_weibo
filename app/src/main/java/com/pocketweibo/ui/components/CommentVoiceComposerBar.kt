@@ -8,6 +8,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +30,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,6 +49,9 @@ import com.pocketweibo.ui.theme.WeiboOrange
  * Comment input with optional voice draft (mic + send). Recording state is owned by the caller.
  * When [isRecording] is true, shows a pulsing banner so users see that capture is active.
  * Tapping the banner calls [onRecordingBannerTap] (e.g. stop + send shortcut).
+ * The mic is hidden while the user is composing text (field focused or non-blank text) so the
+ * text path stays uncluttered; it stays visible when the field is empty and unfocused, and
+ * always while recording so capture can be stopped from the bar.
  */
 @Composable
 fun CommentVoiceComposerBar(
@@ -72,6 +78,11 @@ fun CommentVoiceComposerBar(
     } else {
         micContentDescription
     }
+
+    val textFieldInteractionSource = remember { MutableInteractionSource() }
+    val textFieldFocused by textFieldInteractionSource.collectIsFocusedAsState()
+    val showMicButton =
+        isRecording || (text.isBlank() && !textFieldFocused)
 
     Column(modifier = modifier) {
         if (preparedVoice && !isRecording) {
@@ -114,6 +125,7 @@ fun CommentVoiceComposerBar(
                 },
                 modifier = Modifier.weight(1f),
                 shape = textFieldShape,
+                interactionSource = textFieldInteractionSource,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = WeiboOrange,
                     unfocusedBorderColor = GrayLight,
@@ -122,20 +134,22 @@ fun CommentVoiceComposerBar(
                 ),
                 maxLines = textMaxLines,
             )
-            IconButton(onClick = onMicClick) {
-                val micModifier = if (isRecording) {
-                    Modifier
-                        .background(Color(0xFFFFCDD2).copy(alpha = 0.95f), CircleShape)
-                        .padding(6.dp)
-                } else {
-                    Modifier
+            if (showMicButton) {
+                IconButton(onClick = onMicClick) {
+                    val micModifier = if (isRecording) {
+                        Modifier
+                            .background(Color(0xFFFFCDD2).copy(alpha = 0.95f), CircleShape)
+                            .padding(6.dp)
+                    } else {
+                        Modifier
+                    }
+                    Icon(
+                        imageVector = Icons.Default.Mic,
+                        contentDescription = micCd,
+                        tint = if (isRecording) Color(0xFFE53935) else WeiboOrange,
+                        modifier = micModifier,
+                    )
                 }
-                Icon(
-                    imageVector = Icons.Default.Mic,
-                    contentDescription = micCd,
-                    tint = if (isRecording) Color(0xFFE53935) else WeiboOrange,
-                    modifier = micModifier,
-                )
             }
             IconButton(onClick = onSend, enabled = sendEnabled) {
                 Icon(
