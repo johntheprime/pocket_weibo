@@ -1,7 +1,6 @@
 package com.pocketweibo.ui.screens.photo
 
 import android.net.Uri
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -18,19 +17,18 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -38,9 +36,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -50,10 +50,15 @@ import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.PI
@@ -84,11 +89,28 @@ private fun clampPhotoPan(offset: Offset, scale: Float, widthPx: Float, heightPx
     )
 }
 
+/** Height for one feed row: match image aspect at full width, clamped so the list stays usable. */
+private fun cardHeightForImage(
+    boxWidthPx: Float,
+    intrinsic: IntSize?,
+    minH: Dp,
+    maxH: Dp,
+    density: Density,
+): Dp {
+    if (intrinsic == null || intrinsic.width <= 0 || intrinsic.height <= 0) {
+        return minH
+    }
+    val idealPx = boxWidthPx * intrinsic.height / intrinsic.width.toFloat()
+    val minPx = with(density) { minH.toPx() }
+    val maxPx = with(density) { maxH.toPx() }
+    return with(density) { idealPx.coerceIn(minPx, maxPx).toDp() }
+}
+
 /**
  * Like [androidx.compose.foundation.gestures.detectTransformGestures] (panZoomLock false) after slop,
- * but when [allowSingleFingerPan] is false at gesture start (~1×) we only cross touch
- * slop for pinch / rotation / two-finger drag — not a one-finger pan — so [HorizontalPager]
- * keeps smooth horizontal paging.
+ * but when [allowSingleFingerPan] is false at gesture start (~1× in the feed) we only cross touch
+ * slop for pinch / rotation / two-finger drag — not a one-finger pan — so [LazyColumn] keeps smooth
+ * vertical scroll.
  */
 private suspend fun PointerInputScope.detectPhotoFeedTransformGestures(
     allowSingleFingerPan: () -> Boolean,
@@ -173,7 +195,6 @@ private suspend fun PointerInputScope.detectPhotoFeedTransformGestures(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PhotoScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -184,12 +205,10 @@ fun PhotoScreen(modifier: Modifier = Modifier) {
             .filter { PostAttachmentStorage.parseStoredPaths(it.imageUris).isNotEmpty() }
             .sortedByDescending { it.createdAt }
     }
-
-    var zoomBlocksPager by remember { mutableStateOf(false) }
-    val pagerState = rememberPagerState(pageCount = { photoPosts.size })
-
-    LaunchedEffect(pagerState.currentPage) {
-        zoomBlocksPager = false
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val minPhotoHeight = 240.dp
+    val maxPhotoHeight = remember(screenHeightDp) {
+        (screenHeightDp * 0.72f).dp.coerceIn(400.dp, 720.dp)
     }
 
     Column(
@@ -202,41 +221,35 @@ fun PhotoScreen(modifier: Modifier = Modifier) {
         if (photoPosts.isEmpty()) {
             PhotoEmptyState()
         } else {
-            val currentPage by remember {
-                derivedStateOf { pagerState.currentPage }
-            }
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = !zoomBlocksPager,
-            ) { page ->
-                PhotoGalleryPage(
-                    post = photoPosts[page],
-                    pageIndex = page,
-                    currentPageIndex = currentPage,
-                    onZoomBlocksPagerChange = { zoomed ->
-                        if (page == currentPage) {
-                            zoomBlocksPager = zoomed
-                        }
-                    },
-                )
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(photoPosts, key = { it.id }) { post ->
+                    PhotoFeedCard(
+                        post = post,
+                        minImageHeight = minPhotoHeight,
+                        maxImageHeight = maxPhotoHeight,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Divider(thickness = 0.5.dp, color = Color(0xFFE8E8E8))
+                }
             }
         }
     }
 }
 
 @Composable
-private fun PhotoGalleryPage(
+private fun PhotoFeedCard(
     post: PostWithIdentity,
-    pageIndex: Int,
-    currentPageIndex: Int,
-    onZoomBlocksPagerChange: (Boolean) -> Unit,
+    minImageHeight: Dp,
+    maxImageHeight: Dp,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val resources = context.resources
+    val density = LocalDensity.current
     var overlayVisible by remember(post.id) { mutableStateOf(true) }
     var scale by remember(post.id) { mutableFloatStateOf(1f) }
     var offset by remember(post.id) { mutableStateOf(Offset.Zero) }
+    var intrinsicSize by remember(post.id) { mutableStateOf<IntSize?>(null) }
     val model = rememberFirstImageModel(post.imageUris)
     val displayName = identityDisplayName(post.identityName)
     val timeText = resources.formatRelativeTime(post.createdAt, RelativeTimePreset.FeedCard)
@@ -244,19 +257,10 @@ private fun PhotoGalleryPage(
     val resetZoomA11y = stringResource(R.string.photo_feed_reset_zoom_a11y)
     val zoomInA11y = stringResource(R.string.photo_feed_double_tap_zoom_in_a11y)
 
-    LaunchedEffect(scale, pageIndex, currentPageIndex) {
-        if (pageIndex == currentPageIndex) {
-            onZoomBlocksPagerChange(scale > 1.02f)
-        }
-    }
-
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF2A2A2A))
-    ) {
+    BoxWithConstraints(modifier.fillMaxWidth()) {
         val wPx = constraints.maxWidth.toFloat().coerceAtLeast(1f)
-        val hPx = constraints.maxHeight.toFloat().coerceAtLeast(1f)
+        val cardHeight = cardHeightForImage(wPx, intrinsicSize, minImageHeight, maxImageHeight, density)
+        val hPx = with(density) { cardHeight.toPx() }
 
         val nestedScrollConnection = remember(scale) {
             object : NestedScrollConnection {
@@ -271,8 +275,11 @@ private fun PhotoGalleryPage(
 
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
+                .height(cardHeight)
                 .nestedScroll(nestedScrollConnection)
+                .clip(RectangleShape)
+                .background(Color(0xFF2A2A2A))
         ) {
             if (model != null) {
                 AsyncImage(
@@ -286,9 +293,16 @@ private fun PhotoGalleryPage(
                         "$imageCdBase $zoomInA11y"
                     },
                     contentScale = ContentScale.Fit,
+                    onSuccess = { state ->
+                        val d = state.result.drawable
+                        val iw = d.intrinsicWidth
+                        val ih = d.intrinsicHeight
+                        if (iw > 0 && ih > 0) {
+                            intrinsicSize = IntSize(iw, ih)
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxSize()
-                        .align(Alignment.Center)
                         .graphicsLayer {
                             transformOrigin = TransformOrigin.Center
                             scaleX = scale
