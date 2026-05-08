@@ -7,6 +7,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +45,7 @@ import com.pocketweibo.ui.theme.WeiboOrange
 /**
  * Comment input with optional voice draft (mic + send). Recording state is owned by the caller.
  * When [isRecording] is true, shows a pulsing banner so users see that capture is active.
+ * Tapping the banner calls [onRecordingBannerTap] (e.g. stop + send shortcut).
  */
 @Composable
 fun CommentVoiceComposerBar(
@@ -59,11 +61,12 @@ fun CommentVoiceComposerBar(
     sendContentDescription: String,
     sendEnabled: Boolean,
     onSend: () -> Unit,
+    onRecordingBannerTap: () -> Unit,
     modifier: Modifier = Modifier,
     textFieldShape: RoundedCornerShape = RoundedCornerShape(24.dp),
     textMaxLines: Int = 4,
 ) {
-    val recordingSemantics = stringResource(R.string.comment_voice_recording_semantics)
+    val bannerTapSemantics = stringResource(R.string.comment_voice_banner_stop_send_cd)
     val micCd = if (isRecording) {
         stringResource(R.string.compose_voice_tap_stop)
     } else {
@@ -97,8 +100,9 @@ fun CommentVoiceComposerBar(
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
                     .semantics(mergeDescendants = true) {
-                        contentDescription = recordingSemantics
-                    },
+                        contentDescription = bannerTapSemantics
+                    }
+                    .clickable(onClick = onRecordingBannerTap),
             )
         }
         Row(verticalAlignment = Alignment.Bottom) {
@@ -179,7 +183,7 @@ private fun CommentVoiceRecordingBanner(modifier: Modifier = Modifier) {
                 color = Color(0xFFB71C1C),
             )
             Text(
-                text = stringResource(R.string.compose_voice_tap_stop),
+                text = stringResource(R.string.comment_voice_banner_stop_send_hint),
                 fontSize = 12.sp,
                 color = GrayMiddle,
                 modifier = Modifier.padding(top = 2.dp),

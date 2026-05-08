@@ -262,6 +262,25 @@ fun CommentBottomSheet(
                     commentText = ""
                     preparedVoiceFile = null
                 },
+                onRecordingBannerTap = {
+                    if (isRecordingVoice) {
+                        val file = voiceRecorder.stopRecording(finishedByMaxDuration = false) {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.toast_compose_voice_too_short),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        isRecordingVoice = false
+                        if (file != null) {
+                            preparedVoiceFile = file
+                            scrollToNewestAfterSend = true
+                            onSendComment(commentText, preparedVoiceFile)
+                            commentText = ""
+                            preparedVoiceFile = null
+                        }
+                    }
+                },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 textFieldShape = RoundedCornerShape(20.dp),
                 textMaxLines = 5,

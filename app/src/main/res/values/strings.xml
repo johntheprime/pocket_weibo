@@ -262,6 +262,8 @@
     <string name="toast_compose_voice_max_duration">已达到最长录音时间</string>
     <string name="toast_record_audio_denied">需要麦克风权限才能录音</string>
     <string name="comment_voice_recording_semantics">正在录制语音，点击麦克风按钮结束录制</string>
+    <string name="comment_voice_banner_stop_send_hint">点击此区域结束录音并发送</string>
+    <string name="comment_voice_banner_stop_send_cd">结束录音并发送评论</string>
     <string name="post_image_cd">微博配图</string>
     <string name="post_image_detail_cd">微博配图，单击可全屏预览</string>
     <string name="post_image_viewer_cd">大图预览，双击在触点处放大或缩小，单击关闭</string>

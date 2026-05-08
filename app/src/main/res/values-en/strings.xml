@@ -262,6 +262,8 @@
     <string name="toast_compose_voice_max_duration">Maximum recording length reached</string>
     <string name="toast_record_audio_denied">Microphone permission is required to record</string>
     <string name="comment_voice_recording_semantics">Recording voice. Tap the microphone button to stop.</string>
+    <string name="comment_voice_banner_stop_send_hint">Tap here to stop recording and send</string>
+    <string name="comment_voice_banner_stop_send_cd">Stop recording and send comment</string>
     <string name="post_image_cd">Post image</string>
     <string name="post_image_detail_cd">Post image, single tap for fullscreen preview</string>
     <string name="post_image_viewer_cd">Preview: double-tap to zoom in or out at the tap point, single tap to close</string>
