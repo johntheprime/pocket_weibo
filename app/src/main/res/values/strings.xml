@@ -178,7 +178,7 @@
     <string name="photo_empty_title">暂无带图微博</string>
     <string name="photo_empty_subtitle">发布带配图的微博后，会按时间顺序显示在这里；点按图片可隐藏或显示文字叠层；双指捏合可缩放（以画面中心为基准），单指可拖动查看边缘。</string>
     <string name="photo_feed_image_cd">微博配图</string>
-    <string name="photo_feed_reset_zoom_a11y">双击可恢复原始缩放，便于继续滑动列表</string>
+    <string name="photo_feed_reset_zoom_a11y">双击可恢复原始缩放，便于左右滑动切换照片</string>
     <string name="photo_feed_double_tap_zoom_in_a11y">双击可放大至约两倍；也可用双指缩放</string>
 
     <string name="post_detail_comment_hint">写评论…</string>
