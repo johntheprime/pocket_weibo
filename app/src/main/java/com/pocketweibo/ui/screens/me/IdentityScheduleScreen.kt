@@ -325,11 +325,7 @@ private fun EditScheduleDialog(
             )
         },
         text = {
-            Column(
-                modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
+            Column(modifier = Modifier.padding(vertical = 8.dp)) {
                 Text(
                     text = stringResource(R.string.schedule_pick_identity),
                     fontSize = 15.sp,
@@ -343,6 +339,7 @@ private fun EditScheduleDialog(
                         .fillMaxWidth()
                         .padding(start = 4.dp)
                         .heightIn(max = 200.dp)
+                        .verticalScroll(rememberScrollState())
                 ) {
                     identities.forEach { identity ->
                         Row(
