@@ -11,6 +11,8 @@ import com.pocketweibo.data.local.dao.CommentDao
 import com.pocketweibo.data.local.dao.CommentSearchRow
 import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.data.local.dao.IdentityDao
+import com.pocketweibo.data.local.dao.IdentityScheduleDao
+import com.pocketweibo.data.local.dao.IdentityScheduleWithIdentityName
 import com.pocketweibo.data.local.dao.PostDao
 import com.pocketweibo.data.local.dao.PostReminderDao
 import com.pocketweibo.data.local.dao.PostReminderWithPreview
@@ -18,12 +20,15 @@ import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.local.entity.Gender
 import com.pocketweibo.data.local.entity.IdentityEntity
+import com.pocketweibo.data.local.entity.IdentityScheduleEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.local.entity.PostReminderEntity
 import com.pocketweibo.data.media.CommentAttachmentStorage
 import com.pocketweibo.data.media.IdentityAvatarStorage
 import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.data.media.PostVoice
+import com.pocketweibo.reminder.IdentityScheduleAlarmScheduler
+import com.pocketweibo.reminder.IdentityScheduleNextFire
 import com.pocketweibo.reminder.PostReminderAlarmScheduler
 import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.R
@@ -49,6 +54,7 @@ private const val REMINDER_LOG_TAG = "PW_Reminder"
 
 class WeiboRepository(
     private val identityDao: IdentityDao,
+    private val identityScheduleDao: IdentityScheduleDao,
     private val postDao: PostDao,
     private val commentDao: CommentDao,
     private val postReminderDao: PostReminderDao,
@@ -140,6 +146,46 @@ class WeiboRepository(
     suspend fun setActiveIdentity(id: Long) {
         identityDao.deactivateAll()
         identityDao.activate(id)
+    }
+
+    fun observeIdentitySchedules(): Flow<List<IdentityScheduleWithIdentityName>> =
+        identityScheduleDao.observeAll()
+
+    suspend fun insertIdentitySchedule(schedule: IdentityScheduleEntity): Long {
+        val newId = identityScheduleDao.insert(schedule)
+        val next = IdentityScheduleNextFire.computeNext(
+            schedule.hour, schedule.minute, schedule.daysOfWeek
+        )
+        IdentityScheduleAlarmScheduler.scheduleNext(context, newId, next)
+        return newId
+    }
+
+    suspend fun deleteIdentitySchedule(scheduleId: Long) {
+        IdentityScheduleAlarmScheduler.cancel(context, scheduleId)
+        identityScheduleDao.deleteById(scheduleId)
+    }
+
+    suspend fun setIdentityScheduleEnabled(scheduleId: Long, enabled: Boolean) {
+        identityScheduleDao.setEnabled(scheduleId, enabled)
+        if (enabled) {
+            val row = identityScheduleDao.getById(scheduleId) ?: return
+            val next = IdentityScheduleNextFire.computeNext(
+                row.hour, row.minute, row.daysOfWeek
+            )
+            IdentityScheduleAlarmScheduler.scheduleNext(context, scheduleId, next)
+        } else {
+            IdentityScheduleAlarmScheduler.cancel(context, scheduleId)
+        }
+    }
+
+    suspend fun rescheduleAllIdentitySchedulesFromDb() {
+        val rows = identityScheduleDao.listEnabled()
+        for (r in rows) {
+            val next = IdentityScheduleNextFire.computeNext(
+                r.hour, r.minute, r.daysOfWeek
+            )
+            IdentityScheduleAlarmScheduler.scheduleNext(context, r.id, next)
+        }
     }
 
     suspend fun insertPost(post: PostEntity): Long = postDao.insert(post)

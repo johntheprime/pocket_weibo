@@ -26,6 +26,7 @@ class PostReminderBootReceiver : BroadcastReceiver() {
             try {
                 val app = context.applicationContext as PocketWeiboApp
                 app.repository.rescheduleAllPostRemindersFromDb()
+                app.repository.rescheduleAllIdentitySchedulesFromDb()
             } finally {
                 pendingResult.finish()
             }

@@ -163,6 +163,7 @@ private fun ShakeReminderSettingsSection() {
 fun MeSettingsScreen(
     onBack: () -> Unit,
     onOpenIdentities: () -> Unit = {},
+    onOpenSchedule: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -199,6 +200,14 @@ fun MeSettingsScreen(
                     title = stringResource(R.string.me_identity_title),
                     subtitle = stringResource(R.string.me_identity_subtitle),
                     onClick = onOpenIdentities
+                )
+            }
+            item {
+                Divider()
+                MenuItem(
+                    title = stringResource(R.string.schedule_title),
+                    subtitle = stringResource(R.string.schedule_settings_subtitle),
+                    onClick = onOpenSchedule
                 )
             }
             item {

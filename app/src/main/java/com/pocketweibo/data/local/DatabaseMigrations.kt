@@ -166,4 +166,23 @@ object DatabaseMigrations {
             db.execSQL("ALTER TABLE comments ADD COLUMN audioPath TEXT NOT NULL DEFAULT ''")
         }
     }
+
+    val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `identity_schedules` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `identityId` INTEGER NOT NULL,
+                    `hour` INTEGER NOT NULL,
+                    `minute` INTEGER NOT NULL,
+                    `daysOfWeek` TEXT NOT NULL DEFAULT '',
+                    `enabled` INTEGER NOT NULL DEFAULT 1,
+                    FOREIGN KEY(`identityId`) REFERENCES `identities`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_identity_schedules_identityId` ON `identity_schedules` (`identityId`)")
+        }
+    }
 }

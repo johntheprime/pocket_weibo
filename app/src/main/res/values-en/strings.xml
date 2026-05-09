@@ -372,4 +372,28 @@
     <string name="md_field_likes">Likes</string>
     <string name="md_field_comments">Comments</string>
     <string name="md_field_posted_at">Posted at</string>
+
+    <string name="schedule_title">Identity Switch Schedule</string>
+    <string name="schedule_settings_subtitle">Auto-switch identity on schedule</string>
+    <string name="schedule_empty">No scheduled switches</string>
+    <string name="schedule_empty_hint">Tap + to add a scheduled identity switch</string>
+    <string name="schedule_add_cd">Add schedule</string>
+    <string name="schedule_add_title">Add schedule</string>
+    <string name="schedule_added_toast">Schedule added</string>
+    <string name="schedule_pick_identity">Pick identity</string>
+    <string name="schedule_time_format">Time: %1$s tap to change</string>
+    <string name="schedule_time_header">Switch time</string>
+    <string name="schedule_days_label">Repeat on</string>
+    <string name="schedule_every_day">Every day</string>
+    <string name="schedule_day_mon">Mon</string>
+    <string name="schedule_day_tue">Tue</string>
+    <string name="schedule_day_wed">Wed</string>
+    <string name="schedule_day_thu">Thu</string>
+    <string name="schedule_day_fri">Fri</string>
+    <string name="schedule_day_sat">Sat</string>
+    <string name="schedule_day_sun">Sun</string>
+    <string name="schedule_label_every_day">every day</string>
+    <string name="schedule_label_weekdays">weekdays</string>
+    <string name="schedule_label_weekends">weekends</string>
+    <string name="schedule_label_days">%1$s</string>
 </resources>

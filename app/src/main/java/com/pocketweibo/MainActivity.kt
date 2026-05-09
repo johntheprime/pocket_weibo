@@ -31,6 +31,7 @@ import com.pocketweibo.ui.screens.home.HomeScreen
 import com.pocketweibo.ui.screens.identity.IdentityDetailScreen
 import com.pocketweibo.ui.screens.identity.IdentityListScreen
 import com.pocketweibo.ui.screens.me.MeScreen
+import com.pocketweibo.ui.screens.me.IdentityScheduleScreen
 import com.pocketweibo.ui.screens.me.MeSettingsScreen
 import com.pocketweibo.ui.screens.photo.PhotoScreen
 import com.pocketweibo.data.prefs.UiPreferences
@@ -90,6 +91,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     var identityDetailId by remember { mutableStateOf<Long?>(null) }
     var postDetailId by remember { mutableStateOf<Long?>(null) }
     var showMeSettings by remember { mutableStateOf(false) }
+    var showIdentitySchedule by remember { mutableStateOf(false) }
     var homeScrollToLatestSignal by remember { mutableStateOf(0) }
     /** Last `homeScrollToLatestSignal` value for which HomeScreen already ran the refresh affordance. */
     var homeScrollToLatestConsumed by remember { mutableStateOf(0) }
@@ -116,16 +118,17 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
             showIdentityList -> showIdentityList = false
             postDetailId != null -> postDetailId = null
             showCompose -> showCompose = false
+            showIdentitySchedule -> showIdentitySchedule = false
             showMeSettings -> showMeSettings = false
         }
     }
 
-    val canSwipeBack = identityDetailId != null || showIdentityList || postDetailId != null || showCompose || showMeSettings
+    val canSwipeBack = identityDetailId != null || showIdentityList || postDetailId != null || showCompose || showIdentitySchedule || showMeSettings
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (!showCompose && !showIdentityList && identityDetailId == null && postDetailId == null && !showMeSettings) {
+            if (!showCompose && !showIdentityList && identityDetailId == null && postDetailId == null && !showIdentitySchedule && !showMeSettings) {
                 WeiboBottomTabBar(
                     selectedTab = selectedTab,
                     onTabSelected = { tab ->
@@ -197,12 +200,22 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
+                showIdentitySchedule -> {
+                    IdentityScheduleScreen(
+                        onBack = { showIdentitySchedule = false },
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                }
                 showMeSettings -> {
                     MeSettingsScreen(
                         onBack = { showMeSettings = false },
                         onOpenIdentities = {
                             showMeSettings = false
                             showIdentityList = true
+                        },
+                        onOpenSchedule = {
+                            showMeSettings = false
+                            showIdentitySchedule = true
                         },
                         modifier = Modifier.padding(paddingValues)
                     )

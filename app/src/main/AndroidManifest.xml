@@ -45,6 +45,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".reminder.IdentityScheduleReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".reminder.PostReminderBootReceiver"
             android:exported="true">
             <intent-filter>

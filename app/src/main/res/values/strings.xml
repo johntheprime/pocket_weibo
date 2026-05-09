@@ -372,4 +372,28 @@
     <string name="md_field_likes">点赞</string>
     <string name="md_field_comments">评论</string>
     <string name="md_field_posted_at">发布时间</string>
+
+    <string name="schedule_title">身份切换定时</string>
+    <string name="schedule_settings_subtitle">按时间自动切换当前身份</string>
+    <string name="schedule_empty">暂无定时切换</string>
+    <string name="schedule_empty_hint">点击右下角 + 添加定时身份切换</string>
+    <string name="schedule_add_cd">添加定时切换</string>
+    <string name="schedule_add_title">添加定时切换</string>
+    <string name="schedule_added_toast">定时切换已添加</string>
+    <string name="schedule_pick_identity">选择身份</string>
+    <string name="schedule_time_format">时间：%1$s 点击修改</string>
+    <string name="schedule_time_header">切换时间</string>
+    <string name="schedule_days_label">重复日</string>
+    <string name="schedule_every_day">每天</string>
+    <string name="schedule_day_mon">周一</string>
+    <string name="schedule_day_tue">周二</string>
+    <string name="schedule_day_wed">周三</string>
+    <string name="schedule_day_thu">周四</string>
+    <string name="schedule_day_fri">周五</string>
+    <string name="schedule_day_sat">周六</string>
+    <string name="schedule_day_sun">周日</string>
+    <string name="schedule_label_every_day">每天</string>
+    <string name="schedule_label_weekdays">工作日</string>
+    <string name="schedule_label_weekends">周末</string>
+    <string name="schedule_label_days">%1$s</string>
 </resources>

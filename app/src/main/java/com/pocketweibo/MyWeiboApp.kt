@@ -25,6 +25,7 @@ class PocketWeiboApp : Application() {
     val repository by lazy {
         WeiboRepository(
             database.identityDao(),
+            database.identityScheduleDao(),
             database.postDao(),
             database.commentDao(),
             database.postReminderDao(),
@@ -54,6 +55,7 @@ class PocketWeiboApp : Application() {
             DiagnosticLogBuffer.captureEnabled =
                 UiPreferences.isDiagnosticLogCaptureEnabled(this@PocketWeiboApp)
             repository.rescheduleAllPostRemindersFromDb()
+            repository.rescheduleAllIdentitySchedulesFromDb()
         }
         if (DiagnosticLogBuffer.captureEnabled) {
             DiagnosticLog.i("PW_Reminder", "Diagnostic capture on at process start")
