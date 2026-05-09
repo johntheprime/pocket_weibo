@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
@@ -53,7 +55,6 @@ import com.pocketweibo.data.local.dao.IdentityScheduleWithIdentityName
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.IdentityScheduleEntity
 import com.pocketweibo.ui.components.WeiboTitleBar
-import com.pocketweibo.ui.reminder.RemindSelection
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
@@ -367,14 +368,47 @@ private fun EditScheduleDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                RemindSelection(
-                    hour = selectedHour,
-                    minute = selectedMinute,
-                    onTimeSelected = { h, m ->
-                        selectedHour = h
-                        selectedMinute = m
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(onClick = { selectedHour = (selectedHour + 1) % 24 }) {
+                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = null)
+                        }
+                        Text(
+                            text = String.format("%02d", selectedHour),
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GrayDark
+                        )
+                        IconButton(onClick = { selectedHour = (selectedHour + 23) % 24 }) {
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
+                        }
                     }
-                )
+                    Text(
+                        text = ":",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GrayMiddle,
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(onClick = { selectedMinute = (selectedMinute + 5) % 60 }) {
+                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = null)
+                        }
+                        Text(
+                            text = String.format("%02d", selectedMinute),
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GrayDark
+                        )
+                        IconButton(onClick = { selectedMinute = (selectedMinute + 55) % 60 }) {
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Divider(thickness = 0.5.dp, color = GrayLight)
