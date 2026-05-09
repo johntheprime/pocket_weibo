@@ -42,6 +42,7 @@ This file records **resolved requirements** and the **standard process** for eve
 | 2026-05-03 | GitHub Actions: **each** successful publish should create a **new** release (do not reuse/overwrite one rolling tag). APK **filename** must include an app **version** (from Gradle). | Same workflow file; release APK naming + unique tag per run. | Same as above |
 | 2026-05-03 | Discover search: tapping a **微博** search result opens that post’s **detail and comments** (same as home / trending). | Wired `onPostClick` through `SearchResultsContent` → `PostSearchItem`; row uses `Modifier.clickable` and navigates via `postDetailId` → `PostDetailScreen`. File: `app/src/main/java/com/pocketweibo/ui/screens/discover/DiscoverScreen.kt`. | `./gradlew assembleDebug` — BUILD SUCCESSFUL (confirmed before commit) |
 | 2026-05-03 | Maintain **FIX.md** as the fix ledger and **plan → implement → verify → record → ship** checklist for all future work. | Added this file; links CI expectation to Gradle builds. | Same build as above |
+| 2026-05-10 | **定时切换**：时间选择钮为 **+**（迷惑）；已建任务不能 **编辑**（只能删除重建） | **`IdentityScheduleScreen`**：时间弹窗钮换 **`Icons.Default.Schedule`**（时钟）；整行点击 **复用同对话框** 预填已有值，存时调用 **`updateIdentitySchedule`**（`@Update`）。版本 **3.56.1 (189)**。 | Pending |
 
 _Add new rows above this line for each shipped fix._
 

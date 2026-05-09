@@ -160,6 +160,18 @@ class WeiboRepository(
         return newId
     }
 
+    suspend fun updateIdentitySchedule(schedule: IdentityScheduleEntity) {
+        identityScheduleDao.update(schedule)
+        if (schedule.enabled) {
+            val next = IdentityScheduleNextFire.computeNext(
+                schedule.hour, schedule.minute, schedule.daysOfWeek
+            )
+            IdentityScheduleAlarmScheduler.scheduleNext(context, schedule.id, next)
+        } else {
+            IdentityScheduleAlarmScheduler.cancel(context, schedule.id)
+        }
+    }
+
     suspend fun deleteIdentitySchedule(scheduleId: Long) {
         IdentityScheduleAlarmScheduler.cancel(context, scheduleId)
         identityScheduleDao.deleteById(scheduleId)

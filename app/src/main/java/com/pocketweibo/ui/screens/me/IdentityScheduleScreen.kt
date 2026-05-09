@@ -4,6 +4,7 @@ import android.app.TimePickerDialog
 import android.text.format.DateFormat
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -28,8 +30,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -63,7 +64,6 @@ import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.util.findActivity
 import kotlinx.coroutines.launch
-import java.util.Calendar
 
 @Composable
 fun IdentityScheduleScreen(
@@ -77,6 +77,7 @@ fun IdentityScheduleScreen(
     val allIdentities by app.repository.allIdentities.collectAsState(initial = emptyList())
 
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingSchedule by remember { mutableStateOf<IdentityScheduleWithIdentityName?>(null) }
 
     Column(
         modifier = modifier
@@ -134,6 +135,9 @@ fun IdentityScheduleScreen(
                             scope.launch {
                                 app.repository.deleteIdentitySchedule(schedule.id)
                             }
+                        },
+                        onEdit = {
+                            editingSchedule = schedule
                         }
                     )
                 }
@@ -155,8 +159,9 @@ fun IdentityScheduleScreen(
     }
 
     if (showAddDialog) {
-        AddScheduleDialog(
+        EditScheduleDialog(
             identities = allIdentities,
+            schedule = null,
             onDismiss = { showAddDialog = false },
             onSave = { identityId, hour, minute, daysOfWeek ->
                 scope.launch {
@@ -178,18 +183,48 @@ fun IdentityScheduleScreen(
             }
         )
     }
+
+    editingSchedule?.let { schedule ->
+        EditScheduleDialog(
+            identities = allIdentities,
+            schedule = schedule,
+            onDismiss = { editingSchedule = null },
+            onSave = { identityId, hour, minute, daysOfWeek ->
+                scope.launch {
+                    app.repository.updateIdentitySchedule(
+                        IdentityScheduleEntity(
+                            id = schedule.id,
+                            identityId = identityId,
+                            hour = hour,
+                            minute = minute,
+                            daysOfWeek = daysOfWeek,
+                            enabled = schedule.enabled
+                        )
+                    )
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.schedule_updated_toast),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                editingSchedule = null
+            }
+        )
+    }
 }
 
 @Composable
 private fun ScheduleRow(
     schedule: IdentityScheduleWithIdentityName,
     onToggle: (Boolean) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     val context = LocalContext.current
     Surface(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .clickable(onClick = onEdit),
         color = Color.White
     ) {
         Row(
@@ -257,15 +292,17 @@ private fun formatScheduleTime(context: android.content.Context, hour: Int, minu
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddScheduleDialog(
+private fun EditScheduleDialog(
     identities: List<IdentityEntity>,
+    schedule: IdentityScheduleWithIdentityName?,
     onDismiss: () -> Unit,
     onSave: (identityId: Long, hour: Int, minute: Int, daysOfWeek: String) -> Unit
 ) {
-    var selectedIdentityId by remember { mutableStateOf(identities.firstOrNull()?.id ?: 0L) }
-    var selectedHour by remember { mutableStateOf(9) }
-    var selectedMinute by remember { mutableStateOf(0) }
-    var selectedDays by remember { mutableStateOf("") }
+    val isEdit = schedule != null
+    var selectedIdentityId by remember { mutableStateOf(schedule?.identityId ?: identities.firstOrNull()?.id ?: 0L) }
+    var selectedHour by remember { mutableStateOf(schedule?.hour ?: 9) }
+    var selectedMinute by remember { mutableStateOf(schedule?.minute ?: 0) }
+    var selectedDays by remember { mutableStateOf(schedule?.daysOfWeek ?: "") }
     val context = LocalContext.current
 
     val dayLabels = listOf(
@@ -282,7 +319,8 @@ private fun AddScheduleDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = stringResource(R.string.schedule_add_title),
+                text = if (isEdit) stringResource(R.string.schedule_edit_title)
+                       else stringResource(R.string.schedule_add_title),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -309,7 +347,7 @@ private fun AddScheduleDialog(
                                 .padding(vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            androidx.compose.material3.RadioButton(
+                            RadioButton(
                                 selected = selectedIdentityId == identity.id,
                                 onClick = { selectedIdentityId = identity.id }
                             )
@@ -351,23 +389,19 @@ private fun AddScheduleDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    colors = ButtonDefaults.buttonColors(
                         containerColor = WeiboOrange,
                         contentColor = Color.White
                     )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Add,
+                        imageVector = Icons.Default.Schedule,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = String.format(
-                            "%02d:%02d",
-                            selectedHour,
-                            selectedMinute
-                        ),
+                        text = String.format("%02d:%02d", selectedHour, selectedMinute),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -432,7 +466,7 @@ private fun AddScheduleDialog(
                 },
                 enabled = selectedIdentityId != 0L
             ) {
-                Text(stringResource(R.string.save))
+                Text(if (isEdit) stringResource(R.string.save) else stringResource(R.string.schedule_add_confirm))
             }
         },
         dismissButton = {

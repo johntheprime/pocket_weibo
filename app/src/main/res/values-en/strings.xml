@@ -396,4 +396,7 @@
     <string name="schedule_label_weekdays">weekdays</string>
     <string name="schedule_label_weekends">weekends</string>
     <string name="schedule_label_days">%1$s</string>
+    <string name="schedule_add_confirm">Add</string>
+    <string name="schedule_edit_title">Edit schedule</string>
+    <string name="schedule_updated_toast">Schedule updated</string>
 </resources>
