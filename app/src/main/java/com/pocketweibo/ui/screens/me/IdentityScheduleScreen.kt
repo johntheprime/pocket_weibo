@@ -1,7 +1,5 @@
 package com.pocketweibo.ui.screens.me
 
-import android.app.TimePickerDialog
-import android.text.format.DateFormat
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,10 +18,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -57,12 +53,12 @@ import com.pocketweibo.data.local.dao.IdentityScheduleWithIdentityName
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.IdentityScheduleEntity
 import com.pocketweibo.ui.components.WeiboTitleBar
+import com.pocketweibo.ui.reminder.RemindSelection
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.WeiboOrange
-import com.pocketweibo.ui.util.findActivity
 import kotlinx.coroutines.launch
 
 @Composable
@@ -303,7 +299,6 @@ private fun EditScheduleDialog(
     var selectedHour by remember { mutableStateOf(schedule?.hour ?: 9) }
     var selectedMinute by remember { mutableStateOf(schedule?.minute ?: 0) }
     var selectedDays by remember { mutableStateOf(schedule?.daysOfWeek ?: "") }
-    val context = LocalContext.current
 
     val dayLabels = listOf(
         1 to stringResource(R.string.schedule_day_mon),
@@ -372,40 +367,14 @@ private fun EditScheduleDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Button(
-                    onClick = {
-                        val act = context.findActivity() ?: return@Button
-                        TimePickerDialog(
-                            act,
-                            { _, h, m ->
-                                selectedHour = h
-                                selectedMinute = m
-                            },
-                            selectedHour,
-                            selectedMinute,
-                            DateFormat.is24HourFormat(act)
-                        ).show()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = WeiboOrange,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = String.format("%02d:%02d", selectedHour, selectedMinute),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                RemindSelection(
+                    hour = selectedHour,
+                    minute = selectedMinute,
+                    onTimeSelected = { h, m ->
+                        selectedHour = h
+                        selectedMinute = m
+                    }
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Divider(thickness = 0.5.dp, color = GrayLight)

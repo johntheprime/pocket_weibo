@@ -399,4 +399,5 @@
     <string name="schedule_add_confirm">添加</string>
     <string name="schedule_edit_title">编辑定时切换</string>
     <string name="schedule_updated_toast">定时切换已更新</string>
+    <string name="remind_selection_pick_time">选择时间</string>
 </resources>
