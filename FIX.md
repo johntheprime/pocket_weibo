@@ -46,7 +46,8 @@ This file records **resolved requirements** and the **standard process** for eve
 | 2026-05-10 | **定时切换** 对话框：无直观时间选择器；系统 `TimePickerDialog` 弹出式体验割裂 | **`RemindSelection`** composable：Material3 `TimePicker` **内联在 Material3 AlertDialog** 中，无需弹出系统窗口；`IdentityScheduleScreen` 改用 `RemindSelection`；新增 `remind_selection_pick_time` 中/英。版本 **3.56.2 (190)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-10 | **定时切换** 对话框：时间选择仍需 **点击按钮→二级弹窗**，用户看不见具体操作控件 | 完全替换为 **InlineTimeWheel**：时/分两列 **▲ / ▼** 按钮 + 大字号数字，直接在主对话框内 **加减调节**，无需任何二级弹窗。移除 `RemindSelection` 引用。版本 **3.56.3 (191)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-10 | **添加定时切换** 对话框：身份列表太长时，时间区域 **被推出可视区**，无法看到时间选择控件 | 为外层 `Column` 添加 **`verticalScroll(rememberScrollState())`**；身份列表添加 **`heightIn(max = 200.dp)`** 限制高度，确保时间区域始终可见。版本 **3.56.4 (192)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
-| 2026-05-10 | **添加定时切换** 对话框：外层 `verticalScroll` **拦截触摸**，导致身份 RadioButton **不可点击**、整屏滚动失效 | 外层 `Column` **移除** `verticalScroll`，改为 **仅身份列表内部** `verticalScroll`（高度上限 200dp 限制），其余内容正常放置，RadioButton 触摸穿透无障碍。版本 **3.56.5 (193)**。 | Pending |
+| 2026-05-10 | **添加定时切换** 对话框：外层 `verticalScroll` **拦截触摸**，导致身份 RadioButton **不可点击**、整屏滚动失效 | 外层 `Column` **移除** `verticalScroll`，改为 **仅身份列表内部** `verticalScroll`（高度上限 200dp 限制），其余内容正常放置，RadioButton 触摸穿透无障碍。版本 **3.56.5 (193)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
+| 2026-05-10 | **添加/编辑身份** 页：简介（bio）字段被键盘遮挡，无法看到输入内容 | `IdentityDetailScreen` 根 `Column` 添加 **`Modifier.imePadding()`**，键盘弹出时自动上移内容；`LazyColumn.weight(1f)` 配合收缩。版本 **3.57.1 (195)**。 | Pending |
 
 _Add new rows above this line for each shipped fix._
 
