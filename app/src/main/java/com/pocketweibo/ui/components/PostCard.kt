@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
@@ -46,6 +47,7 @@ import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.GrayDark
+import com.pocketweibo.ui.theme.WeiboOrange
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PostCard(
@@ -115,6 +117,16 @@ fun PostCard(
                             color = GrayMiddle,
                             maxLines = 1
                         )
+                        if (post.isPinned) {
+                            Icon(
+                                imageVector = Icons.Default.PushPin,
+                                contentDescription = null,
+                                tint = WeiboOrange,
+                                modifier = Modifier
+                                    .padding(start = 4.dp)
+                                    .size(14.dp)
+                            )
+                        }
                         if (!showPostImages && hasStoredImages) {
                             ListPostImageIndicator(
                                 imageUris = post.imageUris,

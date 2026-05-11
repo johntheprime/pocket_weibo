@@ -434,6 +434,7 @@ fun PostDetailScreen(
                             )
                         },
                         onDeletePost = { viewModel.deletePost(onBack) },
+                        onTogglePin = { viewModel.togglePin() },
                         onScheduleReminderAt = scheduleReminderAt,
                         onOpenExactAlarmSettings = openExactAlarmSettings,
                         onOpenAppDetailsSettings = openAppDetailsSettings
@@ -480,6 +481,7 @@ private fun PostDetailCard(
     onPostImageClick: (Int) -> Unit,
     onCopyPost: () -> Unit,
     onDeletePost: () -> Unit,
+    onTogglePin: () -> Unit,
     onScheduleReminderAt: (Long, String, String?) -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
     onOpenAppDetailsSettings: () -> Unit
@@ -560,6 +562,18 @@ private fun PostDetailCard(
                             onClick = {
                                 moreExpanded = false
                                 showRemindPicker = true
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    if (post.isPinned) stringResource(R.string.post_detail_menu_unpin)
+                                    else stringResource(R.string.post_detail_menu_pin)
+                                )
+                            },
+                            onClick = {
+                                moreExpanded = false
+                                onTogglePin()
                             }
                         )
                         DropdownMenuItem(

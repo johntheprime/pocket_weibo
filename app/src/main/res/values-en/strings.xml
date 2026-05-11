@@ -190,6 +190,8 @@
     <string name="post_detail_menu_copy">Copy full text</string>
     <string name="post_detail_menu_share">Share</string>
     <string name="post_detail_menu_remind">Remind me</string>
+    <string name="post_detail_menu_pin">Pin post</string>
+    <string name="post_detail_menu_unpin">Unpin post</string>
     <string name="post_detail_menu_delete">Delete post</string>
     <string name="post_detail_copy_label">Post body</string>
     <string name="post_detail_delete_confirm_title">Delete this post?</string>

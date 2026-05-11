@@ -17,7 +17,8 @@ data class PostWithIdentity(
     val createdAt: Long,
     val likeCount: Int,
     val commentCount: Int,
-    val isLiked: Boolean
+    val isLiked: Boolean,
+    val isPinned: Boolean = false
 )
 
 @Dao
@@ -25,21 +26,21 @@ interface PostDao {
     @Query("""
         SELECT p.id, p.identityId, i.name as identityName, i.avatarResName as identityAvatarResName,
                i.customAvatarUri as identityCustomAvatarUri,
-               p.content, p.imageUris, p.audioPath, p.extrasJson, p.createdAt, p.likeCount, p.commentCount, p.isLiked
+               p.content, p.imageUris, p.audioPath, p.extrasJson, p.createdAt, p.likeCount, p.commentCount, p.isLiked, p.isPinned
         FROM posts p
         LEFT JOIN identities i ON p.identityId = i.id
-        ORDER BY p.createdAt DESC
+        ORDER BY p.isPinned DESC, p.createdAt DESC
     """)
     fun getAllPosts(): Flow<List<PostWithIdentity>>
 
     @Query("""
         SELECT p.id, p.identityId, i.name as identityName, i.avatarResName as identityAvatarResName,
                i.customAvatarUri as identityCustomAvatarUri,
-               p.content, p.imageUris, p.audioPath, p.extrasJson, p.createdAt, p.likeCount, p.commentCount, p.isLiked
+               p.content, p.imageUris, p.audioPath, p.extrasJson, p.createdAt, p.likeCount, p.commentCount, p.isLiked, p.isPinned
         FROM posts p
         LEFT JOIN identities i ON p.identityId = i.id
         WHERE p.identityId = :identityId
-        ORDER BY p.createdAt DESC
+        ORDER BY p.isPinned DESC, p.createdAt DESC
     """)
     fun getPostsByIdentity(identityId: Long): Flow<List<PostWithIdentity>>
 
@@ -51,6 +52,9 @@ interface PostDao {
 
     @Delete
     suspend fun delete(post: PostEntity)
+
+    @Query("UPDATE posts SET isPinned = NOT isPinned WHERE id = :postId")
+    suspend fun togglePin(postId: Long)
 
     @Query("UPDATE posts SET isLiked = NOT isLiked, likeCount = likeCount + CASE WHEN isLiked THEN -1 ELSE 1 END WHERE id = :postId")
     suspend fun toggleLike(postId: Long)

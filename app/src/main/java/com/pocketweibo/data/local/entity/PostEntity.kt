@@ -30,5 +30,6 @@ data class PostEntity(
     val createdAt: Long = System.currentTimeMillis(),
     val likeCount: Int = 0,
     val commentCount: Int = 0,
-    val isLiked: Boolean = false
+    val isLiked: Boolean = false,
+    val isPinned: Boolean = false
 )

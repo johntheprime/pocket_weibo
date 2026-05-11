@@ -72,6 +72,12 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
         }
     }
 
+    fun togglePin() {
+        viewModelScope.launch {
+            repository.togglePostPin(activePostId)
+        }
+    }
+
     fun scheduleReminderAt(fireAtMillis: Long, repeatRule: String = ReminderRepeatRule.NONE) {
         val p = _post.value ?: return
         viewModelScope.launch {

@@ -336,6 +336,7 @@ class WeiboRepository(
     }
 
     suspend fun togglePostLike(postId: Long) = postDao.toggleLike(postId)
+    suspend fun togglePostPin(postId: Long) = postDao.togglePin(postId)
 
     fun getCommentsByPost(postId: Long): Flow<List<CommentWithIdentity>> =
         commentDao.getCommentsByPost(postId)

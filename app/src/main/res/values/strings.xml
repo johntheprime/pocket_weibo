@@ -190,6 +190,8 @@
     <string name="post_detail_menu_copy">复制全文</string>
     <string name="post_detail_menu_share">分享</string>
     <string name="post_detail_menu_remind">提醒</string>
+    <string name="post_detail_menu_pin">置顶微博</string>
+    <string name="post_detail_menu_unpin">取消置顶</string>
     <string name="post_detail_menu_delete">删除微博</string>
     <string name="post_detail_copy_label">微博正文</string>
     <string name="post_detail_delete_confirm_title">删除这条微博？</string>
