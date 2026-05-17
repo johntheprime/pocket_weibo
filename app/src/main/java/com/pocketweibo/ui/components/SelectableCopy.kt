@@ -12,8 +12,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.pocketweibo.R
+import com.pocketweibo.ui.util.copyPlainToClipboard
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
@@ -44,6 +46,7 @@ fun SelectableCopyDialog(
     title: String? = null
 ) {
     val resolvedTitle = title ?: stringResource(R.string.select_copy_title)
+    val context = LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = resolvedTitle, fontSize = 16.sp) },
@@ -67,8 +70,15 @@ fun SelectableCopyDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.settings_done))
+            TextButton(onClick = {
+                context.copyPlainToClipboard(
+                    label = context.getString(R.string.post_detail_copy_label),
+                    text = body,
+                    toast = context.getString(R.string.toast_clipboard_copied)
+                )
+                onDismiss()
+            }) {
+                Text(stringResource(R.string.select_copy_copy_all))
             }
         }
     )
