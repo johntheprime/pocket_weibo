@@ -72,7 +72,7 @@ Cross-check of the implementation against `FEATURE.md` and `FIX.md`. Severity: *
 - **OBS-02** `DatabaseMigrations`: `PRAGMA foreign_keys` inside the migration transaction is a no-op; keep migrations inside `db.use {}` only for schema work.
 - **OBS-03** Exact-alarm denial on Android 14 silently degrades reminder precision (`set()`-style fallback); consider a settings-level hint when the permission is absent.
 - **OBS-04** Export `version` field (JSON v2 / auto-backup v1) is written but never checked at import; old backup forward-compat is currently implicit.
-- **OBS-05** The only automated test is `androidTest/.../IdentityDeleteKeepsPostsTest.kt` — see `REVIEW.md` §6/S-6 for the highest-value test targets.
+- **OBS-05** Tests exist (8 JVM unit tests + 1 androidTest, all green) but cover only pure functions; the data/export layer and the migration chain are untested — see `REVIEW-2.md` §6 for the highest-value targets.
 
 ---
 

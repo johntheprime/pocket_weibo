@@ -14,7 +14,7 @@ Scope: full source-tree review of `app/src/main/java/com/pocketweibo/**` against
 | Stack | Kotlin, Jetpack Compose (Material3), Room v12, Coil, DataStore (Draft + UiPreferences), AlarmManager reminders |
 | R8 | `isMinifyEnabled = true`, `isShrinkResources = false` — intentionally left off because avatars are resolved at runtime via `Resources.getIdentifier` (see §5) |
 | Docs | `README.md`, `FEATURE.md` (F-001…F-061, all “Done”), `FIX.md` (per-version ledger), `RULES.md`, `docs/F010-F020-rollout-log.md` |
-| Tests | Single androidTest (`IdentityDeleteKeepsPostsTest.kt`); **no unit-test suite** |
+| Tests | 8 JVM unit tests (`app/src/test/...`, pass) + 1 androidTest (`IdentityDeleteKeepsPostsTest.kt`); **no data/DAO or migration tests** — see `REVIEW-2.md` §6 |
 
 ## 2. Architecture
 
@@ -40,7 +40,7 @@ Clean, conventional single-module layout:
 
 - `WeiboRepository` is a god-class; export/import logic (~700 lines) deserves its own file.
 - Several screens reach directly into `app.repository` + `CoroutineScope(Dispatchers.IO).launch {}` or `rememberCoroutineScope` instead of a shared ViewModel layer (identity screens, IdentityListScreen); fine at this scale but unstructured scopes are a crash/teardown hazard (see `BUGS.md` #10).
-- Only one instrumentation test; export/import round-trips, `likedBy` semantics, and migration 11→12 are the highest-value untested surfaces.
+- No data-layer tests: export/import round-trips, `likedBy` semantics, and the migration chain are untested (the highest-value gaps). Detailed test-quality audit in `REVIEW-2.md` §6.
 
 ## 3. Feature ledger spot-check (FEATURE.md → code)
 
@@ -58,7 +58,7 @@ Partial / doc-vs-code gaps (detailed in `BUGS.md`): F-059 lacks 工作日/周末
 
 ## 5. Build / tooling
 
-- `repositories` uses mavenCentral with `google()` first; dependency set is current compose-bom style (compileSdk 34 baseline; Compose compiler plugin now separate in Kotlin 2.x — as configured in `build.gradle.kts` via `compose-compiler-plugin` id, fine).
+- Toolchain is Kotlin **1.9.20** + AGP 8.3.0 + KSP 1.9.20-1.0.14 (root `build.gradle.kts`), with the classic `composeOptions.kotlinCompilerExtensionVersion = "1.5.5"` (no Kotlin 2.x / compose-compiler-plugin migration yet). Deep build/dependency audit in `REVIEW-2.md` §1.
 - `isShrinkResources = false` is deliberate and documented (runtime `getIdentifier` avatar lookup); consider switching to resource obfuscation with an explicit keep-list instead — see suggestion S-1.
 - The single `legal/open_peeps_notice.txt` is referenced in `IdentityDetailScreen` — attribution present, matching F-045.
 
