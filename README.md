@@ -158,3 +158,52 @@ A Weibo-like local notes app built with Jetpack Compose, Kotlin, and Room databa
 2. Open in Android Studio
 3. Sync Gradle
 4. Run on device/emulator
+
+## macOS Development Environment
+
+This repo was originally developed on a phone under Termux (Ubuntu); it now builds on macOS:
+
+- **Android SDK**: `~/Library/Android/sdk` (set in `local.properties`, gitignored).
+- **JDK**: none needed in PATH — Gradle falls back to Android Studio's bundled JetBrains Runtime
+  (`/Applications/Android Studio.app/Contents/jbr/Contents/Home`, JDK 21). Install Android Studio,
+  or set `JAVA_HOME` yourself if you use a standalone JDK.
+- **adb**: available in PATH or at `~/Library/Android/sdk/platform-tools/adb`.
+- **Release signing**: unchanged — `scripts/build-pocketweibo-release.sh` reads the same
+  `github-keystore-secrets.local.txt` + keystore base64 (keystores carried over from the old machine).
+  The release script is bash 3.2 compatible (macOS system bash).
+
+## Wireless Debug Deploy
+
+One-time pairing (on the phone: Settings → Developer options → **Wireless debugging** → ON,
+then tap **Pair device with pairing code**):
+
+```bash
+./scripts/adb-wireless.sh pair <phone-ip:pair-port> <6-digit-code>
+./scripts/adb-wireless.sh connect <phone-ip:port>    # address from the Wireless debugging screen
+```
+
+Every session afterwards (no address needed — auto-discovered):
+
+```bash
+./scripts/adb-wireless.sh connect
+```
+
+Build + install over Wi-Fi after a new feature:
+
+```bash
+./scripts/adb-wireless.sh install-debug     # debug build, installed directly on the phone
+./scripts/adb-wireless.sh install-release   # signed release build, installed on the phone
+```
+
+Extras:
+
+```bash
+./scripts/adb-wireless.sh status            # devices + mDNS services
+./scripts/adb-wireless.sh logcat            # follow full logcat
+./scripts/adb-wireless.sh crash             # follow fatal-exception (crash) log only
+./scripts/adb-wireless.sh disconnect        # drop the Wi-Fi connection
+./scripts/adb-wireless.sh enable-tcpip      # USB-plugged phone → legacy fixed :5555 mode
+```
+
+Overrides via env: `DEVICE_IP` (optional phone address; unset = auto-discover via mDNS),
+`DEVICE_PORT` (legacy `:5555` port, default 5555).

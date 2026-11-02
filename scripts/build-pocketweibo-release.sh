@@ -19,11 +19,14 @@
 #   3) ANDROID_KEYSTORE_BASE64=... inline in the secrets file (single line)
 #
 # After build: renames the APK to pocketweibo-v<versionName>-<versionCode>-local-<timestamp>.apk
-# in the repo root, then (unless --no-copy) cp to /storage/emulated/0/Download and rm the root copy
+# in the repo root, then (unless --no-copy) cp to a destination dir and rm the root copy
 # so the APK is not left in the repo root.
 #
-# Default: cp the APK to /storage/emulated/0/Download (override with --copy-dest). Skip with --no-copy
-# (with --no-copy the APK stays in the repo root only).
+# Default copy destination (override with --copy-dest; skip with --no-copy):
+#   macOS: ~/Downloads (on-device /storage/emulated/0/Download does not exist here;
+#          push to the phone instead with: scripts/adb-wireless.sh install-release)
+#   Linux/Termux (legacy on-device build): /storage/emulated/0/Download
+#   (with --no-copy the APK stays in the repo root only).
 #
 # Usage:
 #   ./scripts/build-pocketweibo-release.sh
@@ -35,8 +38,21 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# JDK: use $JAVA_HOME if set; else Android Studio's bundled JetBrains Runtime (JDK 21)
+# so the script works from any non-interactive shell on macOS too.
+if [ -z "${JAVA_HOME:-}" ]; then
+  JBR="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+  if [ -x "$JBR/bin/java" ]; then
+    export JAVA_HOME="$JBR"
+    export PATH="$JAVA_HOME/bin:$PATH"
+  fi
+fi
+
 DO_COPY=true
-COPY_DEST="/storage/emulated/0/Download"
+case "$(uname -s)" in
+  Darwin) COPY_DEST="$HOME/Downloads" ;;
+  *)      COPY_DEST="/storage/emulated/0/Download" ;;
+esac
 
 SECRETS_FILE="${ROOT}/github-keystore-secrets.local.txt"
 KS_OUT="${ROOT}/ci-release.keystore"
@@ -204,7 +220,11 @@ REL_DIR="$ROOT/app/build/outputs/apk/release"
 if [ ! -d "$REL_DIR" ]; then
   fail "Expected output directory missing: $REL_DIR"
 fi
-mapfile -t APK_CANDIDATES < <(find "$REL_DIR" -maxdepth 1 -name '*.apk' -type f | sort)
+# Collect APK candidates (bash 3.2 compatible — no mapfile; macOS ships bash 3.2).
+APK_CANDIDATES=()
+while IFS= read -r f; do
+  APK_CANDIDATES+=("$f")
+done < <(find "$REL_DIR" -maxdepth 1 -name '*.apk' -type f | sort)
 if [ "${#APK_CANDIDATES[@]}" -eq 0 ]; then
   fail "No APK found under $REL_DIR"
 fi
