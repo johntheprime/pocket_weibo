@@ -114,12 +114,27 @@ jobs:
           java-version: "17"
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install SDK packages (match app compileSdk)
+        shell: bash
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT || '/opt/android-sdk' }}
         run: |
+          set -euo pipefail
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-/opt/android-sdk}" >> "$GITHUB_ENV"
+          mkdir -p "${ANDROID_SDK_ROOT:-/opt/android-sdk}"
+
+          # GitHub-hosted Ubuntu images already include the Android command line tools.
+          # Avoid the brittle older setup-android flow that tries to install the legacy
+          # `tools` package and fails on current runner images.
+          if ! command -v sdkmanager >/dev/null 2>&1; then
+            echo "::error::sdkmanager is not available on this runner image."
+            exit 1
+          fi
+
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager "platforms;android-${ANDROID_SDK_COMPILE_API}" "build-tools;${ANDROID_SDK_BUILD_TOOLS}" "platform-tools"
+          sdkmanager --sdk_root="${ANDROID_SDK_ROOT:-/opt/android-sdk}" \
+            --install "platforms;android-${ANDROID_SDK_COMPILE_API}" \
+            "build-tools;${ANDROID_SDK_BUILD_TOOLS}" \
+            "platform-tools"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
