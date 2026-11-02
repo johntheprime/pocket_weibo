@@ -1,4 +1,4 @@
-# Build a **signed release** APK on push to `apk-build`.
+# Build a **signed release** APK on push to `main`/`apk-build`.
 #
 # **Why release + one keystore:** GitHub-hosted `assembleDebug` APKs are signed with a
 # fresh debug key every run, so Android treats each download as a different app (no upgrade,
@@ -26,7 +26,7 @@
 #
 # Repository settings: Actions → General → Workflow permissions → "Read and write permissions".
 #
-# To trigger: push to `apk-build`, or run manually (workflow_dispatch).
+# To trigger: push to `main`/`apk-build`, or run manually (workflow_dispatch).
 #
 # Local same-signature release APK: scripts/build-pocketweibo-release.sh (reads secrets/github-keystore-secrets.local.txt like CI secrets).
 
@@ -35,6 +35,7 @@ name: Build APK
 on:
   push:
     branches:
+      - main
       - apk-build
   workflow_dispatch:
     inputs:
@@ -116,22 +117,19 @@ jobs:
       - name: Set up Android SDK
         shell: bash
         env:
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT || '/opt/android-sdk' }}
+          ANDROID_SDK_ROOT: /opt/android-sdk
         run: |
           set -euo pipefail
-          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-/opt/android-sdk}" >> "$GITHUB_ENV"
-          mkdir -p "${ANDROID_SDK_ROOT:-/opt/android-sdk}"
+          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> "$GITHUB_ENV"
+          mkdir -p /opt/android-sdk
 
-          # GitHub-hosted Ubuntu images already include the Android command line tools.
-          # Avoid the brittle older setup-android flow that tries to install the legacy
-          # `tools` package and fails on current runner images.
           if ! command -v sdkmanager >/dev/null 2>&1; then
             echo "::error::sdkmanager is not available on this runner image."
             exit 1
           fi
 
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager --sdk_root="${ANDROID_SDK_ROOT:-/opt/android-sdk}" \
+          sdkmanager --sdk_root="/opt/android-sdk" \
             --install "platforms;android-${ANDROID_SDK_COMPILE_API}" \
             "build-tools;${ANDROID_SDK_BUILD_TOOLS}" \
             "platform-tools"
