@@ -87,6 +87,7 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-059 | **身份切换定时管理**：**设置** → **身份切换定时** 管理列表；支持添加定时规则（身份 + 时间 + 可选重复日）；**AlarmManager** 到时自动切换；支持每天/工作日/周末/自定义日；DB 迁移 v11。 | Done |
 | F-060 | **微博置顶**：微博详情页 ⋮ 菜单增加「置顶微博」/「取消置顶」；置顶微博在列表（首页/身份筛选）靠前显示（`ORDER BY isPinned DESC`）；卡片带 📌 小图标。DB 迁移 v12。 | Done |
 | F-061 | **长按选择复制 · 按钮改为复制全文**：首页/发现等长按弹出的正文选择对话框底部的「完成」按钮改为「复制全文」，点击即复制全部正文到剪贴板（仅正文，不含作者/时间）并关闭对话框。 | Done |
+| F-062 | **长按应用图标（logo）→ 发微博快捷方式**：桌面（启动器）长按 PocketWeibo 图标，菜单出现「发微博」静态 App Shortcut（Android 7.1+）；点击直接打开写微博页（`MainActivity.ACTION_NEW_POST`，自动关闭已打开的详情/列表/设置页）；中英文标签。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 

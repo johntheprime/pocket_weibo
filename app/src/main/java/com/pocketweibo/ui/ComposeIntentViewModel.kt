@@ -16,6 +16,10 @@ class ComposeIntentViewModel : ViewModel() {
     private val _openPostId = MutableStateFlow<Long?>(null)
     val openPostId: StateFlow<Long?> = _openPostId.asStateFlow()
 
+    /** Incremented for every "new post" request (launcher shortcut long-press on the app icon / logo). */
+    private val _composeRequests = MutableStateFlow(0)
+    val composeRequests: StateFlow<Int> = _composeRequests.asStateFlow()
+
     fun offerShareText(text: String?) {
         val t = text?.trim().orEmpty()
         _pendingShareText.value = if (t.isEmpty()) null else t.take(2000)
@@ -31,5 +35,9 @@ class ComposeIntentViewModel : ViewModel() {
 
     fun consumeOpenPost() {
         _openPostId.value = null
+    }
+
+    fun requestNewPostCompose() {
+        _composeRequests.value += 1
     }
 }

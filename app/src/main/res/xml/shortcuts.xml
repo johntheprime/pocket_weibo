@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher long-press shortcuts for the app icon (the "logo").
+     "New post" jumps straight into ComposeScreen via MainActivity.ACTION_NEW_POST. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="new_post"
+        android:enabled="true"
+        android:shortcutShortLabel="@string/shortcut_new_post_short"
+        android:shortcutLongLabel="@string/shortcut_new_post_long"
+        android:icon="@mipmap/ic_launcher">
+        <intent
+            android:action="com.pocketweibo.action.NEW_POST"
+            android:targetPackage="com.pocketweibo"
+            android:targetClass="com.pocketweibo.MainActivity" />
+    </shortcut>
+</shortcuts>

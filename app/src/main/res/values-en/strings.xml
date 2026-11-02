@@ -9,6 +9,10 @@
     <string name="tab_me">Me</string>
     <string name="tab_compose_cd">New post</string>
 
+    <!-- Launcher long-press shortcut: long-press the app icon (logo) → new post directly -->
+    <string name="shortcut_new_post_short">New post</string>
+    <string name="shortcut_new_post_long">Compose a new post</string>
+
     <string name="title_home">Home</string>
     <string name="title_photo">Photos</string>
     <string name="title_discover">Discover</string>

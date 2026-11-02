@@ -46,6 +46,8 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_OPEN_POST_ID = "com.pocketweibo.EXTRA_OPEN_POST_ID"
+        /** Launcher long-press shortcut on the app icon (logo): jump straight into a new post. */
+        const val ACTION_NEW_POST = "com.pocketweibo.action.NEW_POST"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,6 +71,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun processLaunchIntent(intent: Intent?) {
         if (intent == null) return
+        if (intent.action == ACTION_NEW_POST) {
+            composeIntentViewModel.requestNewPostCompose()
+            return
+        }
         val postId = intent.getLongExtra(EXTRA_OPEN_POST_ID, -1L)
         if (postId > 0L) {
             composeIntentViewModel.requestOpenPost(postId)
@@ -100,11 +106,23 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
 
     val pendingShareText by composeIntentViewModel.pendingShareText.collectAsState()
     val openPostId by composeIntentViewModel.openPostId.collectAsState()
+    val composeRequests by composeIntentViewModel.composeRequests.collectAsState()
 
     LaunchedEffect(pendingShareText) {
         if (!pendingShareText.isNullOrBlank()) {
             showCompose = true
         }
+    }
+    // Launcher long-press on the app icon (logo) → "New post" shortcut: close any open
+    // detail/list screen and open the composer.
+    LaunchedEffect(composeRequests) {
+        if (composeRequests <= 0) return@LaunchedEffect
+        identityDetailId = null
+        showIdentityList = false
+        postDetailId = null
+        showIdentitySchedule = false
+        showMeSettings = false
+        showCompose = true
     }
     LaunchedEffect(openPostId) {
         val id = openPostId ?: return@LaunchedEffect

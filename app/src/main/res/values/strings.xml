@@ -9,6 +9,10 @@
     <string name="tab_me">我</string>
     <string name="tab_compose_cd">发微博</string>
 
+    <!-- Launcher long-press shortcut: long-press the app icon (logo) → new post directly -->
+    <string name="shortcut_new_post_short">发微博</string>
+    <string name="shortcut_new_post_long">直接写一条新微博</string>
+
     <string name="title_home">首页</string>
     <string name="title_photo">图片</string>
     <string name="title_discover">发现</string>
