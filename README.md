@@ -169,8 +169,10 @@ This repo was originally developed on a phone under Termux (Ubuntu); it now buil
   or set `JAVA_HOME` yourself if you use a standalone JDK.
 - **adb**: available in PATH or at `~/Library/Android/sdk/platform-tools/adb`.
 - **Release signing**: unchanged — `scripts/build-pocketweibo-release.sh` reads the same
-  `github-keystore-secrets.local.txt` + keystore base64 (keystores carried over from the old machine).
-  The release script is bash 3.2 compatible (macOS system bash).
+  `secrets/github-keystore-secrets.local.txt` + keystore base64 (keystores carried over from the
+  old machine). The release script is bash 3.2 compatible (macOS system bash).
+- **Repository layout**: working docs (rules, ledgers, reviews) live in `docs/`; all local signing
+  material (keystores, passwords, base64) lives in `secrets/` (gitignored; templates + README there).
 
 ## Wireless Debug Deploy
 

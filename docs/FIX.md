@@ -8,6 +8,8 @@ This file records **resolved requirements** and the **standard process** for eve
 
 | Date (UTC) | Requirement | Resolution | Verified |
 |-------------|---------------|------------|----------|
+| 2026-11-02 | **macOS 迁移**：项目原在 Termux(Ubuntu) 下开发，需适配 Mac 开发环境并支持 **无线调试直接安装** | 新增 **`scripts/adb-wireless.sh`**（Android 11+ Wireless debugging 配对/连接 + `install-debug` / `install-release` 无线安装 + `logcat` / `crash`；自动发现设备：已连接 → `DEVICE_IP` → mDNS 重试 → 子网 `:5555` 扫描；**不含任何私有 IP**）。`scripts/build-pocketweibo-release.sh`：bash 3.2 兼容（去掉 `mapfile`）、默认拷贝目标按系统选择（macOS `~/Downloads`；Linux/Termux `/storage/emulated/0/Download`）、`JAVA_HOME` 缺失时回退 Android Studio JBR。APK 内容无变化，**不 bump 版本**。 | `./gradlew assembleDebug`（32s）与 `assembleRelease`（54s，签名 APK）均 BUILD SUCCESSFUL |
+| 2026-11-02 | **仓库整理**：开源仓库需 **无可识别个人数据**；文档与密钥文件归类整洁 | 核查无 IP/用户名/密码入库（git 历史亦无）；7 个工作.md（`RULES`/`FEATURE`/`FIX`/`BUGS`/`REVIEW`/`REVIEW-2`/`BACKUP_ARCHIVE`）git mv 至 **`docs/`**；签名密钥/密码/base64 汇入 **`secrets/`**（gitignore `secrets/*`，保留 `*.example` 模板与 `README.md`）；`.example` 模板同步迁入 `secrets/`；`app/build.gradle.kts` 从 `secrets/keystore.properties` 解析（兼容旧根目录），`storeFile` 相对 properties 文件解析；CI workflow 改为写 `secrets/ci-release.keystore` + `secrets/keystore.properties`；`.cursor` 规则、脚本、README 中全部文档引用改为 `docs/` 路径。APK 内容无变化，**不 bump 版本**。 | 签名链验证：`scripts/build-pocketweibo-release.sh --no-copy` BUILD SUCCESSFUL（`secrets/` 版）+ `git check-ignore` 全部密钥文件确认忽略 |
 | 2026-05-08 | **版本**：需 **升高 versionCode** 以便已安装 APK **覆盖升级** | **`app/build.gradle.kts`**：`versionName` **3.55.1**、`versionCode` **187**（相对 **3.55.0 (186)** 仅版本号递增）。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-08 | **图片流**：仅双指放大不便；**1×** 时需 **双击即可放大** | **`PhotoScreen`**：`detectTapGestures.onDoubleTap` 在 **scale ≤ 1.02** 时设为 **2×** 并以触点调整 **`clampPhotoPan(center - tap, …)`**；已放大时仍 **双击还原 1×**。新增 **`photo_feed_double_tap_zoom_in_a11y`**（中英）；`FEATURE.md` **F-056**。版本 **3.55.0 (186)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-05-08 | **写微博 · 提醒**：选好提醒时间后应 **直接发布**，不必再点「发送」 | **`ComposeScreen`**：`ReminderPickerDialog.onScheduleAt` 在有效时间下 **关闭对话框** 并 **`performSend()`**（与发送按钮相同前提）；不可发布时保留 **`pendingComposeReminder`** 并 Toast 提示补全后手动发送。更新 **`compose_remind_*`** 中英文案；`FEATURE.md` **F-047**。版本 **3.54.0 (185)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
@@ -55,7 +57,7 @@ _Add new rows above this line for each shipped fix._
 
 ## Planned backlog (historical)
 
-**F-010–F-020** 已全部在 **FEATURE.md** 标为 **Done** 并已合入 `apk-build`（见 `docs/F010-F020-rollout-log.md` 与对应 git 提交）。后续新需求请重新在 **FEATURE.md** 开行。
+**F-010–F-020** 已全部在 **FEATURE.md** 标为 **Done** 并已合入 `apk-build`（见 `F010-F020-rollout-log.md`（同目录）与对应 git 提交）。后续新需求请重新在 **FEATURE.md** 开行。
 
 ---
 

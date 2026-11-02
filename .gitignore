@@ -4,14 +4,10 @@ build
 .idea
 *.iml
 local.properties
-keystore.properties
-release.keystore
-ci-release.keystore
-# Local GitHub release keystore + secrets (never commit)
-pocket-weibo-github-release.keystore
-ANDROID_KEYSTORE_BASE64.local.txt
-github-keystore-secrets.local.txt
-github-keystore-secrets.local.ANDROID_KEYSTORE_BASE64
+# secrets/ — local signing material, keystores, passwords (never commit; templates stay)
+secrets/*
+!secrets/*.example
+!secrets/README.md
 *.jks
 .DS_Store
 

@@ -3,8 +3,8 @@
 #   decode ANDROID_KEYSTORE_BASE64 → ci-release.keystore, write keystore.properties, then
 #   ./gradlew assembleRelease
 #
-# Signing material is read from repo-root github-keystore-secrets.local.txt (gitignored) — use the
-# same names/values as GitHub Actions secrets (see FIX.md and the workflow file).
+# Signing material is read from repo-root secrets/github-keystore-secrets.local.txt (gitignored) — use the
+# same names/values as GitHub Actions secrets (see docs/FIX.md and the workflow file).
 #
 # File format (one KEY=value per line, # comments and blank lines allowed):
 #   KEYSTORE_PASSWORD=...
@@ -27,6 +27,8 @@
 #          push to the phone instead with: scripts/adb-wireless.sh install-release)
 #   Linux/Termux (legacy on-device build): /storage/emulated/0/Download
 #   (with --no-copy the APK stays in the repo root only).
+# Keystore decoded to secrets/ci-release.keystore; secrets/keystore.properties written next to it
+# (app/build.gradle.kts resolves storeFile relative to the properties file).
 #
 # Usage:
 #   ./scripts/build-pocketweibo-release.sh
@@ -54,9 +56,9 @@ case "$(uname -s)" in
   *)      COPY_DEST="/storage/emulated/0/Download" ;;
 esac
 
-SECRETS_FILE="${ROOT}/github-keystore-secrets.local.txt"
-KS_OUT="${ROOT}/ci-release.keystore"
-PROPS_OUT="${ROOT}/keystore.properties"
+SECRETS_FILE="${ROOT}/secrets/github-keystore-secrets.local.txt"
+KS_OUT="${ROOT}/secrets/ci-release.keystore"
+PROPS_OUT="${ROOT}/secrets/keystore.properties"
 
 usage() {
   cat <<EOF
@@ -70,9 +72,9 @@ Options:
   --secrets-file F    Path to secrets file (default: ${SECRETS_FILE}).
   -h, --help          Show this help.
 
-Requires: ${SECRETS_FILE} with KEYSTORE_PASSWORD and keystore base64 via companion file, ANDROID_KEYSTORE_BASE64_FILE, or inline ANDROID_KEYSTORE_BASE64; JDK 17; Android SDK.
+Requires: ${SECRETS_FILE} with KEYSTORE_PASSWORD and keystore base64 via companion file, ANDROID_KEYSTORE_BASE64_FILE, or inline ANDROID_KEYSTORE_BASE64; JDK (17+); Android SDK.
 Copy: POSIX order cp SOURCE DEST (APK first, destination path second).
-See: .github/workflows/build-apk.yml, FIX.md
+See: .github/workflows/build-apk.yml, docs/FIX.md
 EOF
 }
 
@@ -180,7 +182,7 @@ resolve_keystore_base64 "$SECRETS_FILE"
 if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
   _stem="$SECRETS_FILE"
   [[ "$_stem" == *.txt ]] && _stem="${_stem%.txt}"
-  fail "No keystore base64: set ANDROID_KEYSTORE_BASE64 in $SECRETS_FILE, or ANDROID_KEYSTORE_BASE64_FILE=..., or create companion ${_stem}.ANDROID_KEYSTORE_BASE64 (see FIX.md)"
+  fail "No keystore base64: set ANDROID_KEYSTORE_BASE64 in $SECRETS_FILE, or ANDROID_KEYSTORE_BASE64_FILE=..., or create companion ${_stem}.ANDROID_KEYSTORE_BASE64 (see docs/FIX.md)"
 fi
 if [ -z "$KEYSTORE_PASSWORD" ]; then
   fail "Missing KEYSTORE_PASSWORD in $SECRETS_FILE"

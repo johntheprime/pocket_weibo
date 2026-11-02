@@ -27,12 +27,17 @@ android {
 
     signingConfigs {
         create("release") {
-            val propsFile = rootProject.file("keystore.properties")
-            if (!propsFile.exists()) return@create
+            // keystore.properties lives in secrets/ (repo-root fallback for legacy setups);
+            // storeFile is resolved relative to the properties file's directory.
+            // CI regeneration writes secrets/ci-release.keystore + secrets/keystore.properties via
+            // .github/workflows/build-apk.yml and scripts/build-pocketweibo-release.sh.
+            val candidate = listOf(rootProject.file("secrets/keystore.properties"), rootProject.file("keystore.properties"))
+                .firstOrNull { it.exists() } ?: return@create
             val p = Properties()
-            propsFile.inputStream().use { p.load(it) }
+            candidate.inputStream().use { p.load(it) }
             val storeRel = p.getProperty("storeFile") ?: return@create
-            val store = rootProject.file(storeRel)
+            val storeFileProp = File(storeRel)
+            val store = if (storeFileProp.isAbsolute) storeFileProp else candidate.parentFile.resolve(storeRel)
             if (!store.exists()) return@create
             storeFile = store
             storePassword = p.getProperty("storePassword")

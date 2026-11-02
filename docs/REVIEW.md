@@ -13,7 +13,7 @@ Scope: full source-tree review of `app/src/main/java/com/pocketweibo/**` against
 | minSdk / target / compile | 26 / 34 / 34 |
 | Stack | Kotlin, Jetpack Compose (Material3), Room v12, Coil, DataStore (Draft + UiPreferences), AlarmManager reminders |
 | R8 | `isMinifyEnabled = true`, `isShrinkResources = false` — intentionally left off because avatars are resolved at runtime via `Resources.getIdentifier` (see §5) |
-| Docs | `README.md`, `FEATURE.md` (F-001…F-061, all “Done”), `FIX.md` (per-version ledger), `RULES.md`, `docs/F010-F020-rollout-log.md` |
+| Docs | `README.md`, `FEATURE.md` (F-001…F-061, all “Done”), `FIX.md` (per-version ledger), `RULES.md`, `F010-F020-rollout-log.md` (same dir) |
 | Tests | 8 JVM unit tests (`app/src/test/...`, pass) + 1 androidTest (`IdentityDeleteKeepsPostsTest.kt`); **no data/DAO or migration tests** — see `REVIEW-2.md` §6 |
 
 ## 2. Architecture
