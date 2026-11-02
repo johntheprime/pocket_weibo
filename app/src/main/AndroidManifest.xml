@@ -38,6 +38,12 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
+            <!-- Launcher shortcut target. Some OEMs (e.g. HyperOS) refuse an explicit start of
+                 an action without a matching filter, so declare it here too. -->
+            <intent-filter>
+                <action android:name="com.pocketweibo.action.NEW_POST" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
             <!-- Long-press the launcher icon (logo) → "New post" shortcut (Android 7.1+). -->
             <meta-data
                 android:name="android.app.shortcuts"
