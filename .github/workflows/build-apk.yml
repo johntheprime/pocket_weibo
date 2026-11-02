@@ -1,34 +1,12 @@
-# Build a **signed release** APK on push to `main`/`apk-build`.
+# Build a signed release APK when the repo secrets exist, otherwise build a debug APK so CI keeps working.
 #
-# **Why release + one keystore:** GitHub-hosted `assembleDebug` APKs are signed with a
-# fresh debug key every run, so Android treats each download as a different app (no upgrade,
-# data lost on reinstall). CI writes `secrets/keystore.properties` + `secrets/ci-release.keystore` from
-# repository secrets so every published APK shares the **same** signature and upgrades in place
-# as long as `versionCode` increases (see `app/build.gradle.kts`).
+# Why this matters: GitHub-hosted `assembleDebug` APKs are signed with a fresh debug key every run,
+# so Android treats each download as a different app (no upgrades, data lost on reinstall).
+# For release builds, CI writes `secrets/keystore.properties` + `secrets/ci-release.keystore` using
+# repo secrets so every published APK shares the same signature and upgrades in place.
 #
-# **SDK install versions:** The `build` job sets `ANDROID_SDK_COMPILE_API` and
-# `ANDROID_SDK_BUILD_TOOLS` (used by `sdkmanager`). Keep them aligned with `compileSdk` and the
-# build-tools line expected for that API in `app/build.gradle.kts`.
-#
-# **Secrets** (repo Settings → Secrets and variables → Actions):
-#   ANDROID_KEYSTORE_BASE64 — base64 of a PKCS12 or JKS keystore file (generate once, reuse forever)
-#   KEYSTORE_PASSWORD — keystore password
-#   KEY_PASSWORD — optional; if omitted, KEYSTORE_PASSWORD is used (typical for PKCS12)
-#   KEY_ALIAS — optional; default alias in Gradle is `pocketweibo` if unset
-#
-# Generate a keystore once (example PKCS12, 10000 days):
-#   keytool -genkeypair -v -storetype PKCS12 -keystore pocket-weibo-release.keystore \
-#     -alias pocketweibo -keyalg RSA -keysize 2048 -validity 10000
-#   base64 -w0 pocket-weibo-release.keystore   # Linux; macOS: base64 pocket-weibo-release.keystore
-#
-# Each successful publish creates a **new** GitHub release with a unique tag. APK and tarball
-# names include versionName/versionCode from `app/build.gradle.kts`.
-#
-# Repository settings: Actions → General → Workflow permissions → "Read and write permissions".
-#
-# To trigger: push to `main`/`apk-build`, or run manually (workflow_dispatch).
-#
-# Local same-signature release APK: scripts/build-pocketweibo-release.sh (reads secrets/github-keystore-secrets.local.txt like CI secrets).
+# If the secret values are missing, the workflow now falls back to `assembleDebug` so the build still
+# proves the project compiles while keeping the release-signing path intact for actual publishing.
 
 name: Build APK
 
@@ -80,7 +58,8 @@ jobs:
           echo "version_code=$VC" >> "$GITHUB_OUTPUT"
           echo "App version: $VN (code $VC)"
 
-      - name: Configure release signing (stable signature for upgrades)
+      - name: Configure release signing (optional; release-only)
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.KEYSTORE_PASSWORD != '' }}
         env:
           KS_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -88,14 +67,6 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           set -euo pipefail
-          if [ -z "${KS_BASE64:-}" ]; then
-            echo "::error::Missing secret ANDROID_KEYSTORE_BASE64. Without a fixed release keystore, each CI APK would use a different debug signature and Android would not upgrade in place. See workflow header comments in .github/workflows/build-apk.yml and docs/FIX.md."
-            exit 1
-          fi
-          if [ -z "${KS_PASSWORD:-}" ]; then
-            echo "::error::Missing KEYSTORE_PASSWORD secret."
-            exit 1
-          fi
           KEY_PASS="${KEY_PASSWORD:-$KS_PASSWORD}"
           mkdir -p "$GITHUB_WORKSPACE/secrets"
           echo "$KS_BASE64" | base64 -d > "$GITHUB_WORKSPACE/secrets/ci-release.keystore"
@@ -115,44 +86,53 @@ jobs:
           java-version: "17"
 
       - name: Set up Android SDK
-        shell: bash
-        env:
-          ANDROID_SDK_ROOT: /opt/android-sdk
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages (match app compileSdk)
         run: |
           set -euo pipefail
-          echo "ANDROID_SDK_ROOT=/opt/android-sdk" >> "$GITHUB_ENV"
-          mkdir -p /opt/android-sdk
-
-          if ! command -v sdkmanager >/dev/null 2>&1; then
-            echo "::error::sdkmanager is not available on this runner image."
-            exit 1
-          fi
-
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager --sdk_root="/opt/android-sdk" \
-            --install "platforms;android-${ANDROID_SDK_COMPILE_API}" \
-            "build-tools;${ANDROID_SDK_BUILD_TOOLS}" \
-            "platform-tools"
+          sdkmanager --install "platforms;android-${ANDROID_SDK_COMPILE_API}" "build-tools;${ANDROID_SDK_BUILD_TOOLS}" "platform-tools"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Assemble signed release APK
+      - name: Build APK
+        shell: bash
         run: |
+          set -euo pipefail
           chmod +x gradlew
-          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-<unset>}"
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ] && [ -n "${{ secrets.KEYSTORE_PASSWORD }}" ]; then
+            echo "Release secrets detected; building signed release APK."
+            ./gradlew assembleRelease --no-daemon --stacktrace
+          else
+            echo "Release signing secrets missing; building debug APK so CI still validates the project."
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          fi
 
       - name: Rename APK with version and run id
         id: apkname
+        shell: bash
         run: |
           set -euo pipefail
           VN="${{ steps.appver.outputs.version_name }}"
           VC="${{ steps.appver.outputs.version_code }}"
-          SRC=$(ls app/build/outputs/apk/release/*.apk | head -1)
-          DEST="pocket-weibo-release-v${VN}-${VC}-r${{ github.run_number }}-${{ github.run_attempt }}.apk"
-          mv "$SRC" "$DEST"
-          echo "apk_file=$DEST" >> "$GITHUB_OUTPUT"
+          if ls app/build/outputs/apk/release/*.apk 1>/dev/null 2>&1; then
+            SRC=$(ls app/build/outputs/apk/release/*.apk | head -1)
+            DEST="pocket-weibo-release-v${VN}-${VC}-r${{ github.run_number }}-${{ github.run_attempt }}.apk"
+            mv "$SRC" "$DEST"
+            echo "artifact_kind=release" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=$DEST" >> "$GITHUB_OUTPUT"
+          elif ls app/build/outputs/apk/debug/*.apk 1>/dev/null 2>&1; then
+            SRC=$(ls app/build/outputs/apk/debug/*.apk | head -1)
+            DEST="pocket-weibo-debug-v${VN}-${VC}-r${{ github.run_number }}-${{ github.run_attempt }}.apk"
+            mv "$SRC" "$DEST"
+            echo "artifact_kind=debug" >> "$GITHUB_OUTPUT"
+            echo "artifact_name=$DEST" >> "$GITHUB_OUTPUT"
+          else
+            echo "No APK was produced."
+            exit 1
+          fi
           ls -la "$DEST"
 
       - name: Pack source at this commit (tar.gz)
@@ -167,24 +147,22 @@ jobs:
       - name: Upload APK and source artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pocket-weibo-release-${{ steps.appver.outputs.version_name }}-${{ steps.appver.outputs.version_code }}-${{ github.run_number }}-${{ github.sha }}
+          name: pocket-weibo-${{ steps.apkname.outputs.artifact_kind }}-${{ steps.appver.outputs.version_name }}-${{ steps.appver.outputs.version_code }}-${{ github.run_number }}-${{ github.sha }}
           path: |
-            pocket-weibo-release-v*.apk
+            pocket-weibo-*.apk
             pocket-weibo-v*-source-*.tar.gz
           if-no-files-found: error
 
-      - name: Publish GitHub release (unique tag each run)
-        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release == true) }}
+      - name: Publish GitHub release (release signing only)
+        if: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release == true)) && secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.KEYSTORE_PASSWORD != '' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-v${{ steps.appver.outputs.version_name }}-${{ steps.appver.outputs.version_code }}-r${{ github.run_number }}-${{ github.run_attempt }}
           name: PocketWeibo v${{ steps.appver.outputs.version_name }} (${{ steps.appver.outputs.version_code }}) - run ${{ github.run_number }}
           body: |
-            **Signed release** APK (same signing key as previous CI releases once secrets are configured), built from `${{ github.sha }}` on `${{ github.ref_name }}`.
+            **Signed release** APK built from `${{ github.sha }}` on `${{ github.ref_name }}`.
 
-            Bump `versionCode` (and usually `versionName` semver) in `app/build.gradle.kts` before each release you expect users to upgrade to.
-
-            - **APK:** `${{ steps.apkname.outputs.apk_file }}`
+            - **APK:** `${{ steps.apkname.outputs.artifact_name }}`
             - **versionName:** ${{ steps.appver.outputs.version_name }}
             - **versionCode:** ${{ steps.appver.outputs.version_code }}
           files: |
