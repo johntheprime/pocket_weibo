@@ -181,10 +181,15 @@ then tap **Pair device with pairing code**):
 
 ```bash
 ./scripts/adb-wireless.sh pair <phone-ip:pair-port> <6-digit-code>
-./scripts/adb-wireless.sh connect <phone-ip:port>    # address from the Wireless debugging screen
+./scripts/adb-wireless.sh connect <phone-ip>   # port is auto-scanned (30000–50000)
 ```
 
-Every session afterwards (no address needed — auto-discovered):
+Android 11+ picks a **dynamic port** for wireless debugging (usually 30000–50000). The script
+finds it by mDNS when available, otherwise by a fast parallel port scan (`python3` asyncio, ~2 s;
+`nc` fallback), so a fixed `:5555` is not required. The working `ip:port` is cached in
+`~/.cache/pocketweibo-adb` (local only — no address is stored in the repo).
+
+Every session afterwards (no address needed — auto-discovered / cached):
 
 ```bash
 ./scripts/adb-wireless.sh connect
@@ -197,15 +202,19 @@ Build + install over Wi-Fi after a new feature:
 ./scripts/adb-wireless.sh install-release   # signed release build, installed on the phone
 ```
 
+> Use `install-release` if the phone already has a release-signed build: Android refuses to
+> upgrade across different signatures (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`).
+
 Extras:
 
 ```bash
-./scripts/adb-wireless.sh status            # devices + mDNS services
+./scripts/adb-wireless.sh status            # devices, mDNS services, cached address
 ./scripts/adb-wireless.sh logcat            # follow full logcat
 ./scripts/adb-wireless.sh crash             # follow fatal-exception (crash) log only
 ./scripts/adb-wireless.sh disconnect        # drop the Wi-Fi connection
 ./scripts/adb-wireless.sh enable-tcpip      # USB-plugged phone → legacy fixed :5555 mode
 ```
 
-Overrides via env: `DEVICE_IP` (optional phone address; unset = auto-discover via mDNS),
-`DEVICE_PORT` (legacy `:5555` port, default 5555).
+Overrides via env: `DEVICE_IP` (optional phone address; unset = auto-discover), `DEVICE_PORT`
+(legacy `:5555` port, default 5555), `PORT_SCAN_START` / `PORT_SCAN_END` (default 30000 / 50000),
+`PORT_SCAN_JOBS` (nc fallback parallelism).

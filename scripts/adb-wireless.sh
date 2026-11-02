@@ -5,10 +5,13 @@
 # legacy "ADB over network" (fixed :5555).
 #
 # The script discovers the phone automatically, no configuration needed:
-#   1. any already-connected device,
-#   2. an optional DEVICE_IP env or IP[:PORT] argument,
+#   1. an explicit IP[:PORT] argument or DEVICE_IP env,
+#   2. an already-connected device,
 #   3. mDNS (_adb-tls-connect) — for paired Android 11+ devices,
-#   4. a subnet scan for open :5555 — for legacy-mode devices.
+#   4. a cached last-known host + port scan of the dynamic range 30000–50000
+#      (that range is where Android picks the wireless-debugging TLS port;
+#      mDNS can be blocked on some routers / stop advertising while connected),
+#   5. a subnet scan for open :5555 — for legacy-mode devices.
 #
 # Workflow after a new feature:
 #   1. ./scripts/adb-wireless.sh connect          # pair once, then this every session
@@ -19,8 +22,10 @@
 # On-device enabling: Settings > Developer options > Wireless debugging > ON
 # First-time pairing: tap "Pair device with pairing code" and run:
 #   ./scripts/adb-wireless.sh pair <pairing-ip:port> <6-digit-code>
-# then run `connect <ip:port>` with the address shown on the Wireless debugging screen.
-# (After the first successful pairing+connect, `connect` finds the device by itself.)
+# then run `connect <ip>` — the dynamic TLS port is found by scanning
+# PORT_SCAN_START–PORT_SCAN_END on that host (python3 asyncio, a few seconds).
+# The working address is cached locally (~/.cache/pocketweibo-adb), so plain
+# `connect` reconnects instantly from then on.
 #
 # Usage:
 #   ./scripts/adb-wireless.sh pair [IP:PORT [CODE]]
@@ -34,8 +39,11 @@
 #   ./scripts/adb-wireless.sh crash
 #
 # ENV:
-#   DEVICE_IP   optional default phone address (none = auto-discover)
-#   DEVICE_PORT legacy :5555 port (default 5555)
+#   DEVICE_IP         optional phone host (bare IP or ip:port); none = auto-discover
+#   DEVICE_PORT       legacy fixed ADB port (default 5555)
+#   PORT_SCAN_START   dynamic wireless-debugging port range start (default 30000)
+#   PORT_SCAN_END     dynamic wireless-debugging port range end   (default 50000)
+#   PORT_SCAN_JOBS    parallel probes (default 256)
 #
 set -euo pipefail
 
@@ -44,10 +52,15 @@ cd "$ROOT"
 
 DEVICE_IP="${DEVICE_IP:-}"
 DEVICE_PORT="${DEVICE_PORT:-5555}"
+PORT_SCAN_START="${PORT_SCAN_START:-30000}"
+PORT_SCAN_END="${PORT_SCAN_END:-50000}"
+PORT_SCAN_JOBS="${PORT_SCAN_JOBS:-256}"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/pocketweibo-adb"
+CACHE_TARGET_FILE="$CACHE_DIR/last_target"
 
 ok() { echo "[OK] $*"; }
 fail() { echo "[FAIL] $*" >&2; exit 1; }
-usage() { sed -n '2,31p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,45p' "$0" | sed 's/^# \{0,1\}//'; }
 
 if command -v adb >/dev/null 2>&1; then
   ADB="$(command -v adb)"
@@ -66,6 +79,8 @@ if [ -z "${JAVA_HOME:-}" ]; then
   fi
 fi
 
+esc_ip() { echo "$1" | sed 's/[.]/\\./g'; }
+
 wireless_serial() {
   # First adb-over-Wi-Fi device currently connected ("ip:port  device"), empty otherwise.
   $ADB devices | awk 'NR>1 && $2=="device" {print $1}' | grep ':' | head -1 || true
@@ -75,10 +90,35 @@ any_connected_serial() {
   $ADB devices | awk 'NR>1 && $2=="device" {print $1}' | head -1 || true
 }
 
+connected_to() {
+  $ADB devices | awk 'NR>1 && $2=="device" {print $1}' | grep -qx "$(esc_ip "$1")"
+}
+
+remember_target() {
+  mkdir -p "$CACHE_DIR" 2>/dev/null || return 0
+  echo "$1" > "$CACHE_TARGET_FILE" 2>/dev/null || true
+}
+
+cached_target() {
+  [ -f "$CACHE_TARGET_FILE" ] || return 0
+  head -1 "$CACHE_TARGET_FILE" | tr -d '[:space:]'
+}
+
+cached_host() {
+  local t
+  t="$(cached_target)"
+  [ -n "$t" ] && echo "${t%%:*}"
+}
+
+# Probe one host for the legacy fixed port; prints "ip" on hit (used via xargs).
+probe_5555() {
+  nc -z -G 1 "$1" "$DEVICE_PORT" >/dev/null 2>&1 && echo "$1"
+  return 0
+}
+
 # Scan mDNS-announced wireless-debugging services and print "ip:port" (or empty).
-# Works when the device has already been paired with THIS Mac at least once.
 mdns_discover() {
-  $ADB mdns check >/dev/null 2>&1 || return 1
+  $ADB mdns check >/dev/null 2>&1 || return 0
   # Typical line: adb-<serial>-<name>	_adb-tls-connect._tcp.	<ip>:<port>
   $ADB mdns services 2>/dev/null \
     | grep -i "_adb-tls-connect._tcp" \
@@ -95,18 +135,81 @@ local_lan_prefix() {
   echo "$prefix" | awk -F. '{print $1"."$2"."$3}'
 }
 
-# Probe one host for an open legacy ADB port; prints "ip" on hit (used via xargs -P).
-probe_5555() {
-  nc -z -G 1 "$1" "$DEVICE_PORT" >/dev/null 2>&1 && echo "$1"
-}
-
-# Fall back: scan the /24 subnet for devices with port 5555 open (legacy ADB over network).
-subnet_scan() {
+# Fall back: scan the /24 subnet for devices with the legacy port open.
+subnet_scan_legacy() {
   local prefix i
   prefix="$(local_lan_prefix)" || return 1
   echo "[..] Scanning ${prefix}.1–254 for open :${DEVICE_PORT} …" >&2
   for i in $(seq 1 254); do echo "${prefix}.${i}"; done \
-    | xargs -n 1 -P 64 "$0" __probe 2>/dev/null | head -1
+    | xargs -n 1 -P 64 "$0" __probe_host 2>/dev/null | head -1
+}
+
+# Scan the dynamic wireless-debugging port range on one host and print open ports.
+# Uses a Python asyncio scanner (one process — fast); falls back to nc+xargs without Python 3.
+port_scan() {
+  local host="$1"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$host" "$PORT_SCAN_START" "$PORT_SCAN_END" <<'PY'
+import asyncio, resource, sys
+
+host, start, end = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+try:
+    soft, _ = resource.getrlimit(resource.RLIMIT_NOFILE)
+except Exception:
+    soft = 256
+concurrency = max(64, min(1500, soft // 2))
+sem = asyncio.Semaphore(concurrency)
+
+async def probe(port, out):
+    async with sem:
+        try:
+            _r, w = await asyncio.wait_for(asyncio.open_connection(host, port), 0.6)
+            w.close()
+            out.append(port)
+        except Exception:
+            pass
+
+async def main():
+    out = []
+    await asyncio.gather(*(probe(p, out) for p in range(start, end + 1)))
+    for p in sorted(out):
+        print(p)
+
+asyncio.run(main())
+PY
+  else
+    seq "$PORT_SCAN_START" "$PORT_SCAN_END" \
+      | xargs -n 1 -P "$PORT_SCAN_JOBS" -I{} sh -c "nc -z -G 1 '$host' {} 2>/dev/null && echo {}" \
+      | sort -n
+  fi
+}
+
+# Try to reach a known host: cached target, then legacy fixed port, then the dynamic range.
+# Prints the connected "ip:port" on success.
+connect_host() {
+  local host="$1" port cached
+  cached="$(cached_target)"
+  case "$cached" in
+    "$host":*)
+      if $ADB connect "$cached" >/dev/null 2>&1 && connected_to "$cached"; then
+        echo "$cached"
+        return 0
+      fi
+      ;;
+  esac
+  if $ADB connect "$host:$DEVICE_PORT" >/dev/null 2>&1 && connected_to "$host:$DEVICE_PORT"; then
+    echo "$host:$DEVICE_PORT"
+    return 0
+  fi
+  echo "[..] Scanning $host ports ${PORT_SCAN_START}–${PORT_SCAN_END} for Wireless debugging…" >&2
+  while IFS= read -r port; do
+    [ -n "$port" ] || continue
+    if $ADB connect "$host:$port" >/dev/null 2>&1 && connected_to "$host:$port"; then
+      echo "$host:$port"
+      return 0
+    fi
+  done < <(port_scan "$host")
+  return 1
 }
 
 cmd_status() {
@@ -114,6 +217,8 @@ cmd_status() {
   $ADB devices -l
   echo "--- mDNS services ---"
   $ADB mdns services 2>/dev/null || echo "(mDNS not available/disabled)"
+  echo "--- cached host ---"
+  printf '%s\n' "$(cached_host)" | sed 's/^$/ (none)/'
 }
 
 cmd_pair() {
@@ -131,68 +236,84 @@ cmd_pair() {
   esac
   echo "[..] adb pair $target"
   if $ADB pair "$target" "$code"; then
-    ok "Paired with $target. Now run: $0 connect <ip:port-from-wireless-debugging-screen>"
+    ok "Paired with $target. Now run: $0 connect ${target%%:*}"
   else
     fail "Pairing failed (code expired? — regenerate the pairing dialog and retry)"
   fi
 }
 
 cmd_connect() {
-  local arg="${1:-}" target=""
+  local arg="${1:-}" target="" host=""
 
-  # 1. Explicit argument or DEVICE_IP env.
+  # 1. Explicit argument or DEVICE_IP env: bare host or host:port.
   if [ -n "$arg" ]; then
-    target="$arg"
+    case "$arg" in *:*) target="$arg" ;; *) host="$arg" ;; esac
   elif [ -n "$DEVICE_IP" ]; then
-    target="$DEVICE_IP"
-  fi
-  case "$target" in
-    *:*) : ;;
-    "")  : ;;
-    *)   target="$target:$DEVICE_PORT" ;;
-  esac
-
-  # 2. Already connected over Wi-Fi? nothing to do.
-  if [ -z "$target" ]; then
-    local have
-    have="$(wireless_serial)"
-    if [ -n "$have" ]; then
-      ok "Already connected: $have"
-      cmd_status
-      return 0
-    fi
+    case "$DEVICE_IP" in *:*) target="$DEVICE_IP" ;; *) host="$DEVICE_IP" ;; esac
   fi
 
-  # 3. mDNS discovery (paired Android 11+ devices announce ip:port here).
-  #    Some OEM phones only advertise in bursts or after a few seconds, so retry patiently.
-  if [ -z "$target" ]; then
-    local attempt
-    for attempt in 1 2 3 4 5 6; do
-      target="$(mdns_discover || true)"
-      [ -n "$target" ] && { echo "[..] mDNS found: $target (attempt $attempt/6)"; break; }
-      sleep 2
-    done
-  fi
-
-  # 4. Legacy devices (fixed :5555): try subnet scan, then the default-ip form.
-  if [ -z "$target" ]; then
-    target="$(subnet_scan || true)"
-    [ -n "$target" ] && echo "[..] Subnet scan found: $target" && target="$target:$DEVICE_PORT"
-  fi
-
+  # 2. Direct connect when we already have host:port.
   if [ -n "$target" ]; then
-    if $ADB connect "$target" >/dev/null 2>&1 && \
-       $ADB devices | awk 'NR>1 {print $1" "$2}' | grep -q "^$(echo "$target" | sed 's/[.]/\\./g') device"; then
+    if $ADB connect "$target" >/dev/null 2>&1 && connected_to "$target"; then
+      remember_target "$target"
       ok "Connected: $target"
-      cmd_status
       return 0
     fi
     fail "Could not connect to $target (pairing expired? run: $0 pair)"
   fi
 
+  # 3. Already connected over Wi-Fi? nothing to do.
+  local have
+  have="$(wireless_serial)"
+  if [ -n "$have" ] && [ -z "$host" ]; then
+    remember_target "$have"
+    ok "Already connected: $have"
+    return 0
+  fi
+
+  # 4. mDNS (paired devices may announce their dynamic port).
+  if [ -z "$target" ]; then
+    local discovered
+    discovered="$(mdns_discover || true)"
+    if [ -n "$discovered" ] && { [ -z "$host" ] || [ "${discovered%%:*}" = "$host" ]; }; then
+      if $ADB connect "$discovered" >/dev/null 2>&1 && connected_to "$discovered"; then
+        remember_target "$discovered"
+        ok "Connected (mDNS): $discovered"
+        return 0
+      fi
+    fi
+  fi
+
+  # 5. Known/cached host: scan the dynamic wireless-debugging port range.
+  if [ -z "$host" ]; then
+    host="$(cached_host)"
+    [ -n "$host" ] && echo "[..] Using cached phone host: $host"
+  fi
+  if [ -n "$host" ]; then
+    if target="$(connect_host "$host")"; then
+      remember_target "$target"
+      ok "Connected: $target"
+      return 0
+    fi
+    fail "Reachable host $host, but no ADB port found in ${PORT_SCAN_START}–${PORT_SCAN_END}.
+  - Is 'Wireless debugging' ON (and the phone screen on)? Toggle it off/on to get a fresh port.
+  - Pairing expired after a reboot/toggle? run: $0 pair <pair-ip:port> <code>"
+  fi
+
+  # 6. Legacy devices on the subnet (fixed :5555).
+  host="$(subnet_scan_legacy || true)"
+  if [ -n "$host" ]; then
+    if target="$(connect_host "$host")"; then
+      remember_target "$target"
+      ok "Connected: $target"
+      return 0
+    fi
+  fi
+
   fail "No device found.
-  - If the phone shows 'IP address & Port' under Wireless debugging, run: $0 connect <that-ip:port>
-  - If never paired on this Mac: $0 pair <pair-ip:port> <code>"
+  - Phone on Wireless debugging: run: $0 connect <phone-ip>  (one time; the host is cached)
+  - Or read 'IP address & Port' on the Wireless debugging screen: $0 connect <ip:port>
+  - Never paired on this Mac: $0 pair <pair-ip:port> <code>"
 }
 
 cmd_disconnect() {
@@ -212,7 +333,7 @@ cmd_enable_tcpip() {
   [ "${#serial[@]}" -ge 1 ] || fail "No USB-connected device; plug in a cable first"
   $ADB -s "${serial[0]}" tcpip "$DEVICE_PORT"
   sleep 2
-  if subnet_scan | grep -q .; then
+  if subnet_scan_legacy | grep -q .; then
     ok "Device is now reachable over Wi-Fi on fixed :$DEVICE_PORT"
     cmd_connect
   else
@@ -251,9 +372,9 @@ cmd_crash() {
   $ADB -s "$serial" logcat -v color "AndroidRuntime:E" "FatalSignal:F" "*:S"
 }
 
-# internal helper for subnet scan (never document)
+# internal helpers for scanning (never document)
 case "${1:-}" in
-  "__probe") probe_5555 "${2:-}" 2>/dev/null; exit 0 ;;
+  "__probe_host") probe_5555 "${2:-}"; exit 0 ;;
 esac
 
 # dispatch
