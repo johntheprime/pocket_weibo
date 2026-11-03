@@ -58,8 +58,10 @@ jobs:
           echo "version_code=$VC" >> "$GITHUB_OUTPUT"
           echo "App version: $VN (code $VC)"
 
-      - name: Configure release signing (optional; release-only)
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.KEYSTORE_PASSWORD != '' }}
+      # NOTE: `secrets.*` is not available in `if:` expressions. Detect the secrets inside
+      # the step and export a regular step output that later steps can branch on.
+      - name: Configure release signing (optional)
+        id: signing
         env:
           KS_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KS_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -67,9 +69,14 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           set -euo pipefail
+          if [ -z "${KS_BASE64:-}" ] || [ -z "${KS_PASSWORD:-}" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Release signing secrets are not configured; will build a debug APK."
+            exit 0
+          fi
           KEY_PASS="${KEY_PASSWORD:-$KS_PASSWORD}"
           mkdir -p "$GITHUB_WORKSPACE/secrets"
-          echo "$KS_BASE64" | base64 -d > "$GITHUB_WORKSPACE/secrets/ci-release.keystore"
+          printf '%s' "$KS_BASE64" | base64 -d > "$GITHUB_WORKSPACE/secrets/ci-release.keystore"
           chmod 600 "$GITHUB_WORKSPACE/secrets/ci-release.keystore"
           umask 077
           {
@@ -78,6 +85,8 @@ jobs:
             echo "keyAlias=${KEY_ALIAS:-pocketweibo}"
             echo "keyPassword=${KEY_PASS}"
           } > "$GITHUB_WORKSPACE/secrets/keystore.properties"
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          echo "Release signing secrets detected; will build a signed release APK."
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -85,54 +94,66 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # v3 downloads the moving `_latest` cmdline-tools URL, which now returns 404
+      # (android-actions/setup-android#513). v4 pins a versioned archive that still exists
+      # and puts sdkmanager on PATH, so the install step below works.
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          cmdline-tools-version: "15859902"
+          packages: "platform-tools"
 
       - name: Install SDK packages (match app compileSdk)
         run: |
           set -euo pipefail
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager --install "platforms;android-${ANDROID_SDK_COMPILE_API}" "build-tools;${ANDROID_SDK_BUILD_TOOLS}" "platform-tools"
+          sdkmanager --install "platforms;android-${ANDROID_SDK_COMPILE_API}" "build-tools;${ANDROID_SDK_BUILD_TOOLS}"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK
+      - name: Build signed release APK
+        if: ${{ steps.signing.outputs.enabled == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           chmod +x gradlew
-          if [ -n "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ] && [ -n "${{ secrets.KEYSTORE_PASSWORD }}" ]; then
-            echo "Release secrets detected; building signed release APK."
-            ./gradlew assembleRelease --no-daemon --stacktrace
-          else
-            echo "Release signing secrets missing; building debug APK so CI still validates the project."
-            ./gradlew assembleDebug --no-daemon --stacktrace
-          fi
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Build debug APK (no release signing secrets)
+        if: ${{ steps.signing.outputs.enabled != 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Rename APK with version and run id
         id: apkname
         shell: bash
         run: |
           set -euo pipefail
+          shopt -s nullglob
           VN="${{ steps.appver.outputs.version_name }}"
           VC="${{ steps.appver.outputs.version_code }}"
-          if ls app/build/outputs/apk/release/*.apk 1>/dev/null 2>&1; then
-            SRC=$(ls app/build/outputs/apk/release/*.apk | head -1)
-            DEST="pocket-weibo-release-v${VN}-${VC}-r${{ github.run_number }}-${{ github.run_attempt }}.apk"
-            mv "$SRC" "$DEST"
-            echo "artifact_kind=release" >> "$GITHUB_OUTPUT"
-            echo "artifact_name=$DEST" >> "$GITHUB_OUTPUT"
-          elif ls app/build/outputs/apk/debug/*.apk 1>/dev/null 2>&1; then
-            SRC=$(ls app/build/outputs/apk/debug/*.apk | head -1)
-            DEST="pocket-weibo-debug-v${VN}-${VC}-r${{ github.run_number }}-${{ github.run_attempt }}.apk"
-            mv "$SRC" "$DEST"
-            echo "artifact_kind=debug" >> "$GITHUB_OUTPUT"
-            echo "artifact_name=$DEST" >> "$GITHUB_OUTPUT"
+          RUN="${{ github.run_number }}-${{ github.run_attempt }}"
+          release_apks=(app/build/outputs/apk/release/*.apk)
+          debug_apks=(app/build/outputs/apk/debug/*.apk)
+          if ((${#release_apks[@]})); then
+            SRC="${release_apks[0]}"
+            DEST="pocket-weibo-release-v${VN}-${VC}-r${RUN}.apk"
+            KIND=release
+          elif ((${#debug_apks[@]})); then
+            SRC="${debug_apks[0]}"
+            DEST="pocket-weibo-debug-v${VN}-${VC}-r${RUN}.apk"
+            KIND=debug
           else
             echo "No APK was produced."
             exit 1
           fi
+          mv "$SRC" "$DEST"
+          echo "artifact_kind=${KIND}" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=${DEST}" >> "$GITHUB_OUTPUT"
           ls -la "$DEST"
 
       - name: Pack source at this commit (tar.gz)
@@ -154,7 +175,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish GitHub release (release signing only)
-        if: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release == true)) && secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.KEYSTORE_PASSWORD != '' }}
+        if: ${{ steps.signing.outputs.enabled == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release == true)) }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-v${{ steps.appver.outputs.version_name }}-${{ steps.appver.outputs.version_code }}-r${{ github.run_number }}-${{ github.run_attempt }}
