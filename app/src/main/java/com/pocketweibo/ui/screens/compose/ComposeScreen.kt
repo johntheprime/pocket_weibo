@@ -89,6 +89,8 @@ import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.Surface
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.util.COMPOSE_MAX_CHARS
+import com.pocketweibo.ui.util.clipComposeText
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -288,13 +290,13 @@ fun ComposeScreen(
 
     LaunchedEffect(Unit) {
         if (initialShareText.isNotBlank()) {
-            content = initialShareText.trim().take(2000)
+            content = clipComposeText(initialShareText.trim())
             lastContentEditedAt = SystemClock.elapsedRealtime()
             onConsumeInitialShare()
         } else {
             val draft = app.repository.loadDraft()
             if (draft != null) {
-                content = draft.first
+                content = clipComposeText(draft.first)
                 lastContentEditedAt = SystemClock.elapsedRealtime()
                 val identityId = draft.second
                 val identity = identities.find { it.id == identityId }
@@ -559,9 +561,12 @@ fun ComposeScreen(
 
                         TextField(
                             value = content,
-                            onValueChange = {
-                                if (it.length <= 2000) {
-                                    content = it
+                            onValueChange = { newText ->
+                                // Never reject an edit (e.g. a large clipboard paste) outright:
+                                // keep as much as fits in the character limit instead.
+                                val clipped = clipComposeText(newText)
+                                if (clipped != content) {
+                                    content = clipped
                                     lastContentEditedAt = SystemClock.elapsedRealtime()
                                 }
                             },
@@ -586,9 +591,9 @@ fun ComposeScreen(
                             horizontalArrangement = Arrangement.End
                         ) {
                             Text(
-                                text = "${content.length}/2000",
+                                text = "${content.length}/$COMPOSE_MAX_CHARS",
                                 fontSize = 12.sp,
-                                color = if (content.length > 1900) Color(0xFFFF5136) else GrayMiddle
+                                color = if (content.length > COMPOSE_MAX_CHARS - 100) Color(0xFFFF5136) else GrayMiddle
                             )
                         }
                         if (preparedImageFiles.isNotEmpty()) {

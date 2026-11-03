@@ -1,6 +1,7 @@
 package com.pocketweibo.ui
 
 import androidx.lifecycle.ViewModel
+import com.pocketweibo.ui.util.clipComposeText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +23,7 @@ class ComposeIntentViewModel : ViewModel() {
 
     fun offerShareText(text: String?) {
         val t = text?.trim().orEmpty()
-        _pendingShareText.value = if (t.isEmpty()) null else t.take(2000)
+        _pendingShareText.value = if (t.isEmpty()) null else clipComposeText(t)
     }
 
     fun consumeShareText() {
