@@ -22,9 +22,9 @@ on:
         type: boolean
         default: true
       prerelease:
-        description: "Mark release as pre-release (uncheck for a full / latest release)"
+        description: "Mark release as pre-release (leave unchecked for an official / latest release)"
         type: boolean
-        default: true
+        default: false
 
 permissions:
   contents: write
@@ -189,5 +189,8 @@ jobs:
           files: |
             pocket-weibo-release-v*.apk
             pocket-weibo-v*-source-*.tar.gz
-          prerelease: ${{ github.event_name == 'push' || inputs.prerelease == true }}
+          # Pushes publish an official release. Only an explicit workflow_dispatch
+          # with "prerelease" checked produces a pre-release.
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease == true }}
+          make_latest: ${{ !(github.event_name == 'workflow_dispatch' && inputs.prerelease == true) }}
           generate_release_notes: true
