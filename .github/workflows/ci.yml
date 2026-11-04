@@ -1,0 +1,73 @@
+# Continuous integration: validate every pull request and every push to `main`.
+#
+# This workflow only builds and tests. It never publishes releases; see `build-apk.yml`,
+# which runs on `v*` tags and manual dispatch.
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ANDROID_SDK_COMPILE_API: "34"
+      ANDROID_SDK_BUILD_TOOLS: "34.0.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # v3 downloads the moving `_latest` cmdline-tools URL, which now returns 404
+      # (android-actions/setup-android#513). v4 pins a versioned archive that still exists
+      # and puts sdkmanager on PATH, so the install step below works.
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          cmdline-tools-version: "15859902"
+          packages: "platform-tools"
+
+      - name: Install SDK packages (match app compileSdk)
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager --install "platforms;android-${ANDROID_SDK_COMPILE_API}" "build-tools;${ANDROID_SDK_BUILD_TOOLS}"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run unit tests and build debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew test assembleDebug --no-daemon --stacktrace
+
+      - name: Upload test reports on failure
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            app/build/reports/tests/**
+            app/build/test-results/**
+          if-no-files-found: ignore
+          retention-days: 7

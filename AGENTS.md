@@ -45,8 +45,8 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"  
 ```
 
 - Use `install-release` when the phone already has a release-signed build; debug and release signatures cannot upgrade over each other.
-- CI (`.github/workflows/build-apk.yml`) only builds an APK; it does **not** run tests or lint. A green CI run does not replace `./gradlew test assembleDebug`.
-- Pushing to `main` or `apk-build` triggers a workflow that publishes a signed GitHub release when signing secrets are present. Do not push unless the user asks.
+- CI (`.github/workflows/ci.yml`) runs `./gradlew test assembleDebug` on pull requests and pushes to `main`. It does not lint; a green run does not replace the local `./gradlew test assembleDebug` check.
+- Releases (`.github/workflows/build-apk.yml`) run only on `v*` tag pushes or manual dispatch. A tag must match `versionName` (`v3.60.0` for `3.60.0`). Pushing to `main` never publishes a release; do not push or tag unless the user asks.
 
 ## Shipping workflow (mandatory for this repo)
 

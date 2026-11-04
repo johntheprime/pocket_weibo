@@ -1,20 +1,25 @@
-# Build a signed release APK when the repo secrets exist, otherwise build a debug APK so CI keeps working.
+# Release workflow: build and publish a signed APK.
+#
+# Triggers:
+#   - push a version tag (e.g. `git tag v3.60.0 && git push origin v3.60.0`) → official release
+#   - manual run from Actions → Release → Run workflow → optional release / pre-release
 #
 # Why this matters: GitHub-hosted `assembleDebug` APKs are signed with a fresh debug key every run,
 # so Android treats each download as a different app (no upgrades, data lost on reinstall).
 # For release builds, CI writes `secrets/keystore.properties` + `secrets/ci-release.keystore` using
 # repo secrets so every published APK shares the same signature and upgrades in place.
 #
-# If the secret values are missing, the workflow now falls back to `assembleDebug` so the build still
+# If the secret values are missing, the workflow falls back to `assembleDebug` so the build still
 # proves the project compiles while keeping the release-signing path intact for actual publishing.
+#
+# Pull requests and pushes to `main` are validated by `ci.yml`, not by this workflow.
 
-name: Build APK
+name: Release
 
 on:
   push:
-    branches:
-      - main
-      - apk-build
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       publish_release:
@@ -31,7 +36,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: build-apk-${{ github.workflow }}-${{ github.ref }}
+  group: release-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -57,6 +62,31 @@ jobs:
           echo "version_name=$VN" >> "$GITHUB_OUTPUT"
           echo "version_code=$VC" >> "$GITHUB_OUTPUT"
           echo "App version: $VN (code $VC)"
+
+      # Tag runs publish the tag that triggered them. Manual runs create a unique tag.
+      - name: Resolve release tag
+        id: reltag
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="apk-v${{ steps.appver.outputs.version_name }}-${{ steps.appver.outputs.version_code }}-r${{ github.run_number }}-${{ github.run_attempt }}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Release tag: ${TAG}"
+
+      # Keep the tag and versionName in sync so releases are predictable.
+      - name: Verify tag matches versionName
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VN="${{ steps.appver.outputs.version_name }}"
+          if [ "$TAG" != "v${VN}" ]; then
+            echo "::error::Tag '$TAG' does not match versionName '$VN'; expected tag 'v${VN}'."
+            exit 1
+          fi
 
       # NOTE: `secrets.*` is not available in `if:` expressions. Detect the secrets inside
       # the step and export a regular step output that later steps can branch on.
@@ -118,7 +148,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          ./gradlew test assembleRelease --no-daemon --stacktrace
 
       - name: Build debug APK (no release signing secrets)
         if: ${{ steps.signing.outputs.enabled != 'true' }}
@@ -126,7 +156,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew test assembleDebug --no-daemon --stacktrace
 
       - name: Rename APK with version and run id
         id: apkname
@@ -174,12 +204,13 @@ jobs:
             pocket-weibo-v*-source-*.tar.gz
           if-no-files-found: error
 
+      # Tag pushes always publish. Manual runs publish only when requested.
       - name: Publish GitHub release (release signing only)
-        if: ${{ steps.signing.outputs.enabled == 'true' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_release == true)) }}
+        if: ${{ steps.signing.outputs.enabled == 'true' && (github.event_name == 'push' || inputs.publish_release == true) }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: apk-v${{ steps.appver.outputs.version_name }}-${{ steps.appver.outputs.version_code }}-r${{ github.run_number }}-${{ github.run_attempt }}
-          name: PocketWeibo v${{ steps.appver.outputs.version_name }} (${{ steps.appver.outputs.version_code }}) - run ${{ github.run_number }}
+          tag_name: ${{ steps.reltag.outputs.tag }}
+          name: PocketWeibo v${{ steps.appver.outputs.version_name }} (${{ steps.appver.outputs.version_code }})
           body: |
             **Signed release** APK built from `${{ github.sha }}` on `${{ github.ref_name }}`.
 
@@ -189,8 +220,7 @@ jobs:
           files: |
             pocket-weibo-release-v*.apk
             pocket-weibo-v*-source-*.tar.gz
-          # Pushes publish an official release. Only an explicit workflow_dispatch
-          # with "prerelease" checked produces a pre-release.
-          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease == true }}
-          make_latest: ${{ !(github.event_name == 'workflow_dispatch' && inputs.prerelease == true) }}
+          # Tag runs and manual runs publish an official release unless "prerelease" is checked.
+          prerelease: ${{ inputs.prerelease == true }}
+          make_latest: ${{ !(inputs.prerelease == true) }}
           generate_release_notes: true
