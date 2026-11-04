@@ -140,6 +140,8 @@
     <string name="discover_search_content_desc">Match post text; comments also appear under Comments in results</string>
     <string name="discover_search_comment_title">Search comments</string>
     <string name="discover_search_comment_desc">Match comment text, commenter, or parent post body and author</string>
+    <string name="discover_search_multi_title">Multiple keywords</string>
+    <string name="discover_search_multi_desc">Separate with | to match any keyword, e.g. Su Shi|Li Bai</string>
     <string name="discover_section_comments">Comments</string>
     <string name="discover_comment_parent_post_line">Post: %1$s</string>
     <string name="discover_comment_open_post_cd">Open the post this comment belongs to</string>
@@ -147,7 +149,7 @@
     <string name="discover_trending_identities">Trending identities</string>
     <string name="discover_trending_posts">Trending posts</string>
     <string name="discover_search_tips">Search tips</string>
-    <string name="discover_search_hint">Search posts, identities, or comments</string>
+    <string name="discover_search_hint">Search posts, identities, or comments (separate with |)</string>
     <string name="discover_empty_results">No results</string>
     <string name="discover_section_identity">Identities</string>
     <string name="discover_section_posts">Posts</string>
@@ -172,7 +174,7 @@
     <string name="home_title_sheet_post_open_cd">Open this post</string>
     <string name="home_title_open_menu_cd">Open home feed filter</string>
     <string name="home_search_dialog_title">Search posts</string>
-    <string name="home_search_hint">Keyword in body, display name, or comments</string>
+    <string name="home_search_hint">Keywords in body, name, or comments (separate with |)</string>
     <string name="home_search_apply">Search</string>
     <string name="home_search_clear">Clear filter</string>
     <string name="home_more_settings">Settings</string>

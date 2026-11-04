@@ -86,6 +86,8 @@ import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.reminder.ReminderPickerDialog
 import com.pocketweibo.ui.util.identityDisplayName
+import com.pocketweibo.ui.util.matchesAnySearchKeyword
+import com.pocketweibo.ui.util.parseSearchKeywords
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -239,22 +241,28 @@ fun HomeScreen(
         }
         if (searchQuery.isBlank()) list
         else {
-            val q = searchQuery.trim()
-            val postIdsFromComments = commentSearchRows.mapNotNull { row ->
-                if (row.content.contains(q, ignoreCase = true) ||
-                    row.commentAuthorName?.contains(q, ignoreCase = true) == true ||
-                    row.postContent.contains(q, ignoreCase = true) ||
-                    row.postAuthorName?.contains(q, ignoreCase = true) == true
-                ) {
-                    row.postId
-                } else {
-                    null
+            val keywords = parseSearchKeywords(searchQuery)
+            if (keywords.isEmpty()) {
+                emptyList()
+            } else {
+                val postIdsFromComments = commentSearchRows.mapNotNull { row ->
+                    if (matchesAnySearchKeyword(
+                            keywords,
+                            row.content,
+                            row.commentAuthorName,
+                            row.postContent,
+                            row.postAuthorName
+                        )
+                    ) {
+                        row.postId
+                    } else {
+                        null
+                    }
+                }.toSet()
+                list.filter { p ->
+                    matchesAnySearchKeyword(keywords, p.content, p.identityName) ||
+                        p.id in postIdsFromComments
                 }
-            }.toSet()
-            list.filter { p ->
-                p.content.contains(q, ignoreCase = true) ||
-                    (p.identityName?.contains(q, ignoreCase = true) == true) ||
-                    p.id in postIdsFromComments
             }
         }
     }

@@ -7,6 +7,8 @@ import com.pocketweibo.data.local.dao.CommentSearchRow
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.repository.WeiboRepository
+import com.pocketweibo.ui.util.matchesAnySearchKeyword
+import com.pocketweibo.ui.util.parseSearchKeywords
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -59,34 +61,36 @@ class DiscoverViewModel(private val repository: WeiboRepository) : ViewModel() {
                 repository.allPosts,
                 repository.allCommentsForSearch
             ) { query, identities, posts, comments ->
-                if (query.isBlank()) {
+                val keywords = parseSearchKeywords(query)
+                if (keywords.isEmpty()) {
                     emptyList()
                 } else {
-                    val lowerQuery = query.lowercase()
                     val results = mutableListOf<SearchResult>()
-                    
-                    identities.filter { 
-                        it.name.lowercase().contains(lowerQuery)
-                    }.forEach { 
+
+                    identities.filter { identity ->
+                        matchesAnySearchKeyword(keywords, identity.name)
+                    }.forEach {
                         results.add(SearchResult.IdentityResult(it))
                     }
-                    
-                    posts.filter {
-                        (it.identityName?.lowercase()?.contains(lowerQuery) == true) ||
-                            it.content.lowercase().contains(lowerQuery)
-                    }.forEach { 
+
+                    posts.filter { post ->
+                        matchesAnySearchKeyword(keywords, post.identityName, post.content)
+                    }.forEach {
                         results.add(SearchResult.PostResult(it))
                     }
 
                     comments.filter { row ->
-                        row.content.lowercase().contains(lowerQuery) ||
-                            (row.commentAuthorName?.lowercase()?.contains(lowerQuery) == true) ||
-                            row.postContent.lowercase().contains(lowerQuery) ||
-                            (row.postAuthorName?.lowercase()?.contains(lowerQuery) == true)
+                        matchesAnySearchKeyword(
+                            keywords,
+                            row.content,
+                            row.commentAuthorName,
+                            row.postContent,
+                            row.postAuthorName
+                        )
                     }.forEach { row ->
                         results.add(SearchResult.CommentResult(row))
                     }
-                    
+
                     results
                 }
             }.collect { results ->

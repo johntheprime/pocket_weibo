@@ -234,6 +234,14 @@ private fun TrendingContent(
 
         item {
             SearchHintItem(
+                title = stringResource(R.string.discover_search_multi_title),
+                description = stringResource(R.string.discover_search_multi_desc),
+                icon = Icons.Default.Search
+            )
+        }
+
+        item {
+            SearchHintItem(
                 title = stringResource(R.string.discover_search_comment_title),
                 description = stringResource(R.string.discover_search_comment_desc),
                 icon = Icons.Default.ChatBubbleOutline
