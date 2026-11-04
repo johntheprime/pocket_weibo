@@ -31,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -43,7 +42,6 @@ import androidx.compose.ui.unit.sp
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.ui.util.RelativeTimePreset
-import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.GrayDark
@@ -61,7 +59,6 @@ fun PostCard(
     modifier: Modifier = Modifier
 ) {
     var showSelectableCopy by remember { mutableStateOf(false) }
-    val resources = LocalContext.current.resources
     val displayName = identityDisplayName(post.identityName)
     val hasStoredImages = remember(post.id, post.imageUris) {
         PostAttachmentStorage.parseStoredPaths(post.imageUris).isNotEmpty()
@@ -111,11 +108,11 @@ fun PostCard(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 2.dp)
                     ) {
-                        Text(
-                            text = resources.formatRelativeTime(post.createdAt, RelativeTimePreset.FeedCard),
+                        RelativeTimeText(
+                            timestamp = post.createdAt,
+                            preset = RelativeTimePreset.FeedCard,
                             fontSize = 11.sp,
-                            color = GrayMiddle,
-                            maxLines = 1
+                            color = GrayMiddle
                         )
                         if (post.isPinned) {
                             Icon(

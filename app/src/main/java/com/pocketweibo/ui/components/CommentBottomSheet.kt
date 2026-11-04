@@ -55,7 +55,6 @@ import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
-import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.ui.util.postOrCommentBodyForDisplay
 import kotlinx.coroutines.delay
@@ -337,7 +336,13 @@ private fun CommentItem(
                     color = GrayDark
                 )
                 Text(
-                    text = " · ${context.resources.formatRelativeTime(comment.createdAt, RelativeTimePreset.CommentSheet)}",
+                    text = " · ",
+                    fontSize = 12.sp,
+                    color = GrayMiddle
+                )
+                RelativeTimeText(
+                    timestamp = comment.createdAt,
+                    preset = RelativeTimePreset.CommentSheet,
                     fontSize = 12.sp,
                     color = GrayMiddle
                 )

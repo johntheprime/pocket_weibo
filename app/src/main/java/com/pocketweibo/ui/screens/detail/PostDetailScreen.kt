@@ -85,13 +85,13 @@ import com.pocketweibo.ui.components.CommentVoiceComposerBar
 import com.pocketweibo.ui.components.PostAudioPlayerBar
 import com.pocketweibo.ui.components.PostImageFullscreenViewer
 import com.pocketweibo.ui.components.PostImageGallery
+import com.pocketweibo.ui.components.RelativeTimeText
 import com.pocketweibo.ui.components.SelectablePostBody
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
 import com.pocketweibo.ui.util.postOrCommentBodyForDisplay
 import com.pocketweibo.ui.util.findActivity
-import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.formatReminderFireToastTime
 import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.reminder.ReminderRepeatRule
@@ -486,8 +486,6 @@ private fun PostDetailCard(
     onOpenExactAlarmSettings: () -> Unit,
     onOpenAppDetailsSettings: () -> Unit
 ) {
-    val context = LocalContext.current
-    val resources = context.resources
     val shareLabel = stringResource(R.string.post_detail_action_share)
     val commentCd = stringResource(R.string.post_detail_comment_cd)
     val moreCd = stringResource(R.string.post_detail_more_cd)
@@ -524,8 +522,9 @@ private fun PostDetailCard(
                         fontWeight = FontWeight.Bold,
                         color = GrayDark
                     )
-                    Text(
-                        text = resources.formatRelativeTime(post.createdAt, RelativeTimePreset.PostDetail),
+                    RelativeTimeText(
+                        timestamp = post.createdAt,
+                        preset = RelativeTimePreset.PostDetail,
                         fontSize = 13.sp,
                         color = GrayMiddle,
                         modifier = Modifier.padding(top = 2.dp)
@@ -818,7 +817,13 @@ private fun CommentCard(comment: CommentWithIdentity) {
                             color = GrayDark
                         )
                         Text(
-                            text = " · ${context.resources.formatRelativeTime(comment.createdAt, RelativeTimePreset.PostDetail)}",
+                            text = " · ",
+                            fontSize = 12.sp,
+                            color = GrayMiddle
+                        )
+                        RelativeTimeText(
+                            timestamp = comment.createdAt,
+                            preset = RelativeTimePreset.PostDetail,
                             fontSize = 12.sp,
                             color = GrayMiddle
                         )

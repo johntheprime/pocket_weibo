@@ -69,11 +69,11 @@ import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.R
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.media.PostAttachmentStorage
+import com.pocketweibo.ui.components.RelativeTimeText
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.util.RelativeTimePreset
-import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
 
 private const val PhotoZoomMaxScale = 4f
@@ -244,7 +244,6 @@ private fun PhotoFeedCard(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val resources = context.resources
     val density = LocalDensity.current
     var overlayVisible by remember(post.id) { mutableStateOf(true) }
     var scale by remember(post.id) { mutableFloatStateOf(1f) }
@@ -252,7 +251,6 @@ private fun PhotoFeedCard(
     var intrinsicSize by remember(post.id) { mutableStateOf<IntSize?>(null) }
     val model = rememberFirstImageModel(post.imageUris)
     val displayName = identityDisplayName(post.identityName)
-    val timeText = resources.formatRelativeTime(post.createdAt, RelativeTimePreset.FeedCard)
     val imageCdBase = stringResource(R.string.photo_feed_image_cd)
     val resetZoomA11y = stringResource(R.string.photo_feed_reset_zoom_a11y)
     val zoomInA11y = stringResource(R.string.photo_feed_double_tap_zoom_in_a11y)
@@ -389,11 +387,11 @@ private fun PhotoFeedCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = timeText,
+                    RelativeTimeText(
+                        timestamp = post.createdAt,
+                        preset = RelativeTimePreset.FeedCard,
                         color = Color.White.copy(alpha = 0.75f),
-                        fontSize = 12.sp,
-                        maxLines = 1
+                        fontSize = 12.sp
                     )
                     if (post.content.isNotBlank()) {
                         Text(

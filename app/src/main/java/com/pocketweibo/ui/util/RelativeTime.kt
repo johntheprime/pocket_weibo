@@ -53,6 +53,10 @@ fun Resources.formatRelativeTime(timestamp: Long, preset: RelativeTimePreset): S
     }
 }
 
+/** Absolute date-time shown when a relative timestamp is tapped (follows app locale). */
+fun Resources.formatExactTime(timestamp: Long): String =
+    SimpleDateFormat(getString(R.string.time_full_format), appLocale()).format(Date(timestamp))
+
 /** Absolute date-time for reminder toasts (follows app locale / [R.string.time_full_format]). */
 fun Resources.formatReminderFireToastTime(fireAtMillis: Long): String =
     SimpleDateFormat(getString(R.string.time_full_format), appLocale()).format(Date(fireAtMillis))

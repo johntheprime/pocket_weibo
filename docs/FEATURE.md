@@ -88,6 +88,7 @@ Use this file for **new product behavior** (not small bugfixes; those go in [FIX
 | F-060 | **微博置顶**：微博详情页 ⋮ 菜单增加「置顶微博」/「取消置顶」；置顶微博在列表（首页/身份筛选）靠前显示（`ORDER BY isPinned DESC`）；卡片带 📌 小图标。DB 迁移 v12。 | Done |
 | F-061 | **长按选择复制 · 按钮改为复制全文**：首页/发现等长按弹出的正文选择对话框底部的「完成」按钮改为「复制全文」，点击即复制全部正文到剪贴板（仅正文，不含作者/时间）并关闭对话框。 | Done |
 | F-062 | **长按应用图标（logo）→ 发微博快捷方式**：桌面（启动器）长按 PocketWeibo 图标，菜单出现「发微博」静态 App Shortcut（Android 7.1+）；点击直接打开写微博页（`MainActivity.ACTION_NEW_POST`，自动关闭已打开的详情/列表/设置页）；中英文标签。 | Done |
+| F-063 | **相对时间点按查看具体时间**：首页卡片、微博详情（正文与评论）、评论底部弹层、图片流叠层中的相对时间（如「3小时前」）**点按**后切换为**具体日期时间**（`time_full_format`，含星期与 `时:分`），再次点按恢复相对时间；本身已是绝对时间的旧内容不响应。 | Done |
 
 _Add new rows for upcoming work; keep IDs incrementing._
 
