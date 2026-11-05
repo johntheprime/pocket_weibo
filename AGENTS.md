@@ -50,6 +50,7 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"  
 
 ## Shipping workflow (mandatory for this repo)
 
+- Work on a short-lived branch (`feat/…`, `fix/…`, `chore/…`) and open a pull request; `main` only changes through a merged PR with a green `CI / build` check. Do not push directly to `main`.
 - One commit per user request; do not bundle unrelated changes.
 - Bump `versionCode` by 1 for every shippable change. Bump `versionName`: MINOR for a new user-facing feature, PATCH for a fix/small correction.
 - Record user-facing features in `docs/FEATURE.md` (next `F-xxx` row) and notable fixes in `docs/FIX.md`. The ledgers are written in Chinese; match the existing table style.
