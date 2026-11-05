@@ -19,6 +19,18 @@ object ReminderRepeatRule {
     fun isRepeating(rule: String): Boolean =
         rule != NONE && rule in setOf(DAILY, WEEKLY, MONTHLY, WORKDAYS)
 
+    /**
+     * RFC 5545 RRULE for a system calendar event, or `null` for a one-shot reminder.
+     * The event start time carries the local clock time, so no BYHOUR/BYMINUTE is needed.
+     */
+    fun toCalendarRrule(rule: String): String? = when (rule) {
+        DAILY -> "FREQ=DAILY"
+        WEEKLY -> "FREQ=WEEKLY"
+        MONTHLY -> "FREQ=MONTHLY"
+        WORKDAYS -> "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
+        else -> null
+    }
+
     /** Next occurrence in local timezone after [lastFireAtMillis] (exclusive step from that instant). */
     fun computeNextFireAfter(lastFireAtMillis: Long, rule: String): Long? {
         if (!isRepeating(rule)) return null

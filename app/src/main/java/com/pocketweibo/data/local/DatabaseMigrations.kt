@@ -173,6 +173,14 @@ object DatabaseMigrations {
         }
     }
 
+    /** System calendar sync: remember the calendar/event created for each reminder. */
+    val MIGRATION_12_13 = object : Migration(12, 13) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE post_reminders ADD COLUMN calendarEventId INTEGER")
+            db.execSQL("ALTER TABLE post_reminders ADD COLUMN calendarId INTEGER")
+        }
+    }
+
     val MIGRATION_10_11 = object : Migration(10, 11) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(

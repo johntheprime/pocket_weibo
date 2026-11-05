@@ -52,4 +52,12 @@ interface PostReminderDao {
 
     @Query("UPDATE post_reminders SET fireAtMillis = :nextFireAtMillis WHERE id = :id")
     suspend fun updateFireAt(id: Long, nextFireAtMillis: Long)
+
+    @Query(
+        "UPDATE post_reminders SET calendarEventId = :eventId, calendarId = :calendarId WHERE id = :id"
+    )
+    suspend fun updateCalendarIds(id: Long, eventId: Long?, calendarId: Long?)
+
+    @Query("UPDATE post_reminders SET calendarEventId = NULL, calendarId = NULL")
+    suspend fun clearAllCalendarIds()
 }

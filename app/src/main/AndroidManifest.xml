@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Optional mirror of post reminders into system calendar events (Settings toggle). -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
     <!-- Lets AlarmManager schedule user-visible reminders reliably (see reminder dialog for battery tips). -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 

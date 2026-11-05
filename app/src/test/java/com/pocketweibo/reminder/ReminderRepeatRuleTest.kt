@@ -76,6 +76,19 @@ class ReminderRepeatRuleTest {
     }
 
     @Test
+    fun calendarRrule_matchesRepeatRules() {
+        assertNull(ReminderRepeatRule.toCalendarRrule(ReminderRepeatRule.NONE))
+        assertNull(ReminderRepeatRule.toCalendarRrule("UNKNOWN"))
+        assertEquals("FREQ=DAILY", ReminderRepeatRule.toCalendarRrule(ReminderRepeatRule.DAILY))
+        assertEquals("FREQ=WEEKLY", ReminderRepeatRule.toCalendarRrule(ReminderRepeatRule.WEEKLY))
+        assertEquals("FREQ=MONTHLY", ReminderRepeatRule.toCalendarRrule(ReminderRepeatRule.MONTHLY))
+        assertEquals(
+            "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
+            ReminderRepeatRule.toCalendarRrule(ReminderRepeatRule.WORKDAYS)
+        )
+    }
+
+    @Test
     fun nextAfterSuccessfulFire_skipsPastOccurrences() {
         val zone = ZoneId.systemDefault()
         val fired = ZonedDateTime.of(2026, 1, 1, 9, 0, 0, 0, zone).toInstant().toEpochMilli()

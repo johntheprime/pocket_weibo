@@ -40,6 +40,8 @@ import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.R
 import com.pocketweibo.data.prefs.ReminderQuickPresetId
 import com.pocketweibo.data.prefs.ReminderQuickPresetStats
+import com.pocketweibo.data.prefs.UiPreferences
+import com.pocketweibo.reminder.PostReminderCalendarSync
 import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
@@ -125,9 +127,12 @@ fun ReminderPickerDialog(
     )
     var repeatRule by remember { mutableStateOf(ReminderRepeatRule.NONE) }
     var showRepeatOptions by remember { mutableStateOf(false) }
+    var calendarSyncOn by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         repeatRule = ReminderRepeatRule.NONE
         showRepeatOptions = false
+        calendarSyncOn = UiPreferences.isCalendarSyncEnabled(appContext) &&
+            PostReminderCalendarSync.hasPermissions(appContext)
     }
     val canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
         (context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager)
@@ -163,6 +168,14 @@ fun ReminderPickerDialog(
                     style = MaterialTheme.typography.bodySmall,
                     color = GrayMiddle
                 )
+                if (!calendarSyncOn) {
+                    Text(
+                        text = stringResource(R.string.post_detail_remind_calendar_sync_off),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = WeiboOrange,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !canExact) {
                     TextButton(
                         onClick = onOpenExactAlarmSettings,
