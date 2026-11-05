@@ -18,6 +18,7 @@ private val Context.uiPreferencesDataStore: DataStore<Preferences> by preference
 
 private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
 private val KEY_DIAGNOSTIC_LOG_CAPTURE = booleanPreferencesKey("diagnostic_log_capture")
+private val KEY_CALENDAR_SYNC_ENABLED = booleanPreferencesKey("calendar_sync_enabled")
 
 private val KEY_SHAKE_EV_H = intPreferencesKey("shake_rem_evening_h")
 private val KEY_SHAKE_EV_M = intPreferencesKey("shake_rem_evening_m")
@@ -57,6 +58,17 @@ object UiPreferences {
 
     suspend fun setDiagnosticLogCaptureEnabled(context: Context, enabled: Boolean) {
         context.uiPreferencesDataStore.edit { it[KEY_DIAGNOSTIC_LOG_CAPTURE] = enabled }
+    }
+
+    /** Mirror post reminders into system calendar events (requires calendar permissions). */
+    fun calendarSyncEnabledFlow(context: Context): Flow<Boolean> =
+        context.uiPreferencesDataStore.data.map { prefs -> prefs[KEY_CALENDAR_SYNC_ENABLED] == true }
+
+    suspend fun isCalendarSyncEnabled(context: Context): Boolean =
+        context.uiPreferencesDataStore.data.map { it[KEY_CALENDAR_SYNC_ENABLED] == true }.first()
+
+    suspend fun setCalendarSyncEnabled(context: Context, enabled: Boolean) {
+        context.uiPreferencesDataStore.edit { it[KEY_CALENDAR_SYNC_ENABLED] = enabled }
     }
 
     /** Shake on post detail: default “today evening” and “next morning” reminder anchors. */

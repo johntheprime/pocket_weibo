@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.me
 
+import android.Manifest
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
@@ -65,6 +66,7 @@ import com.pocketweibo.data.prefs.ShakeReminderSettings
 import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.diagnostic.DiagnosticLog
 import com.pocketweibo.diagnostic.DiagnosticLogBuffer
+import com.pocketweibo.reminder.PostReminderCalendarSync
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
@@ -160,6 +162,141 @@ private fun ShakeReminderSettingsSection() {
 }
 
 @Composable
+private fun CalendarSyncSettingsSection() {
+    val context = LocalContext.current
+    val app = context.applicationContext as PocketWeiboApp
+    val scope = rememberCoroutineScope()
+    var enabled by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        enabled = UiPreferences.isCalendarSyncEnabled(app) &&
+            PostReminderCalendarSync.hasPermissions(app)
+    }
+
+    fun showToast(message: String) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    fun enableAndBackfill() {
+        scope.launch {
+            busy = true
+            UiPreferences.setCalendarSyncEnabled(app, true)
+            val result = runCatching { app.repository.backfillRemindersToCalendar() }.getOrNull()
+            enabled = true
+            busy = false
+            val message = when {
+                result == null -> context.getString(R.string.settings_calendar_sync_permission_denied_toast)
+                result.failed > 0 -> context.getString(R.string.settings_calendar_sync_partial_toast, result.failed)
+                else -> context.getString(R.string.settings_calendar_sync_enabled_toast)
+            }
+            showToast(message)
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        val granted = grants[Manifest.permission.READ_CALENDAR] == true &&
+            grants[Manifest.permission.WRITE_CALENDAR] == true
+        if (granted) {
+            enableAndBackfill()
+        } else {
+            enabled = false
+            scope.launch { UiPreferences.setCalendarSyncEnabled(app, false) }
+            showToast(context.getString(R.string.settings_calendar_sync_permission_denied_toast))
+        }
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.settings_calendar_sync_section_title),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = GrayDark
+            )
+            Text(
+                text = stringResource(R.string.settings_calendar_sync_section_desc),
+                fontSize = 13.sp,
+                color = GrayMiddle,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.settings_calendar_sync_toggle_title),
+                        fontSize = 15.sp,
+                        color = GrayDark
+                    )
+                    Text(
+                        text = stringResource(
+                            when {
+                                busy -> R.string.settings_calendar_sync_state_busy
+                                enabled -> R.string.settings_calendar_sync_state_on
+                                else -> R.string.settings_calendar_sync_state_off
+                            }
+                        ),
+                        fontSize = 12.sp,
+                        color = if (enabled) WeiboOrange else GrayMiddle,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+                Switch(
+                    checked = enabled,
+                    enabled = !busy,
+                    onCheckedChange = { want ->
+                        if (want) {
+                            if (PostReminderCalendarSync.hasPermissions(context)) {
+                                enableAndBackfill()
+                            } else {
+                                permissionLauncher.launch(
+                                    arrayOf(
+                                        Manifest.permission.READ_CALENDAR,
+                                        Manifest.permission.WRITE_CALENDAR
+                                    )
+                                )
+                            }
+                        } else {
+                            scope.launch {
+                                busy = true
+                                UiPreferences.setCalendarSyncEnabled(app, false)
+                                runCatching { app.repository.removeAllCalendarEvents() }
+                                enabled = false
+                                busy = false
+                                showToast(
+                                    context.getString(R.string.settings_calendar_sync_disabled_toast)
+                                )
+                            }
+                        }
+                    }
+                )
+            }
+            if (enabled) {
+                Text(
+                    text = stringResource(R.string.settings_calendar_sync_hint),
+                    fontSize = 12.sp,
+                    color = GrayMiddle,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun MeSettingsScreen(
     onBack: () -> Unit,
     onOpenIdentities: () -> Unit = {},
@@ -235,6 +372,10 @@ fun MeSettingsScreen(
             item {
                 Divider()
                 ShakeReminderSettingsSection()
+            }
+            item {
+                Divider()
+                CalendarSyncSettingsSection()
             }
             item {
                 Divider()

@@ -24,5 +24,9 @@ data class PostReminderEntity(
     val postId: Long,
     val fireAtMillis: Long,
     /** [com.pocketweibo.reminder.ReminderRepeatRule] value. */
-    val repeatRule: String = ReminderRepeatRule.NONE
+    val repeatRule: String = ReminderRepeatRule.NONE,
+    /** System calendar event created for this reminder; `null` when calendar sync is off. */
+    val calendarEventId: Long? = null,
+    /** Calendar that owns [calendarEventId]. */
+    val calendarId: Long? = null
 )

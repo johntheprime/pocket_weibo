@@ -27,9 +27,11 @@ import com.pocketweibo.data.media.CommentAttachmentStorage
 import com.pocketweibo.data.media.IdentityAvatarStorage
 import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.data.media.PostVoice
+import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.reminder.IdentityScheduleAlarmScheduler
 import com.pocketweibo.reminder.IdentityScheduleNextFire
 import com.pocketweibo.reminder.PostReminderAlarmScheduler
+import com.pocketweibo.reminder.PostReminderCalendarSync
 import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.R
 import kotlinx.coroutines.Dispatchers
@@ -292,7 +294,83 @@ class WeiboRepository(
                 "DB insert reminder rowId=$rowId postId=$postId fireAtMillis=$fireAtMillis repeat=$repeatRule"
             )
             PostReminderAlarmScheduler.schedule(context, rowId, postId, fireAtMillis)
+            syncReminderToCalendar(rowId, postId, fireAtMillis, repeatRule)
         }
+    }
+
+    /**
+     * Creates a system-calendar event for [reminderId] when calendar sync is enabled.
+     * Returns `true` when an event was created and its ID stored.
+     */
+    private suspend fun syncReminderToCalendar(
+        reminderId: Long,
+        postId: Long,
+        fireAtMillis: Long,
+        repeatRule: String,
+    ): Boolean {
+        if (!UiPreferences.isCalendarSyncEnabled(context)) return false
+        if (!PostReminderCalendarSync.hasPermissions(context)) {
+            DiagnosticLog.w(REMINDER_LOG_TAG, "calendar sync on but permission missing; skip reminder=$reminderId")
+            return false
+        }
+        val calendarId = PostReminderCalendarSync.findWritableCalendarId(context) ?: run {
+            DiagnosticLog.w(REMINDER_LOG_TAG, "calendar sync on but no writable calendar; skip reminder=$reminderId")
+            return false
+        }
+        val post = postDao.getPostEntityById(postId) ?: return false
+        val identityName = post.identityId?.let { identityDao.getIdentityById(it)?.name }
+        val preview = post.content.trim().replace('\n', ' ').take(60)
+        val title = if (preview.isBlank()) {
+            context.getString(R.string.calendar_event_title)
+        } else {
+            context.getString(R.string.calendar_event_title_with_preview, preview)
+        }
+        val description = buildString {
+            if (!identityName.isNullOrBlank()) append(identityName).append(": ")
+            append(post.content)
+        }
+        val event = PostReminderCalendarSync.createEvent(
+            context = context,
+            calendarId = calendarId,
+            title = title,
+            description = description,
+            startMillis = fireAtMillis,
+            repeatRule = repeatRule,
+        ) ?: return false
+        postReminderDao.updateCalendarIds(reminderId, event.eventId, event.calendarId)
+        return true
+    }
+
+    data class CalendarBackfillResult(val synced: Int, val failed: Int)
+
+    /**
+     * Writes every pending reminder that has no calendar event yet. Used after the user enables
+     * calendar sync, and safe to call repeatedly.
+     */
+    suspend fun backfillRemindersToCalendar(): CalendarBackfillResult = withContext(Dispatchers.IO) {
+        var synced = 0
+        var failed = 0
+        val rows = postReminderDao.listAll()
+        for (row in rows) {
+            if (row.calendarEventId != null) continue
+            if (syncReminderToCalendar(row.id, row.postId, row.fireAtMillis, row.repeatRule)) {
+                synced++
+            } else {
+                failed++
+            }
+        }
+        DiagnosticLog.d(REMINDER_LOG_TAG, "calendar backfill synced=$synced failed=$failed")
+        CalendarBackfillResult(synced, failed)
+    }
+
+    /** Deletes every app-created calendar event and clears stored calendar IDs. */
+    suspend fun removeAllCalendarEvents() = withContext(Dispatchers.IO) {
+        val rows = postReminderDao.listAll()
+        for (row in rows) {
+            row.calendarEventId?.let { PostReminderCalendarSync.deleteEvent(context, it) }
+        }
+        postReminderDao.clearAllCalendarIds()
+        DiagnosticLog.d(REMINDER_LOG_TAG, "removed app calendar events count=${rows.count { it.calendarEventId != null }}")
     }
 
     /**
@@ -320,6 +398,7 @@ class WeiboRepository(
         val rows = postReminderDao.listForPost(postId)
         for (r in rows) {
             PostReminderAlarmScheduler.cancel(context, r.id, r.postId)
+            r.calendarEventId?.let { PostReminderCalendarSync.deleteEvent(context, it) }
         }
         postReminderDao.deleteByPostId(postId)
     }
@@ -331,6 +410,7 @@ class WeiboRepository(
         withContext(Dispatchers.IO) {
             val row = postReminderDao.getById(reminderId) ?: return@withContext
             PostReminderAlarmScheduler.cancel(context, row.id, row.postId)
+            row.calendarEventId?.let { PostReminderCalendarSync.deleteEvent(context, it) }
             postReminderDao.deleteById(reminderId)
         }
     }
@@ -1191,6 +1271,9 @@ class WeiboRepository(
     }
 
     suspend fun clearAllData() {
+        for (row in postReminderDao.listAll()) {
+            row.calendarEventId?.let { PostReminderCalendarSync.deleteEvent(context, it) }
+        }
         commentDao.deleteAll()
         postDao.deleteAll()
         identityDao.deleteAll()

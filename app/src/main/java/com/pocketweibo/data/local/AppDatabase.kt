@@ -17,7 +17,7 @@ import com.pocketweibo.data.local.entity.PostReminderEntity
 
 @Database(
     entities = [IdentityEntity::class, PostEntity::class, CommentEntity::class, PostReminderEntity::class, IdentityScheduleEntity::class],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -48,7 +48,8 @@ abstract class AppDatabase : RoomDatabase() {
                         DatabaseMigrations.MIGRATION_8_9,
                         DatabaseMigrations.MIGRATION_9_10,
                         DatabaseMigrations.MIGRATION_10_11,
-                        DatabaseMigrations.MIGRATION_11_12
+                        DatabaseMigrations.MIGRATION_11_12,
+                        DatabaseMigrations.MIGRATION_12_13
                     )
                     .build()
                 INSTANCE = instance
