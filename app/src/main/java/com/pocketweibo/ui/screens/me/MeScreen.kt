@@ -56,6 +56,7 @@ import com.pocketweibo.ui.theme.Surface as SurfaceColor
 import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.util.formatReminderFireAt
 import com.pocketweibo.ui.util.formatTimeUntilFire
+import com.pocketweibo.ui.util.reminderRepeatShortLabel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 @Composable
@@ -260,17 +261,7 @@ fun MeScreen(
                                 pendingReminders.forEach { row ->
                                     val fireStr = res.formatReminderFireAt(row.fireAtMillis)
                                     val untilStr = res.formatTimeUntilFire(row.fireAtMillis, nowMillis)
-                                    val repeatShort = when (row.repeatRule) {
-                                        ReminderRepeatRule.DAILY ->
-                                            stringResource(R.string.reminder_repeat_short_daily)
-                                        ReminderRepeatRule.WORKDAYS ->
-                                            stringResource(R.string.reminder_repeat_short_workdays)
-                                        ReminderRepeatRule.WEEKLY ->
-                                            stringResource(R.string.reminder_repeat_short_weekly)
-                                        ReminderRepeatRule.MONTHLY ->
-                                            stringResource(R.string.reminder_repeat_short_monthly)
-                                        else -> null
-                                    }
+                                    val repeatShort = res.reminderRepeatShortLabel(row.repeatRule)
                                     val subtitleText = if (ReminderRepeatRule.isRepeating(row.repeatRule) && repeatShort != null) {
                                         stringResource(
                                             R.string.me_reminders_subtitle_next_repeat,

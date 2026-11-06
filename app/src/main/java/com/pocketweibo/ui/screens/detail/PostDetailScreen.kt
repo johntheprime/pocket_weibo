@@ -39,6 +39,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
@@ -77,6 +78,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.dao.CommentWithIdentity
+import com.pocketweibo.data.local.entity.PostReminderEntity
 import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.data.prefs.nextShakeReminderFireAtMillis
 import com.pocketweibo.data.media.PostAttachmentStorage
@@ -93,7 +95,9 @@ import com.pocketweibo.ui.util.copyPlainToClipboard
 import com.pocketweibo.ui.util.postOrCommentBodyForDisplay
 import com.pocketweibo.ui.util.findActivity
 import com.pocketweibo.ui.util.formatReminderFireToastTime
+import com.pocketweibo.ui.util.formatReminderFireAt
 import com.pocketweibo.ui.util.identityDisplayName
+import com.pocketweibo.ui.util.reminderRepeatShortLabel
 import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.ui.reminder.ReminderPickerDialog
 import com.pocketweibo.ui.theme.Background
@@ -228,6 +232,7 @@ fun PostDetailScreen(
 
     val post by viewModel.post.collectAsState()
     val comments by viewModel.comments.collectAsState()
+    val reminders by viewModel.reminders.collectAsState()
     var commentText by remember { mutableStateOf("") }
     var lastCommentEditedAt by remember(postId) { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     var lastShakeReminderScheduledAt by remember(postId) { mutableLongStateOf(0L) }
@@ -414,31 +419,36 @@ fun PostDetailScreen(
         ) {
             post?.let { currentPost ->
                 item {
-                    PostDetailCard(
-                        post = currentPost,
-                        onShareClick = {
-                            sharePost(
-                                context,
-                                context.identityDisplayName(currentPost.identityName),
-                                currentPost.content
-                            )
-                        },
-                        onPostImageClick = { index ->
-                            imageViewer = PostAttachmentStorage.parseStoredPaths(currentPost.imageUris) to index
-                        },
-                        onCopyPost = {
-                            context.copyPlainToClipboard(
-                                context.getString(R.string.post_detail_copy_label),
-                                currentPost.content,
-                                toast = context.getString(R.string.toast_clipboard_copied)
-                            )
-                        },
-                        onDeletePost = { viewModel.deletePost(onBack) },
-                        onTogglePin = { viewModel.togglePin() },
-                        onScheduleReminderAt = scheduleReminderAt,
-                        onOpenExactAlarmSettings = openExactAlarmSettings,
-                        onOpenAppDetailsSettings = openAppDetailsSettings
-                    )
+                    Column {
+                        PostDetailCard(
+                            post = currentPost,
+                            onShareClick = {
+                                sharePost(
+                                    context,
+                                    context.identityDisplayName(currentPost.identityName),
+                                    currentPost.content
+                                )
+                            },
+                            onPostImageClick = { index ->
+                                imageViewer = PostAttachmentStorage.parseStoredPaths(currentPost.imageUris) to index
+                            },
+                            onCopyPost = {
+                                context.copyPlainToClipboard(
+                                    context.getString(R.string.post_detail_copy_label),
+                                    currentPost.content,
+                                    toast = context.getString(R.string.toast_clipboard_copied)
+                                )
+                            },
+                            onDeletePost = { viewModel.deletePost(onBack) },
+                            onTogglePin = { viewModel.togglePin() },
+                            onScheduleReminderAt = scheduleReminderAt,
+                            onOpenExactAlarmSettings = openExactAlarmSettings,
+                            onOpenAppDetailsSettings = openAppDetailsSettings
+                        )
+                        if (reminders.isNotEmpty()) {
+                            ReminderDetailsSection(reminders = reminders)
+                        }
+                    }
                 }
 
                 item { CommentsHeader(commentCount = comments.size, comments = comments) }
@@ -674,6 +684,56 @@ private fun PostDetailCard(
                     onOpenAppDetailsSettings = onOpenAppDetailsSettings,
                     titleText = stringResource(R.string.post_detail_remind_title),
                     additionalHint = null
+                )
+            }
+        }
+    }
+}
+
+/** Pending reminders for the open post; hidden entirely when the post has none. */
+@Composable
+private fun ReminderDetailsSection(reminders: List<PostReminderEntity>) {
+    val res = LocalContext.current.resources
+    Divider(thickness = 0.5.dp)
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = null,
+                    tint = WeiboOrange,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = stringResource(R.string.post_detail_reminder_section_title),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GrayDark,
+                    modifier = Modifier
+                        .padding(start = 6.dp)
+                        .weight(1f)
+                )
+                Text(
+                    text = "(${reminders.size})",
+                    fontSize = 14.sp,
+                    color = GrayMiddle
+                )
+            }
+            reminders.forEach { reminder ->
+                val fireText = res.formatReminderFireAt(reminder.fireAtMillis)
+                val repeatText = res.reminderRepeatShortLabel(reminder.repeatRule)
+                Text(
+                    text = if (repeatText != null) {
+                        stringResource(R.string.post_detail_reminder_row_repeat, fireText, repeatText)
+                    } else {
+                        stringResource(R.string.post_detail_reminder_row_once, fireText)
+                    },
+                    fontSize = 13.sp,
+                    color = WeiboOrange,
+                    modifier = Modifier.padding(top = 6.dp, start = 24.dp)
                 )
             }
         }

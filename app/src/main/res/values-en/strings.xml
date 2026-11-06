@@ -256,6 +256,10 @@
     <string name="reminder_due_soon">Due now</string>
     <string name="reminder_in_under_minute">Under 1 minute</string>
     <string name="reminder_in_mixed_future">%1$dh %2$dm left</string>
+    <string name="post_card_reminder_badge_cd">Reminder set: %1$s</string>
+    <string name="post_detail_reminder_section_title">Reminders</string>
+    <string name="post_detail_reminder_row_once">%1$s · Once</string>
+    <string name="post_detail_reminder_row_repeat">Next %1$s · %2$s</string>
     <string name="comments_header">Comments</string>
     <string name="comments_copy_all">Copy all</string>
     <string name="comments_copy_all_cd">Copy all comment bodies on this post to the clipboard (numbered from oldest to newest, without author or time)</string>

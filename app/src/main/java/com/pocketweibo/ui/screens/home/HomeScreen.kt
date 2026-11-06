@@ -116,6 +116,13 @@ fun HomeScreen(
     val posts by app.repository.allPosts.collectAsState(initial = emptyList())
     val commentSearchRows by app.repository.allCommentsForSearch.collectAsState(initial = emptyList())
     val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
+    val pendingReminders by app.repository.observePostReminders()
+        .collectAsState(initial = emptyList())
+    val nextReminderByPostId = remember(pendingReminders) {
+        pendingReminders
+            .groupBy { it.postId }
+            .mapValues { (_, rows) -> rows.minBy { it.fireAtMillis } }
+    }
     val comments by viewModel.comments.collectAsState()
     val showCommentSheet by viewModel.showCommentSheet.collectAsState()
     val selectedPostId by viewModel.selectedPostId.collectAsState()
@@ -403,7 +410,9 @@ fun HomeScreen(
                                             post.content
                                         )
                                     },
-                                    onPostClick = { onPostClick(post.id) }
+                                    onPostClick = { onPostClick(post.id) },
+                                    reminderFireAtMillis =
+                                        nextReminderByPostId[post.id]?.fireAtMillis
                                 )
                             }
                         }

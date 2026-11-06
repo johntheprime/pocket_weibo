@@ -406,6 +406,10 @@ class WeiboRepository(
     fun observePendingRemindersWithPreview(): Flow<List<PostReminderWithPreview>> =
         postReminderDao.observePendingRemindersWithPreview()
 
+    /** Pending reminders keyed by post, used for feed markers and post detail. */
+    fun observePostReminders(): Flow<List<PostReminderEntity>> =
+        postReminderDao.observeAll()
+
     suspend fun cancelReminderById(reminderId: Long) {
         withContext(Dispatchers.IO) {
             val row = postReminderDao.getById(reminderId) ?: return@withContext
