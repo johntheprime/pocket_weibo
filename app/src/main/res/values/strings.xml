@@ -268,6 +268,7 @@
     <string name="comments_empty">暂无评论，快来抢沙发吧</string>
 
     <string name="comment_sheet_title">评论</string>
+    <string name="comment_sheet_open_post_cd">打开正在评论的微博</string>
     <string name="comment_hint">写评论…</string>
     <string name="comment_send_cd">发送</string>
     <string name="toast_comment_copied">评论已复制</string>

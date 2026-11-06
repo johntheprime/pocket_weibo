@@ -126,6 +126,9 @@ fun HomeScreen(
     val comments by viewModel.comments.collectAsState()
     val showCommentSheet by viewModel.showCommentSheet.collectAsState()
     val selectedPostId by viewModel.selectedPostId.collectAsState()
+    val selectedPost = remember(selectedPostId, posts) {
+        selectedPostId?.let { id -> posts.firstOrNull { it.id == id } }
+    }
     val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
 
     val commentSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -431,6 +434,13 @@ fun HomeScreen(
             CommentBottomSheet(
                 sheetState = commentSheetState,
                 comments = comments,
+                post = selectedPost,
+                onOpenPost = selectedPost?.let { post ->
+                    {
+                        viewModel.closeComments()
+                        onPostClick(post.id)
+                    }
+                },
                 activeIdentityId = activeIdentity?.id,
                 onDismiss = { viewModel.closeComments() },
                 onSendComment = { content, voiceFile ->

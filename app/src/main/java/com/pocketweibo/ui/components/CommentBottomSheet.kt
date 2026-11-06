@@ -6,13 +6,17 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -41,14 +45,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.pocketweibo.R
 import com.pocketweibo.data.local.dao.CommentWithIdentity
+import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.media.VoiceRecordingController
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
@@ -63,16 +72,28 @@ import java.io.File
 private const val COMMENT_DELETE_WINDOW_MS = 48L * 60L * 60L * 1000L
 private const val COMMENT_VOICE_MAX_RECORD_MS = 120_000L
 
+/**
+ * The panel is content-sized up to this fraction of the screen, so a post with few comments gets a
+ * short panel instead of the old fixed 92% sheet. While the keyboard is open the cap is relaxed so
+ * the composer and comment list still fit above the IME.
+ */
+private const val COMMENT_SHEET_MAX_HEIGHT_FRACTION = 0.55f
+private const val COMMENT_SHEET_IME_MAX_HEIGHT_FRACTION = 0.92f
+
 /** Uses device clock; same rule as UI copy in [CommentItem]. */
 fun isCommentWithinDeleteWindow(createdAt: Long): Boolean =
     System.currentTimeMillis() - createdAt <= COMMENT_DELETE_WINDOW_MS
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Suppress("UNUSED_PARAMETER")
 @Composable
 fun CommentBottomSheet(
     sheetState: SheetState,
     comments: List<CommentWithIdentity>,
+    /** Post being commented on; shown as a compact preview so the panel never hides it. */
+    post: PostWithIdentity? = null,
+    /** Opens the post above in detail; the preview is not clickable when null. */
+    onOpenPost: (() -> Unit)? = null,
     activeIdentityId: Long?,
     onDismiss: () -> Unit,
     onSendComment: (String, File?) -> Unit,
@@ -139,6 +160,13 @@ fun CommentBottomSheet(
         }
     }
 
+    val maxSheetHeight = LocalConfiguration.current.screenHeightDp.dp *
+        if (WindowInsets.isImeVisible) {
+            COMMENT_SHEET_IME_MAX_HEIGHT_FRACTION
+        } else {
+            COMMENT_SHEET_MAX_HEIGHT_FRACTION
+        }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -147,7 +175,7 @@ fun CommentBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.92f)
+                .heightIn(max = maxSheetHeight)
                 .imePadding()
                 .navigationBarsPadding()
                 .padding(bottom = 8.dp)
@@ -176,10 +204,15 @@ fun CommentBottomSheet(
 
             Divider()
 
+            if (post != null) {
+                CommentPostPreview(post = post, onOpenPost = onOpenPost)
+                Divider()
+            }
+
             if (comments.isEmpty()) {
                 Box(
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(1f, fill = false)
                         .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
@@ -195,7 +228,7 @@ fun CommentBottomSheet(
                     state = commentListState,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+                        .weight(1f, fill = false)
                 ) {
                     items(comments, key = { it.id }) { comment ->
                         CommentItem(
@@ -283,6 +316,75 @@ fun CommentBottomSheet(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 textFieldShape = RoundedCornerShape(20.dp),
                 textMaxLines = 5,
+            )
+        }
+    }
+}
+
+/**
+ * Compact preview of the post being commented on: keeps the original content visible while the
+ * panel is open and offers a shortcut into the post detail.
+ */
+@Composable
+private fun CommentPostPreview(post: PostWithIdentity, onOpenPost: (() -> Unit)?) {
+    val displayName = identityDisplayName(post.identityName)
+    val body = postOrCommentBodyForDisplay(
+        content = post.content,
+        audioPath = post.audioPath,
+        voiceOnlyLabel = stringResource(R.string.comment_body_voice_only),
+    )
+    val openCd = stringResource(R.string.comment_sheet_open_post_cd)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onOpenPost != null) {
+                    Modifier
+                        .clickable(onClick = onOpenPost)
+                        .semantics(mergeDescendants = true) { contentDescription = openCd }
+                } else {
+                    Modifier
+                }
+            )
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Avatar(
+            name = displayName,
+            color = Color(0xFF4A90D9),
+            size = 28.dp,
+            avatarResName = post.identityAvatarResName,
+            customAvatarUri = post.identityCustomAvatarUri
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 8.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = displayName,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GrayDark,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                RelativeTimeText(
+                    timestamp = post.createdAt,
+                    preset = RelativeTimePreset.FeedCard,
+                    fontSize = 11.sp,
+                    color = GrayMiddle
+                )
+            }
+            Text(
+                text = body,
+                fontSize = 13.sp,
+                color = GrayDark,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 3.dp)
             )
         }
     }

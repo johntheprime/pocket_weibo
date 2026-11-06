@@ -268,6 +268,7 @@
     <string name="comments_empty">No comments yet</string>
 
     <string name="comment_sheet_title">Comments</string>
+    <string name="comment_sheet_open_post_cd">Open the post you are commenting on</string>
     <string name="comment_hint">Write a comment…</string>
     <string name="comment_send_cd">Send</string>
     <string name="toast_comment_copied">Comment copied</string>
