@@ -320,7 +320,6 @@ fun PostDetailScreen(
             // Pinning this to the bottomBar slot of the Scaffold handles the keyboard transition best
             Surface(
                 color = Color.White,
-                tonalElevation = 3.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .imePadding() // This pushes the input bar up
@@ -401,7 +400,7 @@ fun PostDetailScreen(
                                 }
                             }
                         },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     )
                 }
             }
