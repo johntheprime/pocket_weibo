@@ -31,6 +31,10 @@ interface PostReminderDao {
     @Query("SELECT * FROM post_reminders ORDER BY fireAtMillis ASC")
     suspend fun listAll(): List<PostReminderEntity>
 
+    /** Live pending reminders for feed markers and the post-detail section. */
+    @Query("SELECT * FROM post_reminders ORDER BY fireAtMillis ASC")
+    fun observeAll(): Flow<List<PostReminderEntity>>
+
     @Query(
         """
         SELECT r.id AS reminderId, r.postId AS postId, r.fireAtMillis AS fireAtMillis,

@@ -32,7 +32,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import com.pocketweibo.R
 import androidx.compose.ui.text.style.TextAlign
@@ -42,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.media.PostAttachmentStorage
 import com.pocketweibo.ui.util.RelativeTimePreset
+import com.pocketweibo.ui.util.formatReminderFireAt
 import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.GrayDark
@@ -56,10 +60,15 @@ fun PostCard(
     onPostClick: () -> Unit,
     /** List feeds are text-first; images remain visible in post detail. */
     showPostImages: Boolean = false,
+    /** Next pending reminder for this post; shows an orange badge when non-null. */
+    reminderFireAtMillis: Long? = null,
     modifier: Modifier = Modifier
 ) {
     var showSelectableCopy by remember { mutableStateOf(false) }
     val displayName = identityDisplayName(post.identityName)
+    val reminderLabel = reminderFireAtMillis?.let {
+        LocalContext.current.resources.formatReminderFireAt(it)
+    }
     val hasStoredImages = remember(post.id, post.imageUris) {
         PostAttachmentStorage.parseStoredPaths(post.imageUris).isNotEmpty()
     }
@@ -130,6 +139,14 @@ fun PostCard(
                                 modifier = Modifier.padding(start = 4.dp)
                             )
                         }
+                        if (reminderLabel != null) {
+                            ReminderBadge(
+                                label = reminderLabel,
+                                modifier = Modifier
+                                    .padding(start = 4.dp)
+                                    .weight(1f, fill = false)
+                            )
+                        }
                     }
                 }
             }
@@ -191,6 +208,33 @@ fun PostCard(
                 onDismiss = { showSelectableCopy = false }
             )
         }
+    }
+}
+
+@Composable
+private fun ReminderBadge(label: String, modifier: Modifier = Modifier) {
+    val badgeCd = stringResource(R.string.post_card_reminder_badge_cd, label)
+    Row(
+        modifier = modifier
+            .background(WeiboOrange.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
+            .semantics(mergeDescendants = true) { contentDescription = badgeCd }
+            .padding(horizontal = 4.dp, vertical = 1.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Schedule,
+            contentDescription = null,
+            tint = WeiboOrange,
+            modifier = Modifier.size(11.dp)
+        )
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            color = WeiboOrange,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 2.dp)
+        )
     }
 }
 

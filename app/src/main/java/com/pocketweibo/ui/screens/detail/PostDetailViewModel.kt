@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.pocketweibo.data.local.dao.CommentWithIdentity
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.PostEntity
+import com.pocketweibo.data.local.entity.PostReminderEntity
 import com.pocketweibo.data.repository.WeiboRepository
 import com.pocketweibo.diagnostic.DiagnosticLog
 import com.pocketweibo.reminder.ReminderRepeatRule
@@ -22,17 +23,23 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
     private var activePostId: Long = 0L
     private var postRefreshJob: Job? = null
     private var commentsJob: Job? = null
+    private var remindersJob: Job? = null
 
     private val _post = MutableStateFlow<PostWithIdentity?>(null)
     val post: StateFlow<PostWithIdentity?> = _post.asStateFlow()
     
     private val _comments = MutableStateFlow<List<CommentWithIdentity>>(emptyList())
     val comments: StateFlow<List<CommentWithIdentity>> = _comments.asStateFlow()
+
+    private val _reminders = MutableStateFlow<List<PostReminderEntity>>(emptyList())
+    val reminders: StateFlow<List<PostReminderEntity>> = _reminders.asStateFlow()
     
     fun loadPost(postId: Long) {
         activePostId = postId
         postRefreshJob?.cancel()
         commentsJob?.cancel()
+        remindersJob?.cancel()
+        _reminders.value = emptyList()
         postRefreshJob = viewModelScope.launch {
             repository.allPosts.collect { posts ->
                 _post.value = posts.find { it.id == postId }
@@ -41,6 +48,11 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
         commentsJob = viewModelScope.launch {
             repository.getCommentsByPost(postId).collect { commentList ->
                 _comments.value = commentList
+            }
+        }
+        remindersJob = viewModelScope.launch {
+            repository.observePostReminders().collect { all ->
+                _reminders.value = all.filter { it.postId == postId }
             }
         }
     }
@@ -61,6 +73,7 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
     override fun onCleared() {
         postRefreshJob?.cancel()
         commentsJob?.cancel()
+        remindersJob?.cancel()
         super.onCleared()
     }
 
