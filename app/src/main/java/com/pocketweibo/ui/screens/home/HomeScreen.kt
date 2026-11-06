@@ -57,6 +57,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.Alignment
@@ -64,10 +65,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -77,6 +79,7 @@ import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.ui.components.Avatar
+import com.pocketweibo.ui.components.COMMENT_SHEET_MAX_HEIGHT_FRACTION
 import com.pocketweibo.ui.components.CommentBottomSheet
 import com.pocketweibo.ui.components.PostCard
 import com.pocketweibo.ui.components.WeiboTitleBar
@@ -131,6 +134,11 @@ fun HomeScreen(
     val commentSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val titleQuickAccessSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val scope = rememberCoroutineScope()
+
+    // Room under the last feed item so any post can be pinned to the top of the list while the
+    // comment panel (max half the screen) is open, including the last post of a short feed.
+    val commentPanelReserve =
+        (LocalConfiguration.current.screenHeightDp * COMMENT_SHEET_MAX_HEIGHT_FRACTION).dp
 
     var remindPickerPostId by remember { mutableStateOf<Long?>(null) }
     var pendingHomeReminder by remember { mutableStateOf<PendingHomeReminder?>(null) }
@@ -285,6 +293,20 @@ fun HomeScreen(
         onScrollToLatestConsumed()
     }
 
+    // Pin the commented post to the top of the feed so the comment panel (max half the screen)
+    // opens below it instead of covering it. Waits a frame so the panel's reserve spacer has been
+    // measured; without it the last posts cannot scroll all the way to the top of the list.
+    LaunchedEffect(showCommentSheet, selectedPostId) {
+        if (!showCommentSheet) return@LaunchedEffect
+        val postId = selectedPostId ?: return@LaunchedEffect
+        withFrameNanos { }
+        withFrameNanos { }
+        val index = filteredPosts.indexOfFirst { it.id == postId }
+        if (index >= 0) {
+            listState.animateScrollToItem(index)
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -414,6 +436,11 @@ fun HomeScreen(
                                     reminderFireAtMillis =
                                         nextReminderByPostId[post.id]?.fireAtMillis
                                 )
+                            }
+                            if (showCommentSheet) {
+                                item(key = "comment_panel_reserve") {
+                                    Spacer(modifier = Modifier.height(commentPanelReserve))
+                                }
                             }
                         }
                     }

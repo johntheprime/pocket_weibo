@@ -24,11 +24,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.verticalScroll
@@ -317,15 +320,18 @@ fun PostDetailScreen(
             }
         },
         bottomBar = {
-            // Pinning this to the bottomBar slot of the Scaffold handles the keyboard transition best
+            // Pinning this to the bottomBar slot of the Scaffold handles the keyboard transition best.
+            // A single inset owner: max(IME, navigation bar) keeps the composer directly on top of
+            // the keyboard instead of stacking both paddings into a blank strip.
             Surface(
                 color = Color.White,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .imePadding() // This pushes the input bar up
-                    .navigationBarsPadding() // This respects the system nav bar
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column {
+                Column(
+                    modifier = Modifier.windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)
+                    )
+                ) {
                     Divider(thickness = 0.5.dp)
                     val canSendComment = commentText.isNotBlank() || preparedVoiceFile != null
                     CommentVoiceComposerBar(
@@ -412,9 +418,9 @@ fun PostDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Background)
+                // The bottom bar already reserves the IME/navigation-bar space via innerPadding;
+                // adding imePadding() here doubled it and left a keyboard-height gap above the input.
                 .padding(innerPadding)
-                // Reserve space for the IME so the list scrolls above the keyboard
-                .imePadding()
         ) {
             post?.let { currentPost ->
                 item {
