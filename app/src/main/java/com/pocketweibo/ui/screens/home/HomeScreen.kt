@@ -136,7 +136,7 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
 
     // Room under the last feed item so any post can be pinned to the top of the list while the
-    // comment panel (max half the screen) is open, including the last post of a short feed.
+    // comment panel (half the screen) is open, including the last post of a short feed.
     val commentPanelReserve =
         (LocalConfiguration.current.screenHeightDp * COMMENT_SHEET_MAX_HEIGHT_FRACTION).dp
 
@@ -293,7 +293,7 @@ fun HomeScreen(
         onScrollToLatestConsumed()
     }
 
-    // Pin the commented post to the top of the feed so the comment panel (max half the screen)
+    // Pin the commented post to the top of the feed so the comment panel (half the screen)
     // opens below it instead of covering it. Waits a frame so the panel's reserve spacer has been
     // measured; without it the last posts cannot scroll all the way to the top of the list.
     LaunchedEffect(showCommentSheet, selectedPostId) {

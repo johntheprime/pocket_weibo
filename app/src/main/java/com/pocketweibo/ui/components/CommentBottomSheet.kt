@@ -69,10 +69,10 @@ private const val COMMENT_DELETE_WINDOW_MS = 48L * 60L * 60L * 1000L
 private const val COMMENT_VOICE_MAX_RECORD_MS = 120_000L
 
 /**
- * The panel is content-sized up to this fraction of the screen, so the post being commented on
- * stays visible above it (the feed scrolls that post to the top before opening) and a post with
- * few comments gets a short panel instead of the old fixed 92% sheet. While the keyboard is open
- * the cap is relaxed so the composer and comment list still fit above the IME.
+ * The panel takes exactly this fraction of the screen, so the post being commented on always has
+ * room above it (the feed scrolls that post to the top before opening) instead of the old 92%
+ * sheet that covered the feed. While the keyboard is open the cap is relaxed so the composer and
+ * comment list still fit above the IME.
  */
 internal const val COMMENT_SHEET_MAX_HEIGHT_FRACTION = 0.5f
 private const val COMMENT_SHEET_IME_MAX_HEIGHT_FRACTION = 0.92f
@@ -200,7 +200,7 @@ fun CommentBottomSheet(
             if (comments.isEmpty()) {
                 Box(
                     modifier = Modifier
-                        .weight(1f, fill = false)
+                        .weight(1f)
                         .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
@@ -216,7 +216,7 @@ fun CommentBottomSheet(
                     state = commentListState,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f, fill = false)
+                        .weight(1f)
                 ) {
                     items(comments, key = { it.id }) { comment ->
                         CommentItem(
