@@ -27,6 +27,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -61,14 +63,19 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -96,7 +103,7 @@ import kotlinx.coroutines.launch
 
 private data class PendingHomeReminder(val postId: Long, val fireAt: Long, val rule: String)
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun HomeScreen(
     onPostClick: (Long) -> Unit = {},
@@ -232,10 +239,20 @@ fun HomeScreen(
     var showSearchDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var searchDraft by remember { mutableStateOf("") }
+    val searchFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
     /** `null` = show every identity on the home feed; non-null = only posts by that identity. */
     var homeIdentityFilterId by remember { mutableStateOf<Long?>(null) }
     var moreMenuExpanded by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showSearchDialog) {
+        if (showSearchDialog) {
+            withFrameNanos { }
+            searchFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
 
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
@@ -521,9 +538,23 @@ fun HomeScreen(
                 OutlinedTextField(
                     value = searchDraft,
                     onValueChange = { searchDraft = it },
-                    placeholder = { Text(stringResource(R.string.home_search_hint)) },
+                    placeholder = {
+                        Text(
+                            text = stringResource(R.string.home_search_hint),
+                            color = GrayMiddle
+                        )
+                    },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            searchQuery = searchDraft.trim()
+                            showSearchDialog = false
+                        }
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(searchFocusRequester)
                 )
             },
             confirmButton = {
