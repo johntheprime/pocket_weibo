@@ -968,7 +968,7 @@ private fun CommentCard(
             }
         }
     }
-    if (onHideClick != null) {
+    if (onHideClick != null && showActionsSheet) {
         ModalBottomSheet(
             onDismissRequest = { showActionsSheet = false }
         ) {
