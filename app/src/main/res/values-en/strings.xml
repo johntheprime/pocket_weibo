@@ -268,7 +268,7 @@
     <string name="comments_empty">No comments yet</string>
 
     <!-- F-069 hidden comments (detail page) -->
-    <string name="comment_action_copy">Copy text</string>
+    <string name="comment_action_copy">Copy comment</string>
     <string name="comment_action_hide">Hide this comment</string>
     <string name="toast_comment_hidden">Comment hidden</string>
     <string name="comments_hidden_collapsed">%1$d hidden comments · Tap to expand</string>

@@ -41,6 +41,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
@@ -52,6 +53,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -863,7 +865,7 @@ private fun CommentsHeader(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun CommentCard(
     comment: CommentWithIdentity,
@@ -878,116 +880,153 @@ private fun CommentCard(
     val displayName = identityDisplayName(comment.identityName)
     val voiceOnlyLabel = stringResource(R.string.comment_body_voice_only)
     val bodyDisplay = postOrCommentBodyForDisplay(comment.content, comment.audioPath, voiceOnlyLabel)
-    var menuExpanded by remember { mutableStateOf(false) }
+    var showActionsSheet by remember { mutableStateOf(false) }
     val copyComment: () -> Unit = {
         context.copyPlainToClipboard(clipLabel, bodyDisplay, toast = copiedToast)
     }
-    Box {
-        Surface(
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = {},
+                onLongClick = {
+                    // F-069: long press opens the action sheet (copy / hide) instead of copying directly.
+                    if (onHideClick != null) showActionsSheet = true else copyComment()
+                }
+            ),
+        color = Color.White
+    ) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .combinedClickable(
-                    onClick = {},
-                    onLongClick = {
-                        // F-069: long press opens a small menu (copy / hide) instead of copying directly.
-                        if (onHideClick != null) menuExpanded = true else copyComment()
-                    }
-                ),
-            color = Color.White
+                .padding(16.dp)
+                .alpha(if (onRestoreClick != null) 0.6f else 1f)
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .alpha(if (onRestoreClick != null) 0.6f else 1f)
+            Row(
+                verticalAlignment = Alignment.Top
             ) {
-                Row(
-                    verticalAlignment = Alignment.Top
+                Avatar(
+                    name = displayName,
+                    color = Color(0xFF4A90D9),
+                    size = 40.dp,
+                    avatarResName = comment.identityAvatarResName,
+                    customAvatarUri = comment.identityCustomAvatarUri
+                )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 10.dp)
                 ) {
-                    Avatar(
-                        name = displayName,
-                        color = Color(0xFF4A90D9),
-                        size = 40.dp,
-                        avatarResName = comment.identityAvatarResName,
-                        customAvatarUri = comment.identityCustomAvatarUri
-                    )
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 10.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
+                        Text(
+                            text = displayName,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GrayDark
+                        )
+                        Text(
+                            text = " · ",
+                            fontSize = 12.sp,
+                            color = GrayMiddle
+                        )
+                        RelativeTimeText(
+                            timestamp = comment.createdAt,
+                            preset = RelativeTimePreset.PostDetail,
+                            fontSize = 12.sp,
+                            color = GrayMiddle
+                        )
+                    }
+                    Text(
+                        text = bodyDisplay,
+                        fontSize = 14.sp,
+                        color = GrayDark,
+                        lineHeight = 20.sp,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                    if (comment.audioPath.isNotBlank()) {
+                        PostAudioPlayerBar(
+                            relativeAudioPath = comment.audioPath,
+                            modifier = Modifier.padding(top = 8.dp),
+                            compact = true,
+                        )
+                    }
+                    if (onRestoreClick != null) {
+                        TextButton(
+                            onClick = onRestoreClick,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            modifier = Modifier.padding(top = 4.dp)
                         ) {
                             Text(
-                                text = displayName,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = GrayDark
+                                text = stringResource(R.string.comment_unhide),
+                                color = WeiboOrange,
+                                fontSize = 13.sp
                             )
-                            Text(
-                                text = " · ",
-                                fontSize = 12.sp,
-                                color = GrayMiddle
-                            )
-                            RelativeTimeText(
-                                timestamp = comment.createdAt,
-                                preset = RelativeTimePreset.PostDetail,
-                                fontSize = 12.sp,
-                                color = GrayMiddle
-                            )
-                        }
-                        Text(
-                            text = bodyDisplay,
-                            fontSize = 14.sp,
-                            color = GrayDark,
-                            lineHeight = 20.sp,
-                            modifier = Modifier.padding(top = 6.dp)
-                        )
-                        if (comment.audioPath.isNotBlank()) {
-                            PostAudioPlayerBar(
-                                relativeAudioPath = comment.audioPath,
-                                modifier = Modifier.padding(top = 8.dp),
-                                compact = true,
-                            )
-                        }
-                        if (onRestoreClick != null) {
-                            TextButton(
-                                onClick = onRestoreClick,
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
-                                modifier = Modifier.padding(top = 4.dp)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.comment_unhide),
-                                    color = WeiboOrange,
-                                    fontSize = 13.sp
-                                )
-                            }
                         }
                     }
                 }
             }
         }
-        if (onHideClick != null) {
-            DropdownMenu(
-                expanded = menuExpanded,
-                onDismissRequest = { menuExpanded = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text(copyActionLabel) },
-                    onClick = {
-                        menuExpanded = false
-                        copyComment()
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(hideActionLabel) },
-                    onClick = {
-                        menuExpanded = false
-                        onHideClick()
-                    }
-                )
-            }
+    }
+    if (onHideClick != null) {
+        ModalBottomSheet(
+            onDismissRequest = { showActionsSheet = false }
+        ) {
+            CommentActionRow(
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = null,
+                        tint = GrayDark,
+                        modifier = Modifier.size(22.dp)
+                    )
+                },
+                label = copyActionLabel,
+                onClick = {
+                    showActionsSheet = false
+                    copyComment()
+                }
+            )
+            CommentActionRow(
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.VisibilityOff,
+                        contentDescription = null,
+                        tint = GrayDark,
+                        modifier = Modifier.size(22.dp)
+                    )
+                },
+                label = hideActionLabel,
+                onClick = {
+                    showActionsSheet = false
+                    onHideClick()
+                }
+            )
         }
+    }
+}
+
+/** One full-width row in the comment long-press action sheet (F-069). */
+@Composable
+private fun CommentActionRow(
+    icon: @Composable () -> Unit,
+    label: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        icon()
+        Text(
+            text = label,
+            fontSize = 16.sp,
+            color = GrayDark,
+            modifier = Modifier.padding(start = 16.dp)
+        )
     }
 }
 

@@ -268,7 +268,7 @@
     <string name="comments_empty">暂无评论，快来抢沙发吧</string>
 
     <!-- F-069 hidden comments (detail page) -->
-    <string name="comment_action_copy">复制正文</string>
+    <string name="comment_action_copy">复制评论</string>
     <string name="comment_action_hide">隐藏该评论</string>
     <string name="toast_comment_hidden">已隐藏该评论</string>
     <string name="comments_hidden_collapsed">已隐藏 %1$d 条评论 · 点击展开</string>
