@@ -181,6 +181,13 @@ object DatabaseMigrations {
         }
     }
 
+    /** F-069: per-comment hidden flag (`hiddenAt`, 0 = visible) folded at the bottom of the detail list. */
+    val MIGRATION_13_14 = object : Migration(13, 14) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE comments ADD COLUMN hiddenAt INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+
     val MIGRATION_10_11 = object : Migration(10, 11) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(

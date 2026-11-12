@@ -91,6 +91,13 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
         }
     }
 
+    /** F-069: hide/unhide a comment; hidden ones fold to the bottom of the comment list until restored. */
+    fun setCommentHidden(commentId: Long, hidden: Boolean) {
+        viewModelScope.launch {
+            repository.setCommentHidden(commentId, hidden)
+        }
+    }
+
     fun scheduleReminderAt(fireAtMillis: Long, repeatRule: String = ReminderRepeatRule.NONE) {
         val p = _post.value ?: return
         viewModelScope.launch {

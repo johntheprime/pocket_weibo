@@ -267,6 +267,14 @@
     <string name="toast_all_comments_copied">已全部复制评论</string>
     <string name="comments_empty">暂无评论，快来抢沙发吧</string>
 
+    <!-- F-069 hidden comments (detail page) -->
+    <string name="comment_action_copy">复制正文</string>
+    <string name="comment_action_hide">隐藏该评论</string>
+    <string name="toast_comment_hidden">已隐藏该评论</string>
+    <string name="comments_hidden_collapsed">已隐藏 %1$d 条评论 · 点击展开</string>
+    <string name="comments_hidden_expanded">已隐藏 %1$d 条评论 · 点击收起</string>
+    <string name="comment_unhide">恢复显示</string>
+
     <string name="comment_sheet_title">评论</string>
     <string name="comment_hint">写评论…</string>
     <string name="comment_send_cd">发送</string>

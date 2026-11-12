@@ -18,7 +18,9 @@ data class CommentWithIdentity(
     val replyingToIdentityName: String?,
     val likeCount: Int,
     val likedBy: String,
-    val isLikedByMe: Boolean
+    val isLikedByMe: Boolean,
+    /** 0 = visible; >0 = hidden (folded) by the user at this epoch-millis timestamp. */
+    val hiddenAt: Long = 0L
 )
 
 /** Comment row joined with parent post text and authors for global search. */
@@ -44,7 +46,8 @@ interface CommentDao {
                (SELECT i2.name FROM comments c2 LEFT JOIN identities i2 ON c2.identityId = i2.id WHERE c2.id = c.replyingToCommentId) as replyingToIdentityName,
                c.likeCount,
                c.likedBy,
-               CASE WHEN c.likedBy LIKE '%' || :currentIdentityId || '%' THEN 1 ELSE 0 END as isLikedByMe
+               CASE WHEN c.likedBy LIKE '%' || :currentIdentityId || '%' THEN 1 ELSE 0 END as isLikedByMe,
+               c.hiddenAt
         FROM comments c
         LEFT JOIN identities i ON c.identityId = i.id
         WHERE c.postId = :postId
@@ -61,7 +64,8 @@ interface CommentDao {
                (SELECT i2.name FROM comments c2 LEFT JOIN identities i2 ON c2.identityId = i2.id WHERE c2.id = c.replyingToCommentId) as replyingToIdentityName,
                c.likeCount,
                c.likedBy,
-               0 as isLikedByMe
+               0 as isLikedByMe,
+               c.hiddenAt
         FROM comments c
         LEFT JOIN identities i ON c.identityId = i.id
         WHERE c.postId = :postId
@@ -98,6 +102,10 @@ interface CommentDao {
 
     @Query("UPDATE comments SET content = :newContent WHERE id = :commentId")
     suspend fun updateCommentContent(commentId: Long, newContent: String)
+
+    /** F-069: set/clear the hidden flag; hidden comments fold to the bottom of the detail list. */
+    @Query("UPDATE comments SET hiddenAt = :hiddenAt WHERE id = :commentId")
+    suspend fun setCommentHiddenAt(commentId: Long, hiddenAt: Long)
 
     @Query(
         """

@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
@@ -66,6 +67,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -235,6 +237,10 @@ fun PostDetailScreen(
 
     val post by viewModel.post.collectAsState()
     val comments by viewModel.comments.collectAsState()
+    // F-069: hidden comments fold to the bottom of the list until the user restores them.
+    val visibleComments = comments.filter { it.hiddenAt == 0L }
+    val hiddenComments = comments.filter { it.hiddenAt != 0L }
+    var hiddenCommentsExpanded by remember(postId) { mutableStateOf(false) }
     val reminders by viewModel.reminders.collectAsState()
     var commentText by remember { mutableStateOf("") }
     var lastCommentEditedAt by remember(postId) { mutableLongStateOf(SystemClock.elapsedRealtime()) }
@@ -469,9 +475,32 @@ fun PostDetailScreen(
                         }
                     }
                 } else {
-                    items(comments, key = { it.id }) { comment ->
-                        CommentCard(comment = comment)
+                    items(visibleComments, key = { it.id }) { comment ->
+                        CommentCard(
+                            comment = comment,
+                            onHideClick = {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.toast_comment_hidden),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                viewModel.setCommentHidden(comment.id, true)
+                            }
+                        )
                         Divider(thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                    }
+                    if (hiddenComments.isNotEmpty()) {
+                        item(key = "hidden_comments_fold") {
+                            HiddenCommentsFold(
+                                hiddenComments = hiddenComments,
+                                expanded = hiddenCommentsExpanded,
+                                onToggleExpanded = { hiddenCommentsExpanded = !hiddenCommentsExpanded },
+                                onRestore = { commentId ->
+                                    viewModel.setCommentHidden(commentId, false)
+                                }
+                            )
+                            Divider(thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                        }
                     }
                 }
             }
@@ -836,78 +865,180 @@ private fun CommentsHeader(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun CommentCard(comment: CommentWithIdentity) {
+private fun CommentCard(
+    comment: CommentWithIdentity,
+    onHideClick: (() -> Unit)? = null,
+    onRestoreClick: (() -> Unit)? = null
+) {
     val context = LocalContext.current
     val clipLabel = stringResource(R.string.clipboard_label_comment)
     val copiedToast = stringResource(R.string.toast_comment_copied)
+    val copyActionLabel = stringResource(R.string.comment_action_copy)
+    val hideActionLabel = stringResource(R.string.comment_action_hide)
     val displayName = identityDisplayName(comment.identityName)
     val voiceOnlyLabel = stringResource(R.string.comment_body_voice_only)
     val bodyDisplay = postOrCommentBodyForDisplay(comment.content, comment.audioPath, voiceOnlyLabel)
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = {},
-                onLongClick = {
-                    context.copyPlainToClipboard(clipLabel, bodyDisplay, toast = copiedToast)
+    var menuExpanded by remember { mutableStateOf(false) }
+    val copyComment: () -> Unit = {
+        context.copyPlainToClipboard(clipLabel, bodyDisplay, toast = copiedToast)
+    }
+    Box {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = {},
+                    onLongClick = {
+                        // F-069: long press opens a small menu (copy / hide) instead of copying directly.
+                        if (onHideClick != null) menuExpanded = true else copyComment()
+                    }
+                ),
+            color = Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .alpha(if (onRestoreClick != null) 0.6f else 1f)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Avatar(
+                        name = displayName,
+                        color = Color(0xFF4A90D9),
+                        size = 40.dp,
+                        avatarResName = comment.identityAvatarResName,
+                        customAvatarUri = comment.identityCustomAvatarUri
+                    )
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(start = 10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = displayName,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GrayDark
+                            )
+                            Text(
+                                text = " · ",
+                                fontSize = 12.sp,
+                                color = GrayMiddle
+                            )
+                            RelativeTimeText(
+                                timestamp = comment.createdAt,
+                                preset = RelativeTimePreset.PostDetail,
+                                fontSize = 12.sp,
+                                color = GrayMiddle
+                            )
+                        }
+                        Text(
+                            text = bodyDisplay,
+                            fontSize = 14.sp,
+                            color = GrayDark,
+                            lineHeight = 20.sp,
+                            modifier = Modifier.padding(top = 6.dp)
+                        )
+                        if (comment.audioPath.isNotBlank()) {
+                            PostAudioPlayerBar(
+                                relativeAudioPath = comment.audioPath,
+                                modifier = Modifier.padding(top = 8.dp),
+                                compact = true,
+                            )
+                        }
+                        if (onRestoreClick != null) {
+                            TextButton(
+                                onClick = onRestoreClick,
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.comment_unhide),
+                                    color = WeiboOrange,
+                                    fontSize = 13.sp
+                                )
+                            }
+                        }
+                    }
                 }
-            ),
-        color = Color.White
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+            }
+        }
+        if (onHideClick != null) {
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text(copyActionLabel) },
+                    onClick = {
+                        menuExpanded = false
+                        copyComment()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(hideActionLabel) },
+                    onClick = {
+                        menuExpanded = false
+                        onHideClick()
+                    }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * F-069: collapsed bar at the bottom of the comment list counting hidden comments.
+ * Tapping expands the hidden comments inline; each offers a restore action.
+ */
+@Composable
+private fun HiddenCommentsFold(
+    hiddenComments: List<CommentWithIdentity>,
+    expanded: Boolean,
+    onToggleExpanded: () -> Unit,
+    onRestore: (Long) -> Unit
+) {
+    Column {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = Color.White
         ) {
             Row(
-                verticalAlignment = Alignment.Top
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggleExpanded)
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Avatar(
-                    name = displayName,
-                    color = Color(0xFF4A90D9),
-                    size = 40.dp,
-                    avatarResName = comment.identityAvatarResName,
-                    customAvatarUri = comment.identityCustomAvatarUri
+                Icon(
+                    imageVector = Icons.Default.VisibilityOff,
+                    contentDescription = null,
+                    tint = GrayMiddle,
+                    modifier = Modifier.size(16.dp)
                 )
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 10.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = displayName,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = GrayDark
-                        )
-                        Text(
-                            text = " · ",
-                            fontSize = 12.sp,
-                            color = GrayMiddle
-                        )
-                        RelativeTimeText(
-                            timestamp = comment.createdAt,
-                            preset = RelativeTimePreset.PostDetail,
-                            fontSize = 12.sp,
-                            color = GrayMiddle
-                        )
-                    }
-                    Text(
-                        text = bodyDisplay,
-                        fontSize = 14.sp,
-                        color = GrayDark,
-                        lineHeight = 20.sp,
-                        modifier = Modifier.padding(top = 6.dp)
-                    )
-                    if (comment.audioPath.isNotBlank()) {
-                        PostAudioPlayerBar(
-                            relativeAudioPath = comment.audioPath,
-                            modifier = Modifier.padding(top = 8.dp),
-                            compact = true,
-                        )
-                    }
-                }
+                Text(
+                    text = if (expanded) {
+                        stringResource(R.string.comments_hidden_expanded, hiddenComments.size)
+                    } else {
+                        stringResource(R.string.comments_hidden_collapsed, hiddenComments.size)
+                    },
+                    fontSize = 13.sp,
+                    color = GrayMiddle,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+        }
+        if (expanded) {
+            hiddenComments.forEach { comment ->
+                Divider(thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 16.dp))
+                CommentCard(
+                    comment = comment,
+                    onRestoreClick = { onRestore(comment.id) }
+                )
             }
         }
     }

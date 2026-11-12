@@ -33,5 +33,7 @@ data class CommentEntity(
     val createdAt: Long = System.currentTimeMillis(),
     val replyingToCommentId: Long? = null,
     val likeCount: Int = 0,
-    val likedBy: String = ""
+    val likedBy: String = "",
+    /** 0 = visible; a nonzero epoch-millis timestamp marks the comment hidden (folded) by the user. */
+    val hiddenAt: Long = 0L
 )

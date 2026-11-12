@@ -488,6 +488,14 @@ class WeiboRepository(
         commentDao.updateCommentContent(comment.id, comment.content)
     }
 
+    /** F-069: hide/unhide a comment; hidden comments fold to the bottom of the detail list until restored. */
+    suspend fun setCommentHidden(commentId: Long, hidden: Boolean) {
+        commentDao.setCommentHiddenAt(
+            commentId,
+            if (hidden) System.currentTimeMillis() else 0L
+        )
+    }
+
     fun getPostsByIdentity(identityId: Long): Flow<List<PostWithIdentity>> =
         postDao.getPostsByIdentity(identityId)
 
@@ -576,6 +584,7 @@ class WeiboRepository(
                 put("replyingToCommentId", comment.replyingToCommentId ?: JSONObject.NULL)
                 put("likeCount", comment.likeCount)
                 put("likedBy", comment.likedBy)
+                put("hiddenAt", comment.hiddenAt)
             }
             commentsArray.put(commentJson)
         }
@@ -652,6 +661,7 @@ class WeiboRepository(
                 put("replyingToCommentId", comment.replyingToCommentId ?: JSONObject.NULL)
                 put("likeCount", comment.likeCount)
                 put("likedBy", comment.likedBy)
+                put("hiddenAt", comment.hiddenAt)
             }
             commentsArray.put(commentJson)
         }
@@ -1270,7 +1280,8 @@ class WeiboRepository(
             createdAt = commentJson.getLong("createdAt"),
             replyingToCommentId = replying,
             likeCount = commentJson.optInt("likeCount", 0),
-            likedBy = commentJson.optString("likedBy", "")
+            likedBy = commentJson.optString("likedBy", ""),
+            hiddenAt = commentJson.optLong("hiddenAt", 0L)
         )
     }
 
