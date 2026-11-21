@@ -18,7 +18,8 @@ data class PostWithIdentity(
     val likeCount: Int,
     val commentCount: Int,
     val isLiked: Boolean,
-    val isPinned: Boolean = false
+    val isPinned: Boolean = false,
+    val todoDoneAt: Long? = null
 )
 
 @Dao
@@ -26,7 +27,7 @@ interface PostDao {
     @Query("""
         SELECT p.id, p.identityId, i.name as identityName, i.avatarResName as identityAvatarResName,
                i.customAvatarUri as identityCustomAvatarUri,
-               p.content, p.imageUris, p.audioPath, p.extrasJson, p.createdAt, p.likeCount, p.commentCount, p.isLiked, p.isPinned
+               p.content, p.imageUris, p.audioPath, p.extrasJson, p.createdAt, p.likeCount, p.commentCount, p.isLiked, p.isPinned, p.todoDoneAt
         FROM posts p
         LEFT JOIN identities i ON p.identityId = i.id
         ORDER BY p.isPinned DESC, p.createdAt DESC
@@ -36,7 +37,7 @@ interface PostDao {
     @Query("""
         SELECT p.id, p.identityId, i.name as identityName, i.avatarResName as identityAvatarResName,
                i.customAvatarUri as identityCustomAvatarUri,
-               p.content, p.imageUris, p.audioPath, p.extrasJson, p.createdAt, p.likeCount, p.commentCount, p.isLiked, p.isPinned
+               p.content, p.imageUris, p.audioPath, p.extrasJson, p.createdAt, p.likeCount, p.commentCount, p.isLiked, p.isPinned, p.todoDoneAt
         FROM posts p
         LEFT JOIN identities i ON p.identityId = i.id
         WHERE p.identityId = :identityId
@@ -55,6 +56,10 @@ interface PostDao {
 
     @Query("UPDATE posts SET isPinned = NOT isPinned WHERE id = :postId")
     suspend fun togglePin(postId: Long)
+
+    /** Null [doneAt] reopens a completed TODO. */
+    @Query("UPDATE posts SET todoDoneAt = :doneAt WHERE id = :postId")
+    suspend fun setTodoDoneAt(postId: Long, doneAt: Long?)
 
     @Query("UPDATE posts SET isLiked = NOT isLiked, likeCount = likeCount + CASE WHEN isLiked THEN -1 ELSE 1 END WHERE id = :postId")
     suspend fun toggleLike(postId: Long)

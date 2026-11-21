@@ -14,7 +14,9 @@ import com.pocketweibo.data.local.dao.IdentityDao
 import com.pocketweibo.data.local.dao.IdentityScheduleDao
 import com.pocketweibo.data.local.dao.IdentityScheduleWithIdentityName
 import com.pocketweibo.data.local.dao.PostDao
+import com.pocketweibo.data.local.dao.LastReminderFiring
 import com.pocketweibo.data.local.dao.PostReminderDao
+import com.pocketweibo.data.local.dao.PostReminderFiringDao
 import com.pocketweibo.data.local.dao.PostReminderWithPreview
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.CommentEntity
@@ -23,6 +25,7 @@ import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.IdentityScheduleEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.local.entity.PostReminderEntity
+import com.pocketweibo.data.local.entity.PostReminderFiringEntity
 import com.pocketweibo.data.media.CommentAttachmentStorage
 import com.pocketweibo.data.media.IdentityAvatarStorage
 import com.pocketweibo.data.media.PostAttachmentStorage
@@ -60,6 +63,7 @@ class WeiboRepository(
     private val postDao: PostDao,
     private val commentDao: CommentDao,
     private val postReminderDao: PostReminderDao,
+    private val postReminderFiringDao: PostReminderFiringDao,
     private val context: Context
 ) {
     val allIdentities: Flow<List<IdentityEntity>> = identityDao.getAllIdentities()
@@ -410,6 +414,14 @@ class WeiboRepository(
     fun observePostReminders(): Flow<List<PostReminderEntity>> =
         postReminderDao.observeAll()
 
+    /** Last actual notification per post; drives the reminder-based TODO exception. */
+    fun observeLastReminderFirings(): Flow<List<LastReminderFiring>> =
+        postReminderFiringDao.observeLastFiringByPost()
+
+    suspend fun setTodoDoneAt(postId: Long, doneAt: Long?) {
+        postDao.setTodoDoneAt(postId, doneAt)
+    }
+
     suspend fun cancelReminderById(reminderId: Long) {
         withContext(Dispatchers.IO) {
             val row = postReminderDao.getById(reminderId) ?: return@withContext
@@ -522,6 +534,21 @@ class WeiboRepository(
         context.draftDataStore.edit { it.clear() }
     }
 
+    private fun reminderFiringsJson(rows: List<PostReminderFiringEntity>): JSONArray = JSONArray().apply {
+        rows.forEach { row ->
+            put(
+                JSONObject().apply {
+                    put("id", row.id)
+                    put("postId", row.postId)
+                    if (row.reminderId != null) put("reminderId", row.reminderId) else put("reminderId", JSONObject.NULL)
+                    put("scheduledForMillis", row.scheduledForMillis)
+                    put("firedAtMillis", row.firedAtMillis)
+                    put("repeatRule", row.repeatRule)
+                }
+            )
+        }
+    }
+
     suspend fun exportAllData(): String {
         val identities = identityDao.getAllIdentities().first()
         val posts = postDao.getAllPosts().first()
@@ -567,6 +594,7 @@ class WeiboRepository(
                 put("likeCount", post.likeCount)
                 put("commentCount", post.commentCount)
                 put("isLiked", post.isLiked)
+                if (post.todoDoneAt != null) put("todoDoneAt", post.todoDoneAt) else put("todoDoneAt", JSONObject.NULL)
             }
             postsArray.put(postJson)
         }
@@ -589,9 +617,10 @@ class WeiboRepository(
             commentsArray.put(commentJson)
         }
         json.put("comments", commentsArray)
+        json.put("postReminderFirings", reminderFiringsJson(postReminderFiringDao.listAll()))
 
         json.put("exportedAt", System.currentTimeMillis())
-        json.put("version", 2)
+        json.put("version", 3)
 
         return json.toString(2)
     }
@@ -609,7 +638,7 @@ class WeiboRepository(
         val json = JSONObject()
         json.put("kind", "pocket_weibo_text_auto_backup")
         json.put("exportedAt", System.currentTimeMillis())
-        json.put("version", 1)
+        json.put("version", 2)
 
         val identitiesArray = JSONArray()
         identities.forEach { identity ->
@@ -644,6 +673,7 @@ class WeiboRepository(
                 put("likeCount", post.likeCount)
                 put("commentCount", post.commentCount)
                 put("isLiked", post.isLiked)
+                if (post.todoDoneAt != null) put("todoDoneAt", post.todoDoneAt) else put("todoDoneAt", JSONObject.NULL)
             }
             postsArray.put(postJson)
         }
@@ -679,6 +709,7 @@ class WeiboRepository(
             )
         }
         json.put("postReminders", remindersArray)
+        json.put("postReminderFirings", reminderFiringsJson(postReminderFiringDao.listAll()))
 
         json.toString(2)
     }
@@ -967,6 +998,19 @@ class WeiboRepository(
                         commentDao.insert(commentFromJson(commentJson, commentJson.getLong("id")))
                     }
                 }
+                if (json.has("postReminderFirings")) {
+                    val firingsArray = json.getJSONArray("postReminderFirings")
+                    for (i in 0 until firingsArray.length()) {
+                        val firingJson = firingsArray.getJSONObject(i)
+                        postReminderFiringDao.insert(
+                            firingFromJson(
+                                firingJson,
+                                id = firingJson.optLong("id", 0L),
+                                postId = firingJson.getLong("postId")
+                            )
+                        )
+                    }
+                }
             } else {
                 val identityOldToNew = mutableMapOf<Long, Long>()
                 if (json.has("identities")) {
@@ -1092,6 +1136,16 @@ class WeiboRepository(
                         }
                     }
                 }
+                if (json.has("postReminderFirings")) {
+                    val firingsArray = json.getJSONArray("postReminderFirings")
+                    for (i in 0 until firingsArray.length()) {
+                        val firingJson = firingsArray.getJSONObject(i)
+                        val newPostId = postOldToNew[firingJson.getLong("postId")] ?: continue
+                        postReminderFiringDao.insert(
+                            firingFromJson(firingJson, id = 0L, postId = newPostId)
+                        )
+                    }
+                }
             }
 
             true
@@ -1157,7 +1211,30 @@ class WeiboRepository(
             createdAt = postJson.getLong("createdAt"),
             likeCount = postJson.optInt("likeCount", 0),
             commentCount = postJson.optInt("commentCount", 0),
-            isLiked = postJson.optBoolean("isLiked", false)
+            isLiked = postJson.optBoolean("isLiked", false),
+            todoDoneAt = when {
+                !postJson.has("todoDoneAt") || postJson.isNull("todoDoneAt") -> null
+                else -> postJson.getLong("todoDoneAt")
+            }
+        )
+    }
+
+    private fun firingFromJson(json: JSONObject, id: Long, postId: Long): PostReminderFiringEntity {
+        val scheduledFor = when {
+            json.has("scheduledForMillis") && !json.isNull("scheduledForMillis") ->
+                json.getLong("scheduledForMillis")
+            else -> json.getLong("firedAtMillis")
+        }
+        return PostReminderFiringEntity(
+            id = id,
+            postId = postId,
+            reminderId = when {
+                !json.has("reminderId") || json.isNull("reminderId") -> null
+                else -> json.getLong("reminderId")
+            },
+            scheduledForMillis = scheduledFor,
+            firedAtMillis = json.getLong("firedAtMillis"),
+            repeatRule = json.optString("repeatRule", ReminderRepeatRule.NONE)
         )
     }
 
@@ -1290,6 +1367,7 @@ class WeiboRepository(
             row.calendarEventId?.let { PostReminderCalendarSync.deleteEvent(context, it) }
         }
         commentDao.deleteAll()
+        postReminderFiringDao.deleteAll()
         postDao.deleteAll()
         identityDao.deleteAll()
         PostAttachmentStorage.deleteEntireAttachmentTree(context)

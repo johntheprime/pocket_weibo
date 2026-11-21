@@ -188,6 +188,28 @@ object DatabaseMigrations {
         }
     }
 
+    /** F-071: TODO completion timestamp on posts + permanent reminder-firing history. */
+    val MIGRATION_14_15 = object : Migration(14, 15) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE posts ADD COLUMN todoDoneAt INTEGER")
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `post_reminder_firings` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `postId` INTEGER NOT NULL,
+                    `reminderId` INTEGER,
+                    `scheduledForMillis` INTEGER NOT NULL,
+                    `firedAtMillis` INTEGER NOT NULL,
+                    `repeatRule` TEXT NOT NULL,
+                    FOREIGN KEY(`postId`) REFERENCES `posts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_post_reminder_firings_postId` ON `post_reminder_firings` (`postId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_post_reminder_firings_firedAtMillis` ON `post_reminder_firings` (`firedAtMillis`)")
+        }
+    }
+
     val MIGRATION_10_11 = object : Migration(10, 11) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(

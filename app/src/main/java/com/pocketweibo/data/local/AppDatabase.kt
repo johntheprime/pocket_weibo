@@ -9,15 +9,17 @@ import com.pocketweibo.data.local.dao.IdentityDao
 import com.pocketweibo.data.local.dao.IdentityScheduleDao
 import com.pocketweibo.data.local.dao.PostDao
 import com.pocketweibo.data.local.dao.PostReminderDao
+import com.pocketweibo.data.local.dao.PostReminderFiringDao
 import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.IdentityScheduleEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.local.entity.PostReminderEntity
+import com.pocketweibo.data.local.entity.PostReminderFiringEntity
 
 @Database(
-    entities = [IdentityEntity::class, PostEntity::class, CommentEntity::class, PostReminderEntity::class, IdentityScheduleEntity::class],
-    version = 14,
+    entities = [IdentityEntity::class, PostEntity::class, CommentEntity::class, PostReminderEntity::class, IdentityScheduleEntity::class, PostReminderFiringEntity::class],
+    version = 15,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,6 +28,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun postDao(): PostDao
     abstract fun commentDao(): CommentDao
     abstract fun postReminderDao(): PostReminderDao
+    abstract fun postReminderFiringDao(): PostReminderFiringDao
 
     companion object {
         @Volatile
@@ -50,7 +53,8 @@ abstract class AppDatabase : RoomDatabase() {
                         DatabaseMigrations.MIGRATION_10_11,
                         DatabaseMigrations.MIGRATION_11_12,
                         DatabaseMigrations.MIGRATION_12_13,
-                        DatabaseMigrations.MIGRATION_13_14
+                        DatabaseMigrations.MIGRATION_13_14,
+                        DatabaseMigrations.MIGRATION_14_15
                     )
                     .build()
                 INSTANCE = instance

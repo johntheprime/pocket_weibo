@@ -17,17 +17,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -67,14 +71,20 @@ import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
+import com.pocketweibo.ui.theme.TodoDone
+import com.pocketweibo.ui.theme.TodoPending
 import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.extractTopicTags
+import com.pocketweibo.ui.util.formatExactTime
 import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.ui.util.postOrCommentBodyForDisplay
 import java.util.Calendar
 
+private enum class TopicsSection { TOPICS, TODO }
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopicsScreen(
     selectedTopicKey: String?,
@@ -84,6 +94,7 @@ fun TopicsScreen(
     onDiscussAgain: (String) -> Unit,
     topicListState: LazyListState,
     topicTimelineListState: LazyListState,
+    todoListState: LazyListState,
     searchListState: LazyListState,
     modifier: Modifier = Modifier
 ) {
@@ -97,10 +108,14 @@ fun TopicsScreen(
     val allPosts by viewModel.allPosts.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
+    val unfinishedTodos by viewModel.unfinishedTodos.collectAsState()
+    val completedTodos by viewModel.completedTodos.collectAsState()
     val focusManager = LocalFocusManager.current
 
     var topicQuery by remember { mutableStateOf("") }
     var showGlobalSearch by remember { mutableStateOf(false) }
+    var section by remember { mutableStateOf(TopicsSection.TOPICS) }
+    var showCompleted by remember { mutableStateOf(false) }
 
     val selectedTopic = selectedTopicKey?.let { key -> topics.find { it.key == key } }
 
@@ -194,6 +209,20 @@ fun TopicsScreen(
             else -> {
                 WeiboTitleBar(
                     title = stringResource(R.string.title_topics),
+                    centerBelowTitle = {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(
+                                selected = section == TopicsSection.TOPICS,
+                                onClick = { section = TopicsSection.TOPICS },
+                                label = { Text(stringResource(R.string.topics_section_topics)) }
+                            )
+                            FilterChip(
+                                selected = section == TopicsSection.TODO,
+                                onClick = { section = TopicsSection.TODO },
+                                label = { Text(stringResource(R.string.topics_section_todo)) }
+                            )
+                        }
+                    },
                     rightIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -203,42 +232,55 @@ fun TopicsScreen(
                     },
                     onRightIconClick = { showGlobalSearch = true }
                 )
-                OutlinedTextField(
-                    value = topicQuery,
-                    onValueChange = { topicQuery = it },
-                    placeholder = { Text(stringResource(R.string.topics_search_hint), color = GrayMiddle) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = GrayMiddle
-                        )
-                    },
-                    trailingIcon = {
-                        if (topicQuery.isNotEmpty()) {
-                            IconButton(onClick = { topicQuery = "" }) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = stringResource(R.string.discover_clear_search_cd),
-                                    tint = GrayMiddle
-                                )
+                if (section == TopicsSection.TOPICS) {
+                    OutlinedTextField(
+                        value = topicQuery,
+                        onValueChange = { topicQuery = it },
+                        placeholder = { Text(stringResource(R.string.topics_search_hint), color = GrayMiddle) },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                tint = GrayMiddle
+                            )
+                        },
+                        trailingIcon = {
+                            if (topicQuery.isNotEmpty()) {
+                                IconButton(onClick = { topicQuery = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = stringResource(R.string.discover_clear_search_cd),
+                                        tint = GrayMiddle
+                                    )
+                                }
                             }
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(24.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
-                )
-                TopicListContent(
-                    topics = topics,
-                    query = topicQuery,
-                    listState = topicListState,
-                    onTopicClick = { topic -> onOpenTopic(topic.key) }
-                )
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(24.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
+                    )
+                    TopicListContent(
+                        topics = topics,
+                        query = topicQuery,
+                        listState = topicListState,
+                        onTopicClick = { topic -> onOpenTopic(topic.key) }
+                    )
+                } else {
+                    TodoListContent(
+                        unfinished = unfinishedTodos,
+                        completed = completedTodos,
+                        showCompleted = showCompleted,
+                        onToggleCompleted = { showCompleted = !showCompleted },
+                        listState = todoListState,
+                        onPostClick = onPostClick,
+                        onMarkDone = viewModel::markTodoDone,
+                        onReopen = viewModel::reopenTodo
+                    )
+                }
             }
         }
     }
@@ -552,6 +594,283 @@ private fun TopicPostItem(post: PostWithIdentity, onClick: () -> Unit) {
                 onDismiss = { showSelectableCopy = false },
                 title = null
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun TodoListContent(
+    unfinished: List<TodoItem>,
+    completed: List<PostWithIdentity>,
+    showCompleted: Boolean,
+    onToggleCompleted: () -> Unit,
+    listState: LazyListState,
+    onPostClick: (Long) -> Unit,
+    onMarkDone: (Long) -> Unit,
+    onReopen: (Long) -> Unit
+) {
+    LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+        item(key = "todo-header") {
+            Text(
+                text = stringResource(R.string.todo_unfinished_title, unfinished.size),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = GrayDark,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+            )
+        }
+        if (unfinished.isEmpty()) {
+            item(key = "todo-empty") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = TodoDone,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.todo_empty_title),
+                        fontSize = 15.sp,
+                        color = GrayDark,
+                        modifier = Modifier.padding(top = 10.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.todo_empty_subtitle),
+                        fontSize = 12.sp,
+                        color = GrayMiddle,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+        }
+        items(unfinished, key = { "todo-${it.post.id}" }) { item ->
+            TodoRow(
+                item = item,
+                onPostClick = { onPostClick(item.post.id) },
+                onMarkDone = { onMarkDone(item.post.id) }
+            )
+        }
+        item(key = "todo-done-divider") {
+            Divider(modifier = Modifier.padding(top = 12.dp))
+        }
+        item(key = "todo-done-header") {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggleCompleted)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.todo_done_title, completed.size),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GrayDark,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = stringResource(
+                        if (showCompleted) R.string.todo_done_collapse else R.string.todo_done_expand
+                    ),
+                    fontSize = 12.sp,
+                    color = GrayMiddle
+                )
+            }
+        }
+        if (showCompleted) {
+            items(completed, key = { "done-${it.id}" }) { post ->
+                CompletedTodoRow(
+                    post = post,
+                    onPostClick = { onPostClick(post.id) },
+                    onReopen = { onReopen(post.id) }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun TodoRow(
+    item: TodoItem,
+    onPostClick: () -> Unit,
+    onMarkDone: () -> Unit
+) {
+    var showSelectableCopy by remember { mutableStateOf(false) }
+    val post = item.post
+    val context = LocalContext.current
+    val displayName = identityDisplayName(post.identityName)
+    val voiceOnlyLabel = stringResource(R.string.comment_body_voice_only)
+    val body = postOrCommentBodyForDisplay(post.content, post.audioPath, voiceOnlyLabel)
+    val time = context.resources.formatRelativeTime(post.createdAt, RelativeTimePreset.FeedCard)
+    val reasonLabel = stringResource(
+        when (item.reason) {
+            TodoReason.MARKER -> R.string.todo_reason_marker
+            TodoReason.REMINDER -> R.string.todo_reason_reminder
+            TodoReason.BOTH -> R.string.todo_reason_both
+        }
+    )
+    val doneCd = stringResource(R.string.todo_mark_done_cd)
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .combinedClickable(onClick = onPostClick, onLongClick = { showSelectableCopy = true }),
+            shape = RoundedCornerShape(10.dp),
+            color = Color.White
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 5.dp)
+                        .size(8.dp)
+                        .background(TodoPending, CircleShape)
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = displayName,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GrayDark,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(text = time, fontSize = 11.sp, color = GrayMiddle)
+                    }
+                    Text(
+                        text = reasonLabel,
+                        fontSize = 11.sp,
+                        color = TodoPending,
+                        modifier = Modifier.padding(top = 3.dp)
+                    )
+                    Text(
+                        text = body,
+                        fontSize = 13.sp,
+                        color = GrayDark,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.count_comments, post.commentCount),
+                            fontSize = 12.sp,
+                            color = GrayMiddle
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        ListPostImageIndicator(imageUris = post.imageUris)
+                    }
+                }
+                IconButton(
+                    onClick = onMarkDone,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .semantics { contentDescription = doneCd }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = TodoDone,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
+        if (showSelectableCopy) {
+            SelectableCopyDialog(body = body, onDismiss = { showSelectableCopy = false }, title = null)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun CompletedTodoRow(
+    post: PostWithIdentity,
+    onPostClick: () -> Unit,
+    onReopen: () -> Unit
+) {
+    var showSelectableCopy by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val displayName = identityDisplayName(post.identityName)
+    val voiceOnlyLabel = stringResource(R.string.comment_body_voice_only)
+    val body = postOrCommentBodyForDisplay(post.content, post.audioPath, voiceOnlyLabel)
+    val doneAt = post.todoDoneAt?.let { context.resources.formatExactTime(it) }.orEmpty()
+    val reopenCd = stringResource(R.string.todo_reopen_cd)
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .combinedClickable(onClick = onPostClick, onLongClick = { showSelectableCopy = true }),
+            shape = RoundedCornerShape(10.dp),
+            color = Color.White
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 5.dp)
+                        .size(8.dp)
+                        .background(TodoDone, CircleShape)
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = displayName,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = GrayMiddle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = stringResource(R.string.todo_done_at, doneAt),
+                        fontSize = 11.sp,
+                        color = TodoDone,
+                        modifier = Modifier.padding(top = 3.dp)
+                    )
+                    Text(
+                        text = body,
+                        fontSize = 13.sp,
+                        color = GrayMiddle,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+                IconButton(
+                    onClick = onReopen,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .semantics { contentDescription = reopenCd }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = null,
+                        tint = GrayMiddle,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+        if (showSelectableCopy) {
+            SelectableCopyDialog(body = body, onDismiss = { showSelectableCopy = false }, title = null)
         }
     }
 }

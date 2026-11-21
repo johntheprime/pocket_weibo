@@ -9,6 +9,7 @@ import androidx.core.app.NotificationCompat
 import com.pocketweibo.diagnostic.DiagnosticLog
 import com.pocketweibo.MainActivity
 import com.pocketweibo.PocketWeiboApp
+import com.pocketweibo.data.local.entity.PostReminderFiringEntity
 import com.pocketweibo.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -84,6 +85,17 @@ class PostReminderReceiver : BroadcastReceiver() {
                 }
 
                 if (posted) {
+                    val deliveredAt = System.currentTimeMillis()
+                    app.database.postReminderFiringDao().insert(
+                        PostReminderFiringEntity(
+                            postId = row.postId,
+                            reminderId = row.id,
+                            scheduledForMillis = row.fireAtMillis,
+                            firedAtMillis = deliveredAt,
+                            repeatRule = row.repeatRule
+                        )
+                    )
+                    DiagnosticLog.d(TAG, "recorded reminder firing postId=${row.postId} at=$deliveredAt")
                     if (ReminderRepeatRule.isRepeating(row.repeatRule)) {
                         val now = System.currentTimeMillis()
                         val next = ReminderRepeatRule.nextAfterSuccessfulFire(

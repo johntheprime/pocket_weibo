@@ -31,5 +31,7 @@ data class PostEntity(
     val likeCount: Int = 0,
     val commentCount: Int = 0,
     val isLiked: Boolean = false,
-    val isPinned: Boolean = false
+    val isPinned: Boolean = false,
+    /** Epoch millis when this post was marked TODO-done; null means unfinished. */
+    val todoDoneAt: Long? = null
 )

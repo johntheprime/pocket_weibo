@@ -92,6 +92,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     val topicListState = rememberLazyListState()
     val discoverSearchListState = rememberLazyListState()
     val topicTimelineListState = rememberLazyListState()
+    val todoListState = rememberLazyListState()
     var selectedTab by remember { mutableStateOf(MainTab.HOME) }
     var selectedTopicKey by remember { mutableStateOf<String?>(null) }
     var showCompose by remember { mutableStateOf(false) }
@@ -269,6 +270,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             },
                             topicListState = topicListState,
                             topicTimelineListState = topicTimelineListState,
+                            todoListState = todoListState,
                             searchListState = discoverSearchListState,
                             modifier = Modifier.padding(paddingValues)
                         )

@@ -16,6 +16,10 @@ val Black = Color(0xFF000000)
 val White = Color(0xFFFFFFFF)
 val Divider = Color(0xFFdedede)
 
+/** Low-saturation TODO states: visible but quiet in a long list. */
+val TodoPending = Color(0xFFB48233)
+val TodoDone = Color(0xFF6F8F72)
+
 val TabBackground = Color(0xFFf8f8f8)
 val TabSelected = Color(0xFFFD8225)
 val TabUnselected = Color(0xFF8F8F8F)

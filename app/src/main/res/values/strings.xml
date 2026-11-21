@@ -182,6 +182,22 @@
     <string name="topics_discuss_again">再来一帖</string>
     <string name="topics_year_header">%1$d 年 · %2$d 条</string>
     <string name="topics_detail_empty">该话题暂无微博</string>
+
+    <!-- TODO: first-class marker posts and actual reminder firing history -->
+    <string name="topics_section_topics">话题</string>
+    <string name="topics_section_todo">待办</string>
+    <string name="todo_unfinished_title">未完成 · %1$d</string>
+    <string name="todo_empty_title">暂无待办</string>
+    <string name="todo_empty_subtitle">在微博开头写 TODO，或在任意位置写 #TODO；收到提醒的微博也会自动进入待办。</string>
+    <string name="todo_done_title">已完成 · %1$d</string>
+    <string name="todo_done_expand">展开</string>
+    <string name="todo_done_collapse">收起</string>
+    <string name="todo_reason_marker">标记待办</string>
+    <string name="todo_reason_reminder">提醒已响</string>
+    <string name="todo_reason_both">标记待办 · 提醒已响</string>
+    <string name="todo_mark_done_cd">标为完成</string>
+    <string name="todo_reopen_cd">重新打开</string>
+    <string name="todo_done_at">完成于 %1$s</string>
     <string name="count_likes">%1$d 赞</string>
     <string name="count_comments">%1$d 评论</string>
     <string name="identity_search_subtitle">历史人物 · 微博达人</string>

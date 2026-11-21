@@ -182,6 +182,22 @@
     <string name="topics_discuss_again">Post again</string>
     <string name="topics_year_header">%1$d · %2$d posts</string>
     <string name="topics_detail_empty">No posts in this topic</string>
+
+    <!-- TODO: first-class marker posts and actual reminder firing history -->
+    <string name="topics_section_topics">Topics</string>
+    <string name="topics_section_todo">To-Do</string>
+    <string name="todo_unfinished_title">Unfinished · %1$d</string>
+    <string name="todo_empty_title">No to-dos yet</string>
+    <string name="todo_empty_subtitle">Start a post with TODO, or add #TODO anywhere. Posts that fire a reminder are added automatically.</string>
+    <string name="todo_done_title">Completed · %1$d</string>
+    <string name="todo_done_expand">Expand</string>
+    <string name="todo_done_collapse">Collapse</string>
+    <string name="todo_reason_marker">TODO marker</string>
+    <string name="todo_reason_reminder">Reminder fired</string>
+    <string name="todo_reason_both">TODO marker · reminder fired</string>
+    <string name="todo_mark_done_cd">Mark done</string>
+    <string name="todo_reopen_cd">Reopen</string>
+    <string name="todo_done_at">Done at %1$s</string>
     <string name="count_likes">%1$d likes</string>
     <string name="count_comments">%1$d comments</string>
     <string name="identity_search_subtitle">Historical figure · microblog</string>

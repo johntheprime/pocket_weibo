@@ -9,6 +9,7 @@ import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.repository.WeiboRepository
 import com.pocketweibo.ui.util.extractTopicTags
 import com.pocketweibo.ui.util.isReservedTopicKey
+import com.pocketweibo.ui.util.isTodoMarked
 import com.pocketweibo.ui.util.matchesAnySearchKeyword
 import com.pocketweibo.ui.util.parseSearchKeywords
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +32,15 @@ data class TopicItem(
     val firstAt: Long,
     val lastAt: Long,
     val identityCount: Int
+)
+
+enum class TodoReason { MARKER, REMINDER, BOTH }
+
+/** An unfinished TODO post and why it qualified for the list. */
+data class TodoItem(
+    val post: PostWithIdentity,
+    val reason: TodoReason,
+    val lastFiredAt: Long?
 )
 
 private class TopicAccumulator(
@@ -66,9 +76,18 @@ class TopicsViewModel(private val repository: WeiboRepository) : ViewModel() {
     private val _allPosts = MutableStateFlow<List<PostWithIdentity>>(emptyList())
     val allPosts: StateFlow<List<PostWithIdentity>> = _allPosts.asStateFlow()
 
+    private val _lastFirings = MutableStateFlow<Map<Long, Long>>(emptyMap())
+    private val _unfinishedTodos = MutableStateFlow<List<TodoItem>>(emptyList())
+    val unfinishedTodos: StateFlow<List<TodoItem>> = _unfinishedTodos.asStateFlow()
+
+    private val _completedTodos = MutableStateFlow<List<PostWithIdentity>>(emptyList())
+    val completedTodos: StateFlow<List<PostWithIdentity>> = _completedTodos.asStateFlow()
+
     init {
         observeTopics()
         observeSearch()
+        observeReminderFirings()
+        observeTodos()
     }
 
     private fun observeTopics() {
@@ -149,6 +168,60 @@ class TopicsViewModel(private val repository: WeiboRepository) : ViewModel() {
             }.collect { results ->
                 _searchResults.value = results
             }
+        }
+    }
+
+    private fun observeReminderFirings() {
+        viewModelScope.launch {
+            repository.observeLastReminderFirings().collect { rows ->
+                _lastFirings.value = rows.associate { it.postId to it.lastFiredAtMillis }
+            }
+        }
+    }
+
+    private fun observeTodos() {
+        viewModelScope.launch {
+            combine(_allPosts, _lastFirings) { posts, firings ->
+                val unfinished = mutableListOf<TodoItem>()
+                val completed = mutableListOf<PostWithIdentity>()
+                for (post in posts) {
+                    if (post.todoDoneAt != null) {
+                        completed.add(post)
+                        continue
+                    }
+                    val marked = isTodoMarked(post.content)
+                    val firedAt = firings[post.id]
+                    if (marked || firedAt != null) {
+                        val reason = when {
+                            marked && firedAt != null -> TodoReason.BOTH
+                            marked -> TodoReason.MARKER
+                            else -> TodoReason.REMINDER
+                        }
+                        unfinished.add(TodoItem(post, reason, firedAt))
+                    }
+                }
+                unfinished.sortWith(
+                    compareByDescending<TodoItem> { it.lastFiredAt ?: it.post.createdAt }
+                        .thenByDescending { it.post.createdAt }
+                )
+                completed.sortByDescending { it.todoDoneAt ?: 0L }
+                unfinished to completed
+            }.collect { (unfinished, completed) ->
+                _unfinishedTodos.value = unfinished
+                _completedTodos.value = completed
+            }
+        }
+    }
+
+    fun markTodoDone(postId: Long) {
+        viewModelScope.launch {
+            repository.setTodoDoneAt(postId, System.currentTimeMillis())
+        }
+    }
+
+    fun reopenTodo(postId: Long) {
+        viewModelScope.launch {
+            repository.setTodoDoneAt(postId, null)
         }
     }
 
