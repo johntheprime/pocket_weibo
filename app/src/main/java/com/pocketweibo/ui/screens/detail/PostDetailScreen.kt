@@ -129,6 +129,7 @@ private const val COMMENT_VOICE_MAX_RECORD_MS = 120_000L
 fun PostDetailScreen(
     postId: Long,
     onBack: () -> Unit,
+    onTopicClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // ... (Keep your ViewModel and State logic the same)
@@ -435,6 +436,7 @@ fun PostDetailScreen(
                     Column {
                         PostDetailCard(
                             post = currentPost,
+                            onTopicClick = onTopicClick,
                             onShareClick = {
                                 sharePost(
                                     context,
@@ -523,6 +525,7 @@ fun PostDetailScreen(
 @Composable
 private fun PostDetailCard(
     post: com.pocketweibo.data.local.dao.PostWithIdentity,
+    onTopicClick: (String) -> Unit,
     onShareClick: () -> Unit,
     onPostImageClick: (Int) -> Unit,
     onCopyPost: () -> Unit,
@@ -634,6 +637,7 @@ private fun PostDetailCard(
             
             SelectablePostBody(
                 text = post.content,
+                onTopicClick = onTopicClick,
                 style = TextStyle(
                     fontSize = 16.sp,
                     color = GrayDark,

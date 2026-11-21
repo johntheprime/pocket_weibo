@@ -58,6 +58,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +73,7 @@ import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.components.ListPostImageIndicator
 import com.pocketweibo.ui.components.SelectableCopyDialog
+import com.pocketweibo.ui.components.TopicText
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
@@ -105,6 +107,7 @@ fun TopicsScreen(
     onToggleCompleted: () -> Unit,
     onOpenTopic: (String) -> Unit,
     onCloseTopic: () -> Unit,
+    onTopicClick: (String) -> Unit,
     onPostClick: (Long) -> Unit,
     onDiscussAgain: (key: String, name: String) -> Unit,
     topicListState: LazyListState,
@@ -166,6 +169,7 @@ fun TopicsScreen(
                     topic = selectedTopic,
                     posts = allPosts,
                     listState = topicTimelineListState,
+                    onTopicClick = onTopicClick,
                     onPostClick = onPostClick,
                     onDiscussAgain = { onDiscussAgain(selectedTopic.key, selectedTopic.displayName) }
                 )
@@ -228,6 +232,7 @@ fun TopicsScreen(
                         results = searchResults,
                         listState = searchListState,
                         onIdentityClick = { identity -> viewModel.updateSearchQuery(identity.name) },
+                        onTopicClick = onTopicClick,
                         onPostClick = onPostClick
                     )
                 }
@@ -306,6 +311,7 @@ fun TopicsScreen(
                         showCompleted = showCompleted,
                         onToggleCompleted = onToggleCompleted,
                         listState = todoListState,
+                        onTopicClick = onTopicClick,
                         onPostClick = onPostClick,
                         onMarkDone = viewModel::markTodoDone,
                         onReopen = viewModel::reopenTodo
@@ -446,6 +452,7 @@ private fun TopicDetailContent(
     topic: TopicItem,
     posts: List<PostWithIdentity>,
     listState: LazyListState,
+    onTopicClick: (String) -> Unit,
     onPostClick: (Long) -> Unit,
     onDiscussAgain: () -> Unit
 ) {
@@ -542,7 +549,11 @@ private fun TopicDetailContent(
                             )
                         }
                         is TimelineRow.Post -> item(key = "post-${row.post.id}") {
-                            TopicPostItem(post = row.post, onClick = { onPostClick(row.post.id) })
+                            TopicPostItem(
+                                post = row.post,
+                                onTopicClick = onTopicClick,
+                                onClick = { onPostClick(row.post.id) }
+                            )
                         }
                     }
                 }
@@ -555,7 +566,11 @@ private val TopicHeaderBackground = Color(0xFFEFEFEF)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun TopicPostItem(post: PostWithIdentity, onClick: () -> Unit) {
+private fun TopicPostItem(
+    post: PostWithIdentity,
+    onTopicClick: (String) -> Unit,
+    onClick: () -> Unit
+) {
     var showSelectableCopy by remember { mutableStateOf(false) }
     val displayName = identityDisplayName(post.identityName)
     val voiceOnlyLabel = stringResource(R.string.comment_body_voice_only)
@@ -595,10 +610,10 @@ private fun TopicPostItem(post: PostWithIdentity, onClick: () -> Unit) {
                         )
                         Text(text = time, fontSize = 11.sp, color = GrayMiddle)
                     }
-                    Text(
+                    TopicText(
                         text = body,
-                        fontSize = 13.sp,
-                        color = GrayDark,
+                        onTopicClick = onTopicClick,
+                        style = TextStyle(fontSize = 13.sp, color = GrayDark),
                         maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 4.dp)
@@ -636,6 +651,7 @@ private fun TodoListContent(
     showCompleted: Boolean,
     onToggleCompleted: () -> Unit,
     listState: LazyListState,
+    onTopicClick: (String) -> Unit,
     onPostClick: (Long) -> Unit,
     onMarkDone: (Long) -> Unit,
     onReopen: (Long) -> Unit
@@ -682,6 +698,7 @@ private fun TodoListContent(
         items(unfinished, key = { "todo-${it.post.id}" }) { item ->
             TodoRow(
                 item = item,
+                onTopicClick = onTopicClick,
                 onPostClick = { onPostClick(item.post.id) },
                 onMarkDone = { onMarkDone(item.post.id) }
             )
@@ -717,6 +734,7 @@ private fun TodoListContent(
             items(completed, key = { "done-${it.id}" }) { post ->
                 CompletedTodoRow(
                     post = post,
+                    onTopicClick = onTopicClick,
                     onPostClick = { onPostClick(post.id) },
                     onReopen = { onReopen(post.id) }
                 )
@@ -729,6 +747,7 @@ private fun TodoListContent(
 @Composable
 private fun TodoRow(
     item: TodoItem,
+    onTopicClick: (String) -> Unit,
     onPostClick: () -> Unit,
     onMarkDone: () -> Unit
 ) {
@@ -785,10 +804,10 @@ private fun TodoRow(
                         color = TodoPending,
                         modifier = Modifier.padding(top = 3.dp)
                     )
-                    Text(
+                    TopicText(
                         text = body,
-                        fontSize = 13.sp,
-                        color = GrayDark,
+                        onTopicClick = onTopicClick,
+                        style = TextStyle(fontSize = 13.sp, color = GrayDark),
                         maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 4.dp)
@@ -831,6 +850,7 @@ private fun TodoRow(
 @Composable
 private fun CompletedTodoRow(
     post: PostWithIdentity,
+    onTopicClick: (String) -> Unit,
     onPostClick: () -> Unit,
     onReopen: () -> Unit
 ) {
@@ -875,10 +895,10 @@ private fun CompletedTodoRow(
                         color = TodoDone,
                         modifier = Modifier.padding(top = 3.dp)
                     )
-                    Text(
+                    TopicText(
                         text = body,
-                        fontSize = 13.sp,
-                        color = GrayMiddle,
+                        onTopicClick = onTopicClick,
+                        style = TextStyle(fontSize = 13.sp, color = GrayMiddle),
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 4.dp)
@@ -975,6 +995,7 @@ private fun SearchResultsContent(
     results: List<SearchResult>,
     listState: LazyListState,
     onIdentityClick: (IdentityEntity) -> Unit,
+    onTopicClick: (String) -> Unit,
     onPostClick: (Long) -> Unit
 ) {
     if (results.isEmpty()) {
@@ -1014,7 +1035,11 @@ private fun SearchResultsContent(
                 SectionTitle(text = stringResource(R.string.discover_section_posts))
             }
             items(postResults) { result ->
-                PostSearchItem(post = result.post, onClick = { onPostClick(result.post.id) })
+                PostSearchItem(
+                    post = result.post,
+                    onTopicClick = onTopicClick,
+                    onClick = { onPostClick(result.post.id) }
+                )
             }
         }
         if (commentResults.isNotEmpty()) {
@@ -1022,7 +1047,11 @@ private fun SearchResultsContent(
                 SectionTitle(text = stringResource(R.string.discover_section_comments))
             }
             items(commentResults) { result ->
-                CommentSearchItem(row = result.row, onOpenPost = { onPostClick(result.row.postId) })
+                CommentSearchItem(
+                    row = result.row,
+                    onTopicClick = onTopicClick,
+                    onOpenPost = { onPostClick(result.row.postId) }
+                )
             }
         }
     }
@@ -1071,7 +1100,11 @@ private fun IdentitySearchItem(identity: IdentityEntity, onClick: () -> Unit) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun PostSearchItem(post: PostWithIdentity, onClick: () -> Unit) {
+private fun PostSearchItem(
+    post: PostWithIdentity,
+    onTopicClick: (String) -> Unit,
+    onClick: () -> Unit
+) {
     var showSelectableCopy by remember { mutableStateOf(false) }
     val displayName = identityDisplayName(post.identityName)
     val voiceOnlyLabel = stringResource(R.string.comment_body_voice_only)
@@ -1104,10 +1137,10 @@ private fun PostSearchItem(post: PostWithIdentity, onClick: () -> Unit) {
                         )
                         ListPostImageIndicator(imageUris = post.imageUris)
                     }
-                    Text(
+                    TopicText(
                         text = body,
-                        fontSize = 13.sp,
-                        color = GrayDark,
+                        onTopicClick = onTopicClick,
+                        style = TextStyle(fontSize = 13.sp, color = GrayDark),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 4.dp)
@@ -1123,7 +1156,11 @@ private fun PostSearchItem(post: PostWithIdentity, onClick: () -> Unit) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun CommentSearchItem(row: CommentSearchRow, onOpenPost: () -> Unit) {
+private fun CommentSearchItem(
+    row: CommentSearchRow,
+    onTopicClick: (String) -> Unit,
+    onOpenPost: () -> Unit
+) {
     var showSelectableCopy by remember { mutableStateOf(false) }
     val openPostCd = stringResource(R.string.discover_comment_open_post_cd)
     val commentAuthor = identityDisplayName(row.commentAuthorName)
@@ -1165,10 +1202,10 @@ private fun CommentSearchItem(row: CommentSearchRow, onOpenPost: () -> Unit) {
                         color = GrayMiddle,
                         modifier = Modifier.padding(top = 2.dp)
                     )
-                    Text(
+                    TopicText(
                         text = body,
-                        fontSize = 13.sp,
-                        color = GrayDark,
+                        onTopicClick = onTopicClick,
+                        style = TextStyle(fontSize = 13.sp, color = GrayDark),
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 6.dp)

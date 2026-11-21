@@ -40,6 +40,7 @@ import com.pocketweibo.ui.ComposeIntentViewModel
 import com.pocketweibo.ui.theme.PocketWeiboTheme
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -161,6 +162,13 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     val canSwipeBack = postDetailId != null || selectedTopicKey != null || showTopicGlobalSearch ||
         identityDetailId != null || showIdentityList || showCompose || showIdentitySchedule || showMeSettings
 
+    /** Opens a topic referenced by a hashtag; back returns to the list/search it came from. */
+    fun openTopic(displayName: String) {
+        postDetailId = null
+        selectedTab = MainTab.DISCOVER
+        selectedTopicKey = displayName.lowercase(Locale.ROOT)
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
@@ -220,6 +228,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                     PostDetailScreen(
                         postId = postDetailId!!,
                         onBack = { postDetailId = null },
+                        onTopicClick = ::openTopic,
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
@@ -272,6 +281,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                     when (selectedTab) {
                         MainTab.HOME ->                         HomeScreen(
                             onPostClick = { postId -> postDetailId = postId },
+                            onTopicClick = ::openTopic,
                             onOpenSettings = { showMeSettings = true },
                             onNavigateToDiscover = { selectedTab = MainTab.DISCOVER },
                             listState = homeListState,
@@ -296,6 +306,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             onToggleCompleted = { showTopicCompleted = !showTopicCompleted },
                             onOpenTopic = { key -> selectedTopicKey = key },
                             onCloseTopic = { selectedTopicKey = null },
+                            onTopicClick = ::openTopic,
                             onPostClick = { postId -> postDetailId = postId },
                             onDiscussAgain = { key, name ->
                                 topicComposeOriginKey = key

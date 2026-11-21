@@ -38,4 +38,14 @@ class TopicsTest {
         assertTrue(isReservedTopicKey("TODO"))
         assertFalse(isReservedTopicKey("AI"))
     }
+
+    @Test
+    fun extractsEveryHashtagSpanForClicking() {
+        val content = "聊聊 #AI 与 #ai，再看 #苏轼"
+        val links = extractTopicLinks(content)
+
+        assertEquals(3, links.size)
+        assertEquals("#AI", content.substring(links[0].start, links[0].end))
+        assertEquals(listOf("ai", "ai", "苏轼"), links.map { it.key })
+    }
 }

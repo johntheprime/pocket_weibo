@@ -107,6 +107,7 @@ private data class PendingHomeReminder(val postId: Long, val fireAt: Long, val r
 @Composable
 fun HomeScreen(
     onPostClick: (Long) -> Unit = {},
+    onTopicClick: (String) -> Unit = {},
     onOpenSettings: () -> Unit = {},
     onNavigateToDiscover: () -> Unit = {},
     listState: LazyListState,
@@ -450,6 +451,7 @@ fun HomeScreen(
                                         )
                                     },
                                     onPostClick = { onPostClick(post.id) },
+                                    onTopicClick = onTopicClick,
                                     reminderFireAtMillis =
                                         nextReminderByPostId[post.id]?.fireAtMillis
                                 )

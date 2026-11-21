@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import com.pocketweibo.R
 import androidx.compose.ui.text.style.TextAlign
@@ -58,6 +59,8 @@ fun PostCard(
     onRemindClick: () -> Unit,
     onShareClick: () -> Unit,
     onPostClick: () -> Unit,
+    /** Opening a hashtag in the body navigates to that topic. */
+    onTopicClick: (String) -> Unit = {},
     /** List feeds are text-first; images remain visible in post detail. */
     showPostImages: Boolean = false,
     /** Next pending reminder for this post; shows an orange badge when non-null. */
@@ -151,11 +154,14 @@ fun PostCard(
                 }
             }
 
-            Text(
+            TopicText(
                 text = post.content,
-                fontSize = 14.sp,
-                color = Color.Black,
-                lineHeight = 20.sp,
+                onTopicClick = onTopicClick,
+                style = TextStyle(
+                    color = Color.Black,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp
+                ),
                 maxLines = 5,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 8.dp)
