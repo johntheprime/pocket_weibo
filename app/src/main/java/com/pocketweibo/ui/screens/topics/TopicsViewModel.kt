@@ -12,6 +12,7 @@ import com.pocketweibo.ui.util.isReservedTopicKey
 import com.pocketweibo.ui.util.isTodoMarked
 import com.pocketweibo.ui.util.matchesAnySearchKeyword
 import com.pocketweibo.ui.util.parseSearchKeywords
+import com.pocketweibo.ui.util.stripTopicPrefix
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 
 sealed class SearchResult {
     data class IdentityResult(val identity: IdentityEntity) : SearchResult()
+    data class TopicResult(val topic: TopicItem) : SearchResult()
     data class PostResult(val post: PostWithIdentity) : SearchResult()
     data class CommentResult(val row: CommentSearchRow) : SearchResult()
 }
@@ -130,9 +132,10 @@ class TopicsViewModel(private val repository: WeiboRepository) : ViewModel() {
             combine(
                 _searchQuery,
                 repository.allIdentities,
+                _topics,
                 repository.allPosts,
                 repository.allCommentsForSearch
-            ) { query, identities, posts, comments ->
+            ) { query, identities, topics, posts, comments ->
                 val keywords = parseSearchKeywords(query)
                 if (keywords.isEmpty()) {
                     emptyList()
@@ -143,6 +146,16 @@ class TopicsViewModel(private val repository: WeiboRepository) : ViewModel() {
                         matchesAnySearchKeyword(keywords, identity.name)
                     }.forEach {
                         results.add(SearchResult.IdentityResult(it))
+                    }
+
+                    val topicKeywords = keywords.map(::stripTopicPrefix).filter { it.isNotEmpty() }
+                    topics.filter { topic ->
+                        topicKeywords.any { keyword ->
+                            topic.displayName.contains(keyword, ignoreCase = true) ||
+                                topic.key.contains(keyword, ignoreCase = true)
+                        }
+                    }.forEach {
+                        results.add(SearchResult.TopicResult(it))
                     }
 
                     posts.filter { post ->

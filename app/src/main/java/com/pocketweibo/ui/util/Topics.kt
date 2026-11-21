@@ -16,7 +16,7 @@ private const val RESERVED_TOPIC_KEY = "todo"
  * CJK text has no word separator, so authors can end a tag with punctuation or a space.
  */
 private val HashtagRegex = Regex(
-    """#([^\s#\[\](){}<>"'“”‘’，,。．！？!?；;：:|｜]+)"""
+    """[#＃]([^\s#＃\[\](){}<>"'“”‘’，,。．！？!?；;：:|｜]+)"""
 )
 
 private val TrailingHashtagPunctuation = charArrayOf(
@@ -49,6 +49,9 @@ fun extractTopicTags(content: String): List<TopicTag> =
 
 /** True for the reserved `TODO` / `#TODO` tag. */
 fun isReservedTopicKey(key: String): Boolean = key.lowercase(Locale.ROOT) == RESERVED_TOPIC_KEY
+
+/** Removes a leading ASCII or full-width hash from a typed topic name. */
+fun stripTopicPrefix(value: String): String = value.trim().trimStart('#', '＃').trim()
 
 /** A tappable hashtag span inside a post body. [start]/[end] include the leading `#`. */
 data class TopicLink(val start: Int, val end: Int, val displayName: String, val key: String)

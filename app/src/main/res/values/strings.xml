@@ -158,6 +158,7 @@
     <string name="discover_search_comment_desc">匹配评论文字、评论者，或所属微博正文与作者</string>
     <string name="discover_search_multi_title">多个关键词</string>
     <string name="discover_search_multi_desc">用 | 分隔，匹配任意一个，如：苏轼|李白</string>
+    <string name="discover_section_topics">话题</string>
     <string name="discover_section_comments">评论</string>
     <string name="discover_comment_parent_post_line">原微博：%1$s</string>
     <string name="discover_comment_open_post_cd">打开此评论所属的微博</string>
@@ -169,6 +170,7 @@
     <string name="discover_empty_results">未找到相关结果</string>
     <string name="discover_section_identity">身份</string>
     <string name="discover_section_posts">微博</string>
+    <string name="discover_identity_view_posts">查看微博</string>
     <string name="discover_clear_search_cd">清除</string>
 
     <!-- Topics: hashtag-derived long-lived discussion pages -->

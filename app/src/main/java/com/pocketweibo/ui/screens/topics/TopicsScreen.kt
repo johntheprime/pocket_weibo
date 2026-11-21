@@ -87,6 +87,7 @@ import com.pocketweibo.ui.util.extractTopicTags
 import com.pocketweibo.ui.util.formatExactTime
 import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
+import com.pocketweibo.ui.util.stripTopicPrefix
 import com.pocketweibo.ui.util.postOrCommentBodyForDisplay
 import java.util.Calendar
 
@@ -231,7 +232,12 @@ fun TopicsScreen(
                     SearchResultsContent(
                         results = searchResults,
                         listState = searchListState,
-                        onIdentityClick = { identity -> viewModel.updateSearchQuery(identity.name) },
+                        onIdentityClick = { identity ->
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            viewModel.updateSearchQuery(identity.name)
+                        },
+                        onOpenTopic = onOpenTopic,
                         onTopicClick = onTopicClick,
                         onPostClick = onPostClick
                     )
@@ -330,7 +336,7 @@ private fun TopicListContent(
     onTopicClick: (TopicItem) -> Unit
 ) {
     val filtered = remember(topics, query) {
-        val q = query.trim().removePrefix("#")
+        val q = stripTopicPrefix(query)
         if (q.isEmpty()) topics else topics.filter { it.displayName.contains(q, ignoreCase = true) }
     }
     if (filtered.isEmpty()) {
@@ -995,6 +1001,7 @@ private fun SearchResultsContent(
     results: List<SearchResult>,
     listState: LazyListState,
     onIdentityClick: (IdentityEntity) -> Unit,
+    onOpenTopic: (String) -> Unit,
     onTopicClick: (String) -> Unit,
     onPostClick: (Long) -> Unit
 ) {
@@ -1019,6 +1026,7 @@ private fun SearchResultsContent(
     }
     LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
         val identityResults = results.filterIsInstance<SearchResult.IdentityResult>()
+        val topicResults = results.filterIsInstance<SearchResult.TopicResult>()
         val postResults = results.filterIsInstance<SearchResult.PostResult>()
         val commentResults = results.filterIsInstance<SearchResult.CommentResult>()
 
@@ -1028,6 +1036,14 @@ private fun SearchResultsContent(
             }
             items(identityResults) { result ->
                 IdentitySearchItem(identity = result.identity, onClick = { onIdentityClick(result.identity) })
+            }
+        }
+        if (topicResults.isNotEmpty()) {
+            item {
+                SectionTitle(text = stringResource(R.string.discover_section_topics))
+            }
+            items(topicResults) { result ->
+                TopicCard(topic = result.topic, onClick = { onOpenTopic(result.topic.key) })
             }
         }
         if (postResults.isNotEmpty()) {
@@ -1086,7 +1102,7 @@ private fun IdentitySearchItem(identity: IdentityEntity, onClick: () -> Unit) {
                 avatarResName = identity.avatarResName,
                 customAvatarUri = identity.customAvatarUri
             )
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(text = identity.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = GrayDark)
                 Text(
                     text = stringResource(R.string.identity_search_subtitle),
@@ -1094,6 +1110,12 @@ private fun IdentitySearchItem(identity: IdentityEntity, onClick: () -> Unit) {
                     color = GrayMiddle
                 )
             }
+            Text(
+                text = stringResource(R.string.discover_identity_view_posts),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = WeiboOrange
+            )
         }
     }
 }

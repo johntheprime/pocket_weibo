@@ -48,4 +48,15 @@ class TopicsTest {
         assertEquals("#AI", content.substring(links[0].start, links[0].end))
         assertEquals(listOf("ai", "ai", "苏轼"), links.map { it.key })
     }
+
+    @Test
+    fun acceptsFullWidthHash() {
+        val content = "聊聊 ＃苏轼 与 #AI"
+        val tags = extractTopicTags(content)
+        val links = extractTopicLinks(content)
+
+        assertEquals(listOf("苏轼", "AI"), tags.map { it.displayName })
+        assertEquals("＃苏轼", content.substring(links[0].start, links[0].end))
+        assertEquals("苏轼", stripTopicPrefix("＃苏轼"))
+    }
 }
