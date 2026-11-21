@@ -27,6 +27,7 @@ import com.pocketweibo.ui.components.WeiboBottomTabBar
 import com.pocketweibo.ui.screens.compose.ComposeScreen
 import com.pocketweibo.ui.screens.detail.PostDetailScreen
 import com.pocketweibo.ui.screens.topics.TopicsScreen
+import com.pocketweibo.ui.screens.topics.TopicsSection
 import com.pocketweibo.ui.screens.home.HomeScreen
 import com.pocketweibo.ui.screens.identity.IdentityDetailScreen
 import com.pocketweibo.ui.screens.identity.IdentityListScreen
@@ -96,6 +97,9 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     var selectedTab by remember { mutableStateOf(MainTab.HOME) }
     var selectedTopicKey by remember { mutableStateOf<String?>(null) }
     var showTopicGlobalSearch by remember { mutableStateOf(false) }
+    var topicQuery by remember { mutableStateOf("") }
+    var topicSection by remember { mutableStateOf(TopicsSection.TOPICS) }
+    var showTopicCompleted by remember { mutableStateOf(false) }
     var showCompose by remember { mutableStateOf(false) }
     var showIdentityList by remember { mutableStateOf(false) }
     var identityDetailId by remember { mutableStateOf<Long?>(null) }
@@ -271,6 +275,12 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             showGlobalSearch = showTopicGlobalSearch,
                             onOpenSearch = { showTopicGlobalSearch = true },
                             onCloseSearch = { showTopicGlobalSearch = false },
+                            topicQuery = topicQuery,
+                            onTopicQueryChange = { topicQuery = it },
+                            section = topicSection,
+                            onSectionChange = { topicSection = it },
+                            showCompleted = showTopicCompleted,
+                            onToggleCompleted = { showTopicCompleted = !showTopicCompleted },
                             onOpenTopic = { key -> selectedTopicKey = key },
                             onCloseTopic = { selectedTopicKey = null },
                             onPostClick = { postId -> postDetailId = postId },

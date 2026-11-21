@@ -83,7 +83,7 @@ import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.ui.util.postOrCommentBodyForDisplay
 import java.util.Calendar
 
-private enum class TopicsSection { TOPICS, TODO }
+enum class TopicsSection { TOPICS, TODO }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,6 +92,12 @@ fun TopicsScreen(
     showGlobalSearch: Boolean,
     onOpenSearch: () -> Unit,
     onCloseSearch: () -> Unit,
+    topicQuery: String,
+    onTopicQueryChange: (String) -> Unit,
+    section: TopicsSection,
+    onSectionChange: (TopicsSection) -> Unit,
+    showCompleted: Boolean,
+    onToggleCompleted: () -> Unit,
     onOpenTopic: (String) -> Unit,
     onCloseTopic: () -> Unit,
     onPostClick: (Long) -> Unit,
@@ -115,10 +121,6 @@ fun TopicsScreen(
     val unfinishedTodos by viewModel.unfinishedTodos.collectAsState()
     val completedTodos by viewModel.completedTodos.collectAsState()
     val focusManager = LocalFocusManager.current
-
-    var topicQuery by remember { mutableStateOf("") }
-    var section by remember { mutableStateOf(TopicsSection.TOPICS) }
-    var showCompleted by remember { mutableStateOf(false) }
 
     // Search text lives in the ViewModel (Activity-scoped) so it survives opening a post.
     // Clear it only when search is deliberately closed, not when the screen is recomposed.
@@ -221,12 +223,12 @@ fun TopicsScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(
                                 selected = section == TopicsSection.TOPICS,
-                                onClick = { section = TopicsSection.TOPICS },
+                                onClick = { onSectionChange(TopicsSection.TOPICS) },
                                 label = { Text(stringResource(R.string.topics_section_topics)) }
                             )
                             FilterChip(
                                 selected = section == TopicsSection.TODO,
-                                onClick = { section = TopicsSection.TODO },
+                                onClick = { onSectionChange(TopicsSection.TODO) },
                                 label = { Text(stringResource(R.string.topics_section_todo)) }
                             )
                         }
@@ -243,7 +245,7 @@ fun TopicsScreen(
                 if (section == TopicsSection.TOPICS) {
                     OutlinedTextField(
                         value = topicQuery,
-                        onValueChange = { topicQuery = it },
+                        onValueChange = onTopicQueryChange,
                         placeholder = { Text(stringResource(R.string.topics_search_hint), color = GrayMiddle) },
                         leadingIcon = {
                             Icon(
@@ -254,7 +256,7 @@ fun TopicsScreen(
                         },
                         trailingIcon = {
                             if (topicQuery.isNotEmpty()) {
-                                IconButton(onClick = { topicQuery = "" }) {
+                                IconButton(onClick = { onTopicQueryChange("") }) {
                                     Icon(
                                         imageVector = Icons.Default.Clear,
                                         contentDescription = stringResource(R.string.discover_clear_search_cd),
@@ -282,7 +284,7 @@ fun TopicsScreen(
                         unfinished = unfinishedTodos,
                         completed = completedTodos,
                         showCompleted = showCompleted,
-                        onToggleCompleted = { showCompleted = !showCompleted },
+                        onToggleCompleted = onToggleCompleted,
                         listState = todoListState,
                         onPostClick = onPostClick,
                         onMarkDone = viewModel::markTodoDone,
