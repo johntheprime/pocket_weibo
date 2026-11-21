@@ -53,6 +53,15 @@ fun isReservedTopicKey(key: String): Boolean = key.lowercase(Locale.ROOT) == RES
 /** Removes a leading ASCII or full-width hash from a typed topic name. */
 fun stripTopicPrefix(value: String): String = value.trim().trimStart('#', '＃').trim()
 
+/**
+ * Picks the spelling shown for a topic: the most frequent form wins; ties use the
+ * lexicographically smallest form so `#AI` / `#ai` do not flip when new posts arrive.
+ */
+fun stableTopicDisplayName(displayNames: Collection<String>): String =
+    displayNames.groupingBy { it }.eachCount().entries
+        .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+        .first().key
+
 /** A tappable hashtag span inside a post body. [start]/[end] include the leading `#`. */
 data class TopicLink(val start: Int, val end: Int, val displayName: String, val key: String)
 

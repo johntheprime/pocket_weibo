@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,8 +49,6 @@ import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.ui.components.ListPostImageIndicator
 import com.pocketweibo.ui.components.SelectableCopyDialog
 import com.pocketweibo.ui.components.TopicText
-import com.pocketweibo.ui.theme.GrayDark
-import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.TodoDone
 import com.pocketweibo.ui.theme.TodoPending
 import com.pocketweibo.ui.util.RelativeTimePreset
@@ -77,7 +76,7 @@ internal fun TodoListContent(
                 text = stringResource(R.string.todo_unfinished_title, unfinished.size),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = GrayDark,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
             )
         }
@@ -98,13 +97,13 @@ internal fun TodoListContent(
                     Text(
                         text = stringResource(R.string.todo_empty_title),
                         fontSize = 15.sp,
-                        color = GrayDark,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(top = 10.dp)
                     )
                     Text(
                         text = stringResource(R.string.todo_empty_subtitle),
                         fontSize = 12.sp,
-                        color = GrayMiddle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
@@ -133,7 +132,7 @@ internal fun TodoListContent(
                     text = stringResource(R.string.todo_done_title, completed.size),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = GrayDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 Text(
@@ -141,7 +140,7 @@ internal fun TodoListContent(
                         if (showCompleted) R.string.todo_done_collapse else R.string.todo_done_expand
                     ),
                     fontSize = 12.sp,
-                    color = GrayMiddle
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -188,7 +187,7 @@ internal fun TodoRow(
                 .padding(horizontal = 12.dp, vertical = 4.dp)
                 .combinedClickable(onClick = onPostClick, onLongClick = { showSelectableCopy = true }),
             shape = RoundedCornerShape(10.dp),
-            color = Color.White
+            color = MaterialTheme.colorScheme.surface
         ) {
             Row(
                 modifier = Modifier.padding(12.dp),
@@ -206,12 +205,12 @@ internal fun TodoRow(
                             text = displayName,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = GrayDark,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
-                        Text(text = time, fontSize = 11.sp, color = GrayMiddle)
+                        Text(text = time, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Text(
                         text = reasonLabel,
@@ -222,7 +221,7 @@ internal fun TodoRow(
                     TopicText(
                         text = body,
                         onTopicClick = onTopicClick,
-                        style = TextStyle(fontSize = 13.sp, color = GrayDark),
+                        style = TextStyle(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface),
                         maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 4.dp)
@@ -234,7 +233,7 @@ internal fun TodoRow(
                         Text(
                             text = stringResource(R.string.count_comments, post.commentCount),
                             fontSize = 12.sp,
-                            color = GrayMiddle
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.weight(1f))
                         ListPostImageIndicator(imageUris = post.imageUris)
@@ -283,7 +282,7 @@ internal fun CompletedTodoRow(
                 .padding(horizontal = 12.dp, vertical = 4.dp)
                 .combinedClickable(onClick = onPostClick, onLongClick = { showSelectableCopy = true }),
             shape = RoundedCornerShape(10.dp),
-            color = Color.White
+            color = MaterialTheme.colorScheme.surface
         ) {
             Row(
                 modifier = Modifier.padding(12.dp),
@@ -300,7 +299,7 @@ internal fun CompletedTodoRow(
                         text = displayName,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = GrayMiddle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -313,7 +312,7 @@ internal fun CompletedTodoRow(
                     TopicText(
                         text = body,
                         onTopicClick = onTopicClick,
-                        style = TextStyle(fontSize = 13.sp, color = GrayMiddle),
+                        style = TextStyle(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant),
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 4.dp)
@@ -328,7 +327,7 @@ internal fun CompletedTodoRow(
                     Icon(
                         imageVector = Icons.Default.Clear,
                         contentDescription = null,
-                        tint = GrayMiddle,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }

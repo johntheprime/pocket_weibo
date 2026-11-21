@@ -12,6 +12,7 @@ import com.pocketweibo.ui.util.isReservedTopicKey
 import com.pocketweibo.ui.util.isTodoMarked
 import com.pocketweibo.ui.util.matchesAnySearchKeyword
 import com.pocketweibo.ui.util.parseSearchKeywords
+import com.pocketweibo.ui.util.stableTopicDisplayName
 import com.pocketweibo.ui.util.stripTopicPrefix
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,16 +48,16 @@ data class TodoItem(
 
 private class TopicAccumulator(
     val key: String,
-    val displayName: String,
     var firstAt: Long,
     var lastAt: Long,
     val identityIds: MutableSet<Long>
 ) {
     var postCount: Int = 1
+    val displayNames = mutableListOf<String>()
 
     fun toTopicItem() = TopicItem(
         key = key,
-        displayName = displayName,
+        displayName = stableTopicDisplayName(displayNames),
         postCount = postCount,
         firstAt = firstAt,
         lastAt = lastAt,
@@ -97,7 +98,6 @@ class TopicsViewModel(private val repository: WeiboRepository) : ViewModel() {
             repository.allPosts.collect { posts ->
                 _allPosts.value = posts
                 val grouped = LinkedHashMap<String, TopicAccumulator>()
-                // DAO already returns newest first, so the first display name we see is the latest.
                 for (post in posts) {
                     for (tag in extractTopicTags(post.content)) {
                         if (isReservedTopicKey(tag.key)) continue
@@ -105,13 +105,13 @@ class TopicsViewModel(private val repository: WeiboRepository) : ViewModel() {
                         if (current == null) {
                             grouped[tag.key] = TopicAccumulator(
                                 key = tag.key,
-                                displayName = tag.displayName,
                                 firstAt = post.createdAt,
                                 lastAt = post.createdAt,
                                 identityIds = mutableSetOf(post.identityId ?: -1L)
-                            )
+                            ).also { it.displayNames.add(tag.displayName) }
                         } else {
                             current.postCount += 1
+                            current.displayNames.add(tag.displayName)
                             current.firstAt = minOf(current.firstAt, post.createdAt)
                             current.lastAt = maxOf(current.lastAt, post.createdAt)
                             current.identityIds.add(post.identityId ?: -1L)

@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,7 +31,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.util.extractTopicLinks
 
@@ -105,7 +105,7 @@ fun SelectableCopyDialog(
                     BasicText(
                         text = AnnotatedString(body),
                         style = TextStyle(
-                            color = GrayDark,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 16.sp,
                             lineHeight = 24.sp
                         )

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,9 +48,6 @@ import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.components.ListPostImageIndicator
 import com.pocketweibo.ui.components.SelectableCopyDialog
 import com.pocketweibo.ui.components.TopicText
-import com.pocketweibo.ui.theme.GrayDark
-import com.pocketweibo.ui.theme.GrayLight
-import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.ui.util.postOrCommentBodyForDisplay
@@ -61,7 +59,7 @@ internal fun SearchTipsContent() {
             Text(
                 text = stringResource(R.string.discover_search_tips),
                 fontSize = 14.sp,
-                color = GrayMiddle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
             )
         }
@@ -103,7 +101,7 @@ internal fun SearchHintItem(title: String, description: String, icon: ImageVecto
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp),
         shape = RoundedCornerShape(8.dp),
-        color = Color.White
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -112,8 +110,8 @@ internal fun SearchHintItem(title: String, description: String, icon: ImageVecto
         ) {
             Icon(imageVector = icon, contentDescription = null, tint = WeiboOrange, modifier = Modifier.size(24.dp))
             Column {
-                Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GrayDark)
-                Text(text = description, fontSize = 12.sp, color = GrayMiddle, modifier = Modifier.padding(top = 2.dp))
+                Text(text = title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(text = description, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
             }
         }
     }
@@ -134,13 +132,13 @@ internal fun SearchResultsContent(
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = null,
-                    tint = GrayLight,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(48.dp)
                 )
                 Text(
                     text = stringResource(R.string.discover_empty_results),
                     fontSize = 16.sp,
-                    color = GrayMiddle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 12.dp)
                 )
             }
@@ -202,7 +200,7 @@ internal fun SectionTitle(text: String) {
         text = text,
         fontSize = 14.sp,
         fontWeight = FontWeight.Bold,
-        color = GrayDark,
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
     )
 }
@@ -211,7 +209,7 @@ internal fun SectionTitle(text: String) {
 internal fun IdentitySearchItem(identity: IdentityEntity, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        color = Color.White
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -226,11 +224,11 @@ internal fun IdentitySearchItem(identity: IdentityEntity, onClick: () -> Unit) {
                 customAvatarUri = identity.customAvatarUri
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = identity.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = GrayDark)
+                Text(text = identity.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Text(
                     text = stringResource(R.string.identity_search_subtitle),
                     fontSize = 12.sp,
-                    color = GrayMiddle
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(
@@ -259,7 +257,7 @@ internal fun PostSearchItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(onClick = onClick, onLongClick = { showSelectableCopy = true }),
-            color = Color.White
+            color = MaterialTheme.colorScheme.surface
         ) {
             Row(modifier = Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Avatar(
@@ -275,7 +273,7 @@ internal fun PostSearchItem(
                             text = displayName,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = GrayDark,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
@@ -285,7 +283,7 @@ internal fun PostSearchItem(
                     TopicText(
                         text = body,
                         onTopicClick = onTopicClick,
-                        style = TextStyle(fontSize = 13.sp, color = GrayDark),
+                        style = TextStyle(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 4.dp)
@@ -320,7 +318,7 @@ internal fun CommentSearchItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(onClick = onOpenPost, onLongClick = { showSelectableCopy = true }),
-            color = Color.White
+            color = MaterialTheme.colorScheme.surface
         ) {
             Row(
                 modifier = Modifier.padding(16.dp).semantics { contentDescription = openPostCd },
@@ -337,20 +335,20 @@ internal fun CommentSearchItem(
                         text = commentAuthor,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = GrayDark,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = stringResource(R.string.comment_search_result_subtitle),
                         fontSize = 11.sp,
-                        color = GrayMiddle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                     TopicText(
                         text = body,
                         onTopicClick = onTopicClick,
-                        style = TextStyle(fontSize = 13.sp, color = GrayDark),
+                        style = TextStyle(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface),
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 6.dp)
@@ -358,7 +356,7 @@ internal fun CommentSearchItem(
                     Text(
                         text = postLine,
                         fontSize = 11.sp,
-                        color = GrayMiddle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 6.dp)

@@ -30,6 +30,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -68,10 +69,6 @@ import com.pocketweibo.ui.components.ListPostImageIndicator
 import com.pocketweibo.ui.components.SelectableCopyDialog
 import com.pocketweibo.ui.components.TopicText
 import com.pocketweibo.ui.components.WeiboTitleBar
-import com.pocketweibo.ui.theme.Background
-import com.pocketweibo.ui.theme.GrayDark
-import com.pocketweibo.ui.theme.GrayLight
-import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.extractTopicTags
@@ -140,7 +137,7 @@ fun TopicsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         when {
             selectedTopic != null -> {
@@ -151,7 +148,7 @@ fun TopicsScreen(
                             Icon(
                                 imageVector = Icons.Default.ArrowBack,
                                 contentDescription = stringResource(R.string.back_cd),
-                                tint = GrayDark
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -177,7 +174,7 @@ fun TopicsScreen(
                             Icon(
                                 imageVector = Icons.Default.ArrowBack,
                                 contentDescription = stringResource(R.string.back_cd),
-                                tint = GrayDark
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -185,12 +182,12 @@ fun TopicsScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.updateSearchQuery(it) },
-                    placeholder = { Text(stringResource(R.string.discover_search_hint), color = GrayMiddle) },
+                    placeholder = { Text(stringResource(R.string.discover_search_hint), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = null,
-                            tint = GrayMiddle
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     },
                     trailingIcon = {
@@ -199,7 +196,7 @@ fun TopicsScreen(
                                 Icon(
                                     imageVector = Icons.Default.Clear,
                                     contentDescription = stringResource(R.string.discover_clear_search_cd),
-                                    tint = GrayMiddle
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -255,7 +252,7 @@ fun TopicsScreen(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = stringResource(R.string.home_search_cd),
-                            tint = GrayDark
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     },
                     onRightIconClick = onOpenSearch
@@ -264,12 +261,12 @@ fun TopicsScreen(
                     OutlinedTextField(
                         value = topicQuery,
                         onValueChange = onTopicQueryChange,
-                        placeholder = { Text(stringResource(R.string.topics_search_hint), color = GrayMiddle) },
+                        placeholder = { Text(stringResource(R.string.topics_search_hint), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
-                                tint = GrayMiddle
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
                         trailingIcon = {
@@ -278,7 +275,7 @@ fun TopicsScreen(
                                     Icon(
                                         imageVector = Icons.Default.Clear,
                                         contentDescription = stringResource(R.string.discover_clear_search_cd),
-                                        tint = GrayMiddle
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -335,7 +332,7 @@ private fun TopicListContent(
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = null,
-                    tint = GrayLight,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(48.dp)
                 )
                 Text(
@@ -343,14 +340,14 @@ private fun TopicListContent(
                         if (query.isBlank()) R.string.topics_empty_title else R.string.discover_empty_results
                     ),
                     fontSize = 16.sp,
-                    color = GrayMiddle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 12.dp)
                 )
                 if (query.isBlank()) {
                     Text(
                         text = stringResource(R.string.topics_empty_subtitle),
                         fontSize = 12.sp,
-                        color = GrayMiddle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 6.dp)
                     )
                 }
@@ -386,7 +383,7 @@ internal fun TopicCard(topic: TopicItem, onClick: () -> Unit) {
             .clickable(onClick = onClick)
             .semantics { contentDescription = cardCd },
         shape = RoundedCornerShape(10.dp),
-        color = Color.White
+        color = MaterialTheme.colorScheme.surface
     ) {
         Row(
             modifier = Modifier.padding(14.dp),
@@ -406,7 +403,7 @@ internal fun TopicCard(topic: TopicItem, onClick: () -> Unit) {
                     text = "#${topic.displayName}",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = GrayDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -418,7 +415,7 @@ internal fun TopicCard(topic: TopicItem, onClick: () -> Unit) {
                         lastActivity
                     ),
                     fontSize = 12.sp,
-                    color = GrayMiddle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
                 )
                 if (years > 1) {
@@ -487,12 +484,12 @@ private fun TopicDetailContent(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Surface(modifier = Modifier.fillMaxWidth(), color = Color.White) {
+        Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                 Text(
                     text = stringResource(R.string.topics_detail_summary, topic.postCount, topic.identityCount),
                     fontSize = 12.sp,
-                    color = GrayMiddle
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(
@@ -521,7 +518,7 @@ private fun TopicDetailContent(
                 Text(
                     text = stringResource(R.string.topics_detail_empty),
                     fontSize = 15.sp,
-                    color = GrayMiddle
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else {
@@ -537,10 +534,10 @@ private fun TopicDetailContent(
                                 ),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = GrayDark,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(TopicHeaderBackground)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                             )
                         }
@@ -557,8 +554,6 @@ private fun TopicDetailContent(
         }
     }
 }
-
-private val TopicHeaderBackground = Color(0xFFEFEFEF)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -578,7 +573,7 @@ private fun TopicPostItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(onClick = onClick, onLongClick = { showSelectableCopy = true }),
-            color = Color.White
+            color = MaterialTheme.colorScheme.surface
         ) {
             Row(
                 modifier = Modifier
@@ -599,17 +594,17 @@ private fun TopicPostItem(
                             text = displayName,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = GrayDark,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
-                        Text(text = time, fontSize = 11.sp, color = GrayMiddle)
+                        Text(text = time, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     TopicText(
                         text = body,
                         onTopicClick = onTopicClick,
-                        style = TextStyle(fontSize = 13.sp, color = GrayDark),
+                        style = TextStyle(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface),
                         maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 4.dp)
@@ -621,7 +616,7 @@ private fun TopicPostItem(
                         Text(
                             text = stringResource(R.string.count_comments, post.commentCount),
                             fontSize = 12.sp,
-                            color = GrayMiddle
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.weight(1f))
                         ListPostImageIndicator(imageUris = post.imageUris)

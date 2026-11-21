@@ -50,6 +50,12 @@ class TopicsTest {
     }
 
     @Test
+    fun stableDisplayNamePrefersMostFrequentThenDeterministicTieBreak() {
+        assertEquals("苏轼", stableTopicDisplayName(listOf("苏轼", "苏轼", "苏东坡")))
+        assertEquals("AI", stableTopicDisplayName(listOf("ai", "AI")))
+    }
+
+    @Test
     fun acceptsFullWidthHash() {
         val content = "聊聊 ＃苏轼 与 #AI"
         val tags = extractTopicTags(content)

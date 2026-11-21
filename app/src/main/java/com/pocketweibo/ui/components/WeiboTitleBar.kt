@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -24,10 +25,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.pocketweibo.ui.theme.GrayDark
-import com.pocketweibo.ui.theme.TabBackground
 import com.pocketweibo.ui.theme.WeiboOrange
 
 @Composable
@@ -54,7 +54,7 @@ fun WeiboTitleBar(
                     Modifier.heightIn(min = 44.dp, max = 44.dp)
                 }
             )
-            .background(TabBackground)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -98,9 +98,11 @@ fun WeiboTitleBar(
                     ) {
                         Text(
                             text = title,
-                            color = GrayDark,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         if (showDropdown) {
                             Icon(
@@ -132,9 +134,11 @@ fun WeiboTitleBar(
                 ) {
                     Text(
                         text = title,
-                        color = GrayDark,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     if (showDropdown) {
                         Icon(
