@@ -106,7 +106,7 @@ fun TopicsScreen(
     onOpenTopic: (String) -> Unit,
     onCloseTopic: () -> Unit,
     onPostClick: (Long) -> Unit,
-    onDiscussAgain: (String) -> Unit,
+    onDiscussAgain: (key: String, name: String) -> Unit,
     topicListState: LazyListState,
     topicTimelineListState: LazyListState,
     todoListState: LazyListState,
@@ -167,7 +167,7 @@ fun TopicsScreen(
                     posts = allPosts,
                     listState = topicTimelineListState,
                     onPostClick = onPostClick,
-                    onDiscussAgain = { onDiscussAgain(selectedTopic.displayName) }
+                    onDiscussAgain = { onDiscussAgain(selectedTopic.key, selectedTopic.displayName) }
                 )
             }
 

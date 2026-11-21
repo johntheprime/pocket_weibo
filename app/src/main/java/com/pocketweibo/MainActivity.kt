@@ -100,6 +100,8 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     var topicQuery by remember { mutableStateOf("") }
     var topicSection by remember { mutableStateOf(TopicsSection.TOPICS) }
     var showTopicCompleted by remember { mutableStateOf(false) }
+    /** Topic a “Post again” draft came from; return there after publishing. */
+    var topicComposeOriginKey by remember { mutableStateOf<String?>(null) }
     var showCompose by remember { mutableStateOf(false) }
     var showIdentityList by remember { mutableStateOf(false) }
     var identityDetailId by remember { mutableStateOf<Long?>(null) }
@@ -130,6 +132,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
         postDetailId = null
         selectedTopicKey = null
         showTopicGlobalSearch = false
+        topicComposeOriginKey = null
         showIdentitySchedule = false
         showMeSettings = false
         showCompose = true
@@ -222,15 +225,25 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                 }
                 showCompose -> {
                     ComposeScreen(
-                        onDismiss = { showCompose = false },
+                        onDismiss = {
+                            showCompose = false
+                            topicComposeOriginKey = null
+                        },
                         initialShareText = pendingShareText.orEmpty(),
                         onConsumeInitialShare = { composeIntentViewModel.consumeShareText() },
                         onPostPublished = {
-                            selectedTab = MainTab.HOME
-                            mainScope.launch {
-                                homeListState.scrollToItem(0)
+                            val originKey = topicComposeOriginKey
+                            topicComposeOriginKey = null
+                            if (originKey != null) {
+                                selectedTab = MainTab.DISCOVER
+                                selectedTopicKey = originKey
+                            } else {
+                                selectedTab = MainTab.HOME
+                                mainScope.launch {
+                                    homeListState.scrollToItem(0)
+                                }
+                                homeScrollToLatestSignal++
                             }
-                            homeScrollToLatestSignal++
                         },
                         modifier = Modifier.padding(paddingValues)
                     )
@@ -284,8 +297,9 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             onOpenTopic = { key -> selectedTopicKey = key },
                             onCloseTopic = { selectedTopicKey = null },
                             onPostClick = { postId -> postDetailId = postId },
-                            onDiscussAgain = { topic ->
-                                composeIntentViewModel.offerShareText("#$topic ")
+                            onDiscussAgain = { key, name ->
+                                topicComposeOriginKey = key
+                                composeIntentViewModel.offerShareText("#$name ")
                                 selectedTopicKey = null
                                 showCompose = true
                             },
