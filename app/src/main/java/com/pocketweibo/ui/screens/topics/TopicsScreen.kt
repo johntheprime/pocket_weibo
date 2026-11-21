@@ -239,12 +239,12 @@ fun TopicsScreen(
                             FilterChip(
                                 selected = section == TopicsSection.TOPICS,
                                 onClick = { onSectionChange(TopicsSection.TOPICS) },
-                                label = { Text(stringResource(R.string.topics_section_topics)) }
+                                label = { Text(stringResource(R.string.topics_section_topics, topics.size)) }
                             )
                             FilterChip(
                                 selected = section == TopicsSection.TODO,
                                 onClick = { onSectionChange(TopicsSection.TODO) },
-                                label = { Text(stringResource(R.string.topics_section_todo)) }
+                                label = { Text(stringResource(R.string.topics_section_todo, unfinishedTodos.size)) }
                             )
                         }
                     },
