@@ -44,12 +44,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -85,7 +90,7 @@ import java.util.Calendar
 
 enum class TopicsSection { TOPICS, TODO }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun TopicsScreen(
     selectedTopicKey: String?,
@@ -121,11 +126,19 @@ fun TopicsScreen(
     val unfinishedTodos by viewModel.unfinishedTodos.collectAsState()
     val completedTodos by viewModel.completedTodos.collectAsState()
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val globalSearchFocusRequester = remember { FocusRequester() }
 
     // Search text lives in the ViewModel (Activity-scoped) so it survives opening a post.
-    // Clear it only when search is deliberately closed, not when the screen is recomposed.
+    // Clear it only when search is deliberately closed, then focus the field as soon as it opens.
     LaunchedEffect(showGlobalSearch) {
-        if (!showGlobalSearch) viewModel.updateSearchQuery("")
+        if (showGlobalSearch) {
+            withFrameNanos { }
+            globalSearchFocusRequester.requestFocus()
+            keyboardController?.show()
+        } else {
+            viewModel.updateSearchQuery("")
+        }
     }
 
     val selectedTopic = selectedTopicKey?.let { key -> topics.find { it.key == key } }
@@ -198,11 +211,15 @@ fun TopicsScreen(
                     },
                     singleLine = true,
                     shape = RoundedCornerShape(24.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    }),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .focusRequester(globalSearchFocusRequester)
                 )
                 if (searchQuery.isEmpty()) {
                     SearchTipsContent()
@@ -270,8 +287,11 @@ fun TopicsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        })
                     )
                     TopicListContent(
                         topics = topics,
