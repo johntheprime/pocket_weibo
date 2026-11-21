@@ -95,6 +95,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     val todoListState = rememberLazyListState()
     var selectedTab by remember { mutableStateOf(MainTab.HOME) }
     var selectedTopicKey by remember { mutableStateOf<String?>(null) }
+    var showTopicGlobalSearch by remember { mutableStateOf(false) }
     var showCompose by remember { mutableStateOf(false) }
     var showIdentityList by remember { mutableStateOf(false) }
     var identityDetailId by remember { mutableStateOf<Long?>(null) }
@@ -124,6 +125,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
         showIdentityList = false
         postDetailId = null
         selectedTopicKey = null
+        showTopicGlobalSearch = false
         showIdentitySchedule = false
         showMeSettings = false
         showCompose = true
@@ -135,23 +137,29 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     }
 
     fun navigateBack() {
+        // Pop the most recently opened layer first: a post opened from a topic returns to
+        // that topic; a topic opened from search returns to search; search returns to the list.
         when {
+            postDetailId != null -> postDetailId = null
             selectedTopicKey != null -> selectedTopicKey = null
+            showTopicGlobalSearch -> showTopicGlobalSearch = false
             identityDetailId != null -> identityDetailId = null
             showIdentityList -> showIdentityList = false
-            postDetailId != null -> postDetailId = null
             showCompose -> showCompose = false
             showIdentitySchedule -> showIdentitySchedule = false
             showMeSettings -> showMeSettings = false
         }
     }
 
-    val canSwipeBack = selectedTopicKey != null || identityDetailId != null || showIdentityList || postDetailId != null || showCompose || showIdentitySchedule || showMeSettings
+    val canSwipeBack = postDetailId != null || selectedTopicKey != null || showTopicGlobalSearch ||
+        identityDetailId != null || showIdentityList || showCompose || showIdentitySchedule || showMeSettings
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (!showCompose && !showIdentityList && identityDetailId == null && postDetailId == null && selectedTopicKey == null && !showIdentitySchedule && !showMeSettings) {
+            if (!showCompose && !showIdentityList && identityDetailId == null && postDetailId == null &&
+                selectedTopicKey == null && !showTopicGlobalSearch && !showIdentitySchedule && !showMeSettings
+            ) {
                 WeiboBottomTabBar(
                     selectedTab = selectedTab,
                     onTabSelected = { tab ->
@@ -260,6 +268,9 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                         MainTab.PHOTO -> PhotoScreen(modifier = Modifier.padding(paddingValues))
                         MainTab.DISCOVER -> TopicsScreen(
                             selectedTopicKey = selectedTopicKey,
+                            showGlobalSearch = showTopicGlobalSearch,
+                            onOpenSearch = { showTopicGlobalSearch = true },
+                            onCloseSearch = { showTopicGlobalSearch = false },
                             onOpenTopic = { key -> selectedTopicKey = key },
                             onCloseTopic = { selectedTopicKey = null },
                             onPostClick = { postId -> postDetailId = postId },

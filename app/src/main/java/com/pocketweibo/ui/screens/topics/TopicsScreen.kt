@@ -38,6 +38,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -88,6 +89,9 @@ private enum class TopicsSection { TOPICS, TODO }
 @Composable
 fun TopicsScreen(
     selectedTopicKey: String?,
+    showGlobalSearch: Boolean,
+    onOpenSearch: () -> Unit,
+    onCloseSearch: () -> Unit,
     onOpenTopic: (String) -> Unit,
     onCloseTopic: () -> Unit,
     onPostClick: (Long) -> Unit,
@@ -113,9 +117,14 @@ fun TopicsScreen(
     val focusManager = LocalFocusManager.current
 
     var topicQuery by remember { mutableStateOf("") }
-    var showGlobalSearch by remember { mutableStateOf(false) }
     var section by remember { mutableStateOf(TopicsSection.TOPICS) }
     var showCompleted by remember { mutableStateOf(false) }
+
+    // Search text lives in the ViewModel (Activity-scoped) so it survives opening a post.
+    // Clear it only when search is deliberately closed, not when the screen is recomposed.
+    LaunchedEffect(showGlobalSearch) {
+        if (!showGlobalSearch) viewModel.updateSearchQuery("")
+    }
 
     val selectedTopic = selectedTopicKey?.let { key -> topics.find { it.key == key } }
 
@@ -152,9 +161,8 @@ fun TopicsScreen(
                     title = stringResource(R.string.title_search),
                     leftIcon = {
                         IconButton(onClick = {
-                            viewModel.updateSearchQuery("")
                             focusManager.clearFocus()
-                            showGlobalSearch = false
+                            onCloseSearch()
                         }) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBack,
@@ -230,7 +238,7 @@ fun TopicsScreen(
                             tint = GrayDark
                         )
                     },
-                    onRightIconClick = { showGlobalSearch = true }
+                    onRightIconClick = onOpenSearch
                 )
                 if (section == TopicsSection.TOPICS) {
                     OutlinedTextField(
