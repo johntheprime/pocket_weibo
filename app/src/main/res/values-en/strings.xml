@@ -5,7 +5,7 @@
 
     <string name="tab_home">Home</string>
     <string name="tab_photo">Photos</string>
-    <string name="tab_discover">Discover</string>
+    <string name="tab_discover">Topics</string>
     <string name="tab_me">Me</string>
     <string name="tab_compose_cd">New post</string>
 
@@ -15,7 +15,9 @@
 
     <string name="title_home">Home</string>
     <string name="title_photo">Photos</string>
-    <string name="title_discover">Discover</string>
+    <string name="title_discover">Topics</string>
+    <string name="title_topics">Topics</string>
+    <string name="title_search">Search</string>
     <string name="title_me">Me</string>
     <string name="title_settings">Settings</string>
     <string name="settings_shake_reminder_section_title">Post detail · shake reminder</string>
@@ -168,6 +170,18 @@
     <string name="discover_section_identity">Identities</string>
     <string name="discover_section_posts">Posts</string>
     <string name="discover_clear_search_cd">Clear</string>
+
+    <!-- Topics: hashtag-derived long-lived discussion pages -->
+    <string name="topics_search_hint">Type a topic name or #</string>
+    <string name="topics_empty_title">No topics yet</string>
+    <string name="topics_empty_subtitle">Write #TopicName in a post to create a topic. End a tag with a space or punctuation.</string>
+    <string name="topics_topic_meta">%1$d posts · %2$d identities · last %3$s</string>
+    <string name="topics_topic_span">Spans %1$d years</string>
+    <string name="topics_topic_cd">Topic %1$s, %2$d posts, spanning %3$d years</string>
+    <string name="topics_detail_summary">%1$d posts · %2$d identities · oldest first</string>
+    <string name="topics_discuss_again">Post again</string>
+    <string name="topics_year_header">%1$d · %2$d posts</string>
+    <string name="topics_detail_empty">No posts in this topic</string>
     <string name="count_likes">%1$d likes</string>
     <string name="count_comments">%1$d comments</string>
     <string name="identity_search_subtitle">Historical figure · microblog</string>
@@ -192,7 +206,7 @@
     <string name="home_search_apply">Search</string>
     <string name="home_search_clear">Clear filter</string>
     <string name="home_more_settings">Settings</string>
-    <string name="home_more_discover">Discover</string>
+    <string name="home_more_discover">Topics</string>
     <string name="home_empty_search">No posts match your search</string>
     <string name="home_empty_filter_identity">No posts for this identity</string>
 

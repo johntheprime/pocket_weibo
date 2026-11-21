@@ -5,7 +5,7 @@
 
     <string name="tab_home">首页</string>
     <string name="tab_photo">图片</string>
-    <string name="tab_discover">发现</string>
+    <string name="tab_discover">话题</string>
     <string name="tab_me">我</string>
     <string name="tab_compose_cd">发微博</string>
 
@@ -15,7 +15,9 @@
 
     <string name="title_home">首页</string>
     <string name="title_photo">图片</string>
-    <string name="title_discover">发现</string>
+    <string name="title_discover">话题</string>
+    <string name="title_topics">话题</string>
+    <string name="title_search">搜索</string>
     <string name="title_me">我</string>
     <string name="title_settings">设置</string>
     <string name="settings_shake_reminder_section_title">详情页 · 摇一摇提醒</string>
@@ -168,6 +170,18 @@
     <string name="discover_section_identity">身份</string>
     <string name="discover_section_posts">微博</string>
     <string name="discover_clear_search_cd">清除</string>
+
+    <!-- Topics: hashtag-derived long-lived discussion pages -->
+    <string name="topics_search_hint">输入 # 或话题名筛选</string>
+    <string name="topics_empty_title">还没有话题</string>
+    <string name="topics_empty_subtitle">在微博正文里写 #话题名，话题会自动出现在这里；用空格或标点结束标签。</string>
+    <string name="topics_topic_meta">%1$d 条 · %2$d 个身份 · 最近 %3$s</string>
+    <string name="topics_topic_span">跨越 %1$d 年</string>
+    <string name="topics_topic_cd">话题 %1$s，%2$d 条微博，跨越 %3$d 年</string>
+    <string name="topics_detail_summary">%1$d 条微博 · %2$d 个身份 · 按时间先后排列</string>
+    <string name="topics_discuss_again">再来一帖</string>
+    <string name="topics_year_header">%1$d 年 · %2$d 条</string>
+    <string name="topics_detail_empty">该话题暂无微博</string>
     <string name="count_likes">%1$d 赞</string>
     <string name="count_comments">%1$d 评论</string>
     <string name="identity_search_subtitle">历史人物 · 微博达人</string>
@@ -192,7 +206,7 @@
     <string name="home_search_apply">搜索</string>
     <string name="home_search_clear">清除筛选</string>
     <string name="home_more_settings">设置</string>
-    <string name="home_more_discover">发现</string>
+    <string name="home_more_discover">话题</string>
     <string name="home_empty_search">没有匹配的动态</string>
     <string name="home_empty_filter_identity">该身份下暂无微博</string>
 

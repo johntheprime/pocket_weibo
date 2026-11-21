@@ -1,4 +1,4 @@
-package com.pocketweibo.ui.screens.discover
+package com.pocketweibo.ui.screens.topics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -7,6 +7,8 @@ import com.pocketweibo.data.local.dao.CommentSearchRow
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.repository.WeiboRepository
+import com.pocketweibo.ui.util.extractTopicTags
+import com.pocketweibo.ui.util.isReservedTopicKey
 import com.pocketweibo.ui.util.matchesAnySearchKeyword
 import com.pocketweibo.ui.util.parseSearchKeywords
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,38 +23,89 @@ sealed class SearchResult {
     data class CommentResult(val row: CommentSearchRow) : SearchResult()
 }
 
-class DiscoverViewModel(private val repository: WeiboRepository) : ViewModel() {
-    
+/** A topic derived from hashtags. `key` is stable across capitalization changes. */
+data class TopicItem(
+    val key: String,
+    val displayName: String,
+    val postCount: Int,
+    val firstAt: Long,
+    val lastAt: Long,
+    val identityCount: Int
+)
+
+private class TopicAccumulator(
+    val key: String,
+    val displayName: String,
+    var firstAt: Long,
+    var lastAt: Long,
+    val identityIds: MutableSet<Long>
+) {
+    var postCount: Int = 1
+
+    fun toTopicItem() = TopicItem(
+        key = key,
+        displayName = displayName,
+        postCount = postCount,
+        firstAt = firstAt,
+        lastAt = lastAt,
+        identityCount = identityIds.size
+    )
+}
+
+class TopicsViewModel(private val repository: WeiboRepository) : ViewModel() {
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-    
+
     private val _searchResults = MutableStateFlow<List<SearchResult>>(emptyList())
     val searchResults: StateFlow<List<SearchResult>> = _searchResults.asStateFlow()
-    
-    private val _trendingIdentities = MutableStateFlow<List<IdentityEntity>>(emptyList())
-    val trendingIdentities: StateFlow<List<IdentityEntity>> = _trendingIdentities.asStateFlow()
-    
-    private val _trendingPosts = MutableStateFlow<List<PostWithIdentity>>(emptyList())
-    val trendingPosts: StateFlow<List<PostWithIdentity>> = _trendingPosts.asStateFlow()
-    
+
+    private val _topics = MutableStateFlow<List<TopicItem>>(emptyList())
+    val topics: StateFlow<List<TopicItem>> = _topics.asStateFlow()
+
+    private val _allPosts = MutableStateFlow<List<PostWithIdentity>>(emptyList())
+    val allPosts: StateFlow<List<PostWithIdentity>> = _allPosts.asStateFlow()
+
     init {
-        loadTrending()
+        observeTopics()
         observeSearch()
     }
-    
-    private fun loadTrending() {
-        viewModelScope.launch {
-            repository.allIdentities.collect { identities ->
-                _trendingIdentities.value = identities.take(5)
-            }
-        }
+
+    private fun observeTopics() {
         viewModelScope.launch {
             repository.allPosts.collect { posts ->
-                _trendingPosts.value = posts.take(10)
+                _allPosts.value = posts
+                val grouped = LinkedHashMap<String, TopicAccumulator>()
+                // DAO already returns newest first, so the first display name we see is the latest.
+                for (post in posts) {
+                    for (tag in extractTopicTags(post.content)) {
+                        if (isReservedTopicKey(tag.key)) continue
+                        val current = grouped[tag.key]
+                        if (current == null) {
+                            grouped[tag.key] = TopicAccumulator(
+                                key = tag.key,
+                                displayName = tag.displayName,
+                                firstAt = post.createdAt,
+                                lastAt = post.createdAt,
+                                identityIds = mutableSetOf(post.identityId ?: -1L)
+                            )
+                        } else {
+                            current.postCount += 1
+                            current.firstAt = minOf(current.firstAt, post.createdAt)
+                            current.lastAt = maxOf(current.lastAt, post.createdAt)
+                            current.identityIds.add(post.identityId ?: -1L)
+                        }
+                    }
+                }
+                _topics.value = grouped.values.map { it.toTopicItem() }.sortedWith(
+                    compareByDescending<TopicItem> { it.lastAt }
+                        .thenByDescending { it.postCount }
+                        .thenBy { it.displayName }
+                )
             }
         }
     }
-    
+
     private fun observeSearch() {
         viewModelScope.launch {
             combine(
@@ -98,15 +151,15 @@ class DiscoverViewModel(private val repository: WeiboRepository) : ViewModel() {
             }
         }
     }
-    
+
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
     }
-    
+
     class Factory(private val repository: WeiboRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return DiscoverViewModel(repository) as T
+            return TopicsViewModel(repository) as T
         }
     }
 }

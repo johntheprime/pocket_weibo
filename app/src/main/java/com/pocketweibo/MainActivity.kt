@@ -26,7 +26,7 @@ import com.pocketweibo.ui.components.SwipeBackHandler
 import com.pocketweibo.ui.components.WeiboBottomTabBar
 import com.pocketweibo.ui.screens.compose.ComposeScreen
 import com.pocketweibo.ui.screens.detail.PostDetailScreen
-import com.pocketweibo.ui.screens.discover.DiscoverScreen
+import com.pocketweibo.ui.screens.topics.TopicsScreen
 import com.pocketweibo.ui.screens.home.HomeScreen
 import com.pocketweibo.ui.screens.identity.IdentityDetailScreen
 import com.pocketweibo.ui.screens.identity.IdentityListScreen
@@ -89,9 +89,11 @@ class MainActivity : AppCompatActivity() {
 @Composable
 fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     val homeListState = rememberLazyListState()
-    val discoverTrendingListState = rememberLazyListState()
+    val topicListState = rememberLazyListState()
     val discoverSearchListState = rememberLazyListState()
+    val topicTimelineListState = rememberLazyListState()
     var selectedTab by remember { mutableStateOf(MainTab.HOME) }
+    var selectedTopicKey by remember { mutableStateOf<String?>(null) }
     var showCompose by remember { mutableStateOf(false) }
     var showIdentityList by remember { mutableStateOf(false) }
     var identityDetailId by remember { mutableStateOf<Long?>(null) }
@@ -120,6 +122,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
         identityDetailId = null
         showIdentityList = false
         postDetailId = null
+        selectedTopicKey = null
         showIdentitySchedule = false
         showMeSettings = false
         showCompose = true
@@ -132,6 +135,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
 
     fun navigateBack() {
         when {
+            selectedTopicKey != null -> selectedTopicKey = null
             identityDetailId != null -> identityDetailId = null
             showIdentityList -> showIdentityList = false
             postDetailId != null -> postDetailId = null
@@ -141,12 +145,12 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
         }
     }
 
-    val canSwipeBack = identityDetailId != null || showIdentityList || postDetailId != null || showCompose || showIdentitySchedule || showMeSettings
+    val canSwipeBack = selectedTopicKey != null || identityDetailId != null || showIdentityList || postDetailId != null || showCompose || showIdentitySchedule || showMeSettings
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (!showCompose && !showIdentityList && identityDetailId == null && postDetailId == null && !showIdentitySchedule && !showMeSettings) {
+            if (!showCompose && !showIdentityList && identityDetailId == null && postDetailId == null && selectedTopicKey == null && !showIdentitySchedule && !showMeSettings) {
                 WeiboBottomTabBar(
                     selectedTab = selectedTab,
                     onTabSelected = { tab ->
@@ -253,9 +257,18 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.PHOTO -> PhotoScreen(modifier = Modifier.padding(paddingValues))
-                        MainTab.DISCOVER -> DiscoverScreen(
+                        MainTab.DISCOVER -> TopicsScreen(
+                            selectedTopicKey = selectedTopicKey,
+                            onOpenTopic = { key -> selectedTopicKey = key },
+                            onCloseTopic = { selectedTopicKey = null },
                             onPostClick = { postId -> postDetailId = postId },
-                            trendingListState = discoverTrendingListState,
+                            onDiscussAgain = { topic ->
+                                composeIntentViewModel.offerShareText("#$topic ")
+                                selectedTopicKey = null
+                                showCompose = true
+                            },
+                            topicListState = topicListState,
+                            topicTimelineListState = topicTimelineListState,
                             searchListState = discoverSearchListState,
                             modifier = Modifier.padding(paddingValues)
                         )
