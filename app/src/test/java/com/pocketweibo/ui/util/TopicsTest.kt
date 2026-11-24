@@ -56,6 +56,24 @@ class TopicsTest {
     }
 
     @Test
+    fun resolvesManualMergeChainsAndAvoidsCycles() {
+        val aliases = mapOf("a" to "b", "b" to "c", "x" to "y", "y" to "x")
+
+        assertEquals("c", resolveTopicKey("A", aliases))
+        assertEquals("c", resolveTopicKey("b", aliases))
+        assertEquals("c", resolveTopicKey("c", aliases))
+        assertTrue(resolveTopicKey("x", aliases) == "x" || resolveTopicKey("x", aliases) == "y")
+    }
+
+    @Test
+    fun postTopicKeysAreDistinctAfterMerging() {
+        val aliases = mapOf("ai" to "artificial-intelligence", "人工智能" to "artificial-intelligence")
+        val keys = topicKeysForPost("#AI 与 #人工智能，再 #ai", aliases)
+
+        assertEquals(listOf("artificial-intelligence"), keys)
+    }
+
+    @Test
     fun acceptsFullWidthHash() {
         val content = "聊聊 ＃苏轼 与 #AI"
         val tags = extractTopicTags(content)

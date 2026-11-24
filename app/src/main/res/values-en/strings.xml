@@ -181,10 +181,21 @@
     <string name="topics_topic_meta">%1$d posts · %2$d identities · last %3$s</string>
     <string name="topics_topic_span">Spans %1$d years</string>
     <string name="topics_topic_cd">Topic %1$s, %2$d posts, spanning %3$d years</string>
-    <string name="topics_detail_summary">%1$d posts · %2$d identities · oldest first</string>
+    <string name="topics_detail_summary">%1$d posts · %2$d identities · newest first</string>
+    <string name="topics_detail_merged">Merged: %1$s</string>
     <string name="topics_discuss_again">Post again</string>
     <string name="topics_year_header">%1$d · %2$d posts</string>
     <string name="topics_detail_empty">No posts in this topic</string>
+    <string name="topics_detail_more_cd">Topic actions</string>
+    <string name="topics_merge_into">Merge into another topic…</string>
+    <string name="topics_unmerge_action">Unmerge (%1$d spellings)</string>
+    <string name="topics_restore_excluded_action">Restore removed posts (%1$d)</string>
+    <string name="topics_merge_dialog_title">Merge “%1$s” into…</string>
+    <string name="topics_merge_dialog_hint">Posts with either spelling will appear in the same topic.</string>
+    <string name="topics_merge_dialog_search">Search target topic</string>
+    <string name="topics_merge_no_targets">No topics to merge into</string>
+    <string name="topics_merge_target_count">%1$d posts</string>
+    <string name="topics_remove_post_cd">Remove from this topic</string>
 
     <!-- TODO: first-class marker posts and actual reminder firing history -->
     <string name="topics_section_topics">Topics · %1$d</string>

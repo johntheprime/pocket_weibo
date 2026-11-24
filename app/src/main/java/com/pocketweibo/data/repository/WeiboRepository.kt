@@ -19,6 +19,7 @@ import com.pocketweibo.data.local.dao.PostReminderDao
 import com.pocketweibo.data.local.dao.PostReminderFiringDao
 import com.pocketweibo.data.local.dao.PostReminderWithPreview
 import com.pocketweibo.data.local.dao.PostWithIdentity
+import com.pocketweibo.data.local.dao.TopicDao
 import com.pocketweibo.data.local.entity.CommentEntity
 import com.pocketweibo.data.local.entity.Gender
 import com.pocketweibo.data.local.entity.IdentityEntity
@@ -26,6 +27,8 @@ import com.pocketweibo.data.local.entity.IdentityScheduleEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.local.entity.PostReminderEntity
 import com.pocketweibo.data.local.entity.PostReminderFiringEntity
+import com.pocketweibo.data.local.entity.TopicAliasEntity
+import com.pocketweibo.data.local.entity.TopicExclusionEntity
 import com.pocketweibo.data.media.CommentAttachmentStorage
 import com.pocketweibo.data.media.IdentityAvatarStorage
 import com.pocketweibo.data.media.PostAttachmentStorage
@@ -37,6 +40,7 @@ import com.pocketweibo.reminder.PostReminderAlarmScheduler
 import com.pocketweibo.reminder.PostReminderCalendarSync
 import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.R
+import com.pocketweibo.ui.util.resolveTopicKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -64,12 +68,15 @@ class WeiboRepository(
     private val commentDao: CommentDao,
     private val postReminderDao: PostReminderDao,
     private val postReminderFiringDao: PostReminderFiringDao,
+    private val topicDao: TopicDao,
     private val context: Context
 ) {
     val allIdentities: Flow<List<IdentityEntity>> = identityDao.getAllIdentities()
     val activeIdentity: Flow<IdentityEntity?> = identityDao.getActiveIdentity()
     val allPosts: Flow<List<PostWithIdentity>> = postDao.getAllPosts()
     val allCommentsForSearch: Flow<List<CommentSearchRow>> = commentDao.observeAllCommentsForSearch()
+    val topicAliases: Flow<List<TopicAliasEntity>> = topicDao.observeAliases()
+    val topicExclusions: Flow<List<TopicExclusionEntity>> = topicDao.observeExclusions()
 
     suspend fun getIdentityById(id: Long): IdentityEntity? = identityDao.getIdentityById(id)
 
@@ -422,6 +429,49 @@ class WeiboRepository(
         postDao.setTodoDoneAt(postId, doneAt)
     }
 
+    /**
+     * Manually merges [fromKey] into [toKey]. Existing chains that pointed at [fromKey]
+     * are retargeted, and post exclusions move with the topic.
+     */
+    suspend fun mergeTopics(fromKey: String, toKey: String) = withContext(Dispatchers.IO) {
+        val from = fromKey.lowercase(Locale.ROOT)
+        val to = toKey.lowercase(Locale.ROOT)
+        if (from.isBlank() || to.isBlank() || from == to) return@withContext
+        val existing = topicDao.listAliases().associate { it.fromKey to it.toKey }
+        // Refuse cycles such as a → b while b already resolves to a.
+        if (resolveTopicKey(to, existing) == from) return@withContext
+        topicDao.retargetAliases(fromKey = from, toKey = to)
+        topicDao.copyExclusions(fromKey = from, toKey = to)
+        topicDao.clearExclusions(topicKey = from)
+        topicDao.upsertAlias(TopicAliasEntity(fromKey = from, toKey = to))
+    }
+
+    /** Drops merge aliases that currently resolve to [canonicalKey], splitting them back out. */
+    suspend fun unmergeTopicAliases(canonicalKey: String) = withContext(Dispatchers.IO) {
+        val resolvedTarget = canonicalKey.lowercase(Locale.ROOT)
+        val aliases = topicDao.listAliases()
+        val fromKeys = aliases
+            .filter { resolveTopicKey(it.fromKey, assocAliases(aliases)) == resolvedTarget }
+            .map { it.fromKey }
+        if (fromKeys.isNotEmpty()) topicDao.deleteAliases(fromKeys)
+    }
+
+    suspend fun excludePostFromTopic(topicKey: String, postId: Long) = withContext(Dispatchers.IO) {
+        topicDao.insertExclusion(
+            TopicExclusionEntity(
+                topicKey = topicKey.lowercase(Locale.ROOT),
+                postId = postId
+            )
+        )
+    }
+
+    suspend fun restoreExcludedPosts(topicKey: String) = withContext(Dispatchers.IO) {
+        topicDao.clearExclusions(topicKey.lowercase(Locale.ROOT))
+    }
+
+    private fun assocAliases(rows: List<TopicAliasEntity>): Map<String, String> =
+        rows.associate { it.fromKey to it.toKey }
+
     suspend fun cancelReminderById(reminderId: Long) {
         withContext(Dispatchers.IO) {
             val row = postReminderDao.getById(reminderId) ?: return@withContext
@@ -534,6 +584,24 @@ class WeiboRepository(
         context.draftDataStore.edit { it.clear() }
     }
 
+    private suspend fun topicAliasesJson(): JSONArray = JSONArray().apply {
+        for (row in topicDao.listAliases()) {
+            put(JSONObject().apply {
+                put("fromKey", row.fromKey)
+                put("toKey", row.toKey)
+            })
+        }
+    }
+
+    private suspend fun topicExclusionsJson(): JSONArray = JSONArray().apply {
+        for (row in topicDao.listExclusions()) {
+            put(JSONObject().apply {
+                put("topicKey", row.topicKey)
+                put("postId", row.postId)
+            })
+        }
+    }
+
     private fun reminderFiringsJson(rows: List<PostReminderFiringEntity>): JSONArray = JSONArray().apply {
         rows.forEach { row ->
             put(
@@ -618,6 +686,8 @@ class WeiboRepository(
         }
         json.put("comments", commentsArray)
         json.put("postReminderFirings", reminderFiringsJson(postReminderFiringDao.listAll()))
+        json.put("topicAliases", topicAliasesJson())
+        json.put("topicExclusions", topicExclusionsJson())
 
         json.put("exportedAt", System.currentTimeMillis())
         json.put("version", 3)
@@ -710,6 +780,8 @@ class WeiboRepository(
         }
         json.put("postReminders", remindersArray)
         json.put("postReminderFirings", reminderFiringsJson(postReminderFiringDao.listAll()))
+        json.put("topicAliases", topicAliasesJson())
+        json.put("topicExclusions", topicExclusionsJson())
 
         json.toString(2)
     }
@@ -1011,6 +1083,30 @@ class WeiboRepository(
                         )
                     }
                 }
+                if (json.has("topicAliases")) {
+                    val aliasesArray = json.getJSONArray("topicAliases")
+                    for (i in 0 until aliasesArray.length()) {
+                        val aliasJson = aliasesArray.getJSONObject(i)
+                        topicDao.upsertAlias(
+                            TopicAliasEntity(
+                                fromKey = aliasJson.getString("fromKey"),
+                                toKey = aliasJson.getString("toKey")
+                            )
+                        )
+                    }
+                }
+                if (json.has("topicExclusions")) {
+                    val exclusionsArray = json.getJSONArray("topicExclusions")
+                    for (i in 0 until exclusionsArray.length()) {
+                        val exclusionJson = exclusionsArray.getJSONObject(i)
+                        topicDao.insertExclusion(
+                            TopicExclusionEntity(
+                                topicKey = exclusionJson.getString("topicKey"),
+                                postId = exclusionJson.getLong("postId")
+                            )
+                        )
+                    }
+                }
             } else {
                 val identityOldToNew = mutableMapOf<Long, Long>()
                 if (json.has("identities")) {
@@ -1143,6 +1239,31 @@ class WeiboRepository(
                         val newPostId = postOldToNew[firingJson.getLong("postId")] ?: continue
                         postReminderFiringDao.insert(
                             firingFromJson(firingJson, id = 0L, postId = newPostId)
+                        )
+                    }
+                }
+                if (json.has("topicAliases")) {
+                    val aliasesArray = json.getJSONArray("topicAliases")
+                    for (i in 0 until aliasesArray.length()) {
+                        val aliasJson = aliasesArray.getJSONObject(i)
+                        topicDao.upsertAlias(
+                            TopicAliasEntity(
+                                fromKey = aliasJson.getString("fromKey").lowercase(Locale.ROOT),
+                                toKey = aliasJson.getString("toKey").lowercase(Locale.ROOT)
+                            )
+                        )
+                    }
+                }
+                if (json.has("topicExclusions")) {
+                    val exclusionsArray = json.getJSONArray("topicExclusions")
+                    for (i in 0 until exclusionsArray.length()) {
+                        val exclusionJson = exclusionsArray.getJSONObject(i)
+                        val newPostId = postOldToNew[exclusionJson.getLong("postId")] ?: continue
+                        topicDao.insertExclusion(
+                            TopicExclusionEntity(
+                                topicKey = exclusionJson.getString("topicKey").lowercase(Locale.ROOT),
+                                postId = newPostId
+                            )
                         )
                     }
                 }
@@ -1368,6 +1489,8 @@ class WeiboRepository(
         }
         commentDao.deleteAll()
         postReminderFiringDao.deleteAll()
+        topicDao.clearAllAliases()
+        topicDao.clearAllExclusions()
         postDao.deleteAll()
         identityDao.deleteAll()
         PostAttachmentStorage.deleteEntireAttachmentTree(context)

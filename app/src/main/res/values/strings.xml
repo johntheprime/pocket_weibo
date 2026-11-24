@@ -181,10 +181,21 @@
     <string name="topics_topic_meta">%1$d 条 · %2$d 个身份 · 最近 %3$s</string>
     <string name="topics_topic_span">跨越 %1$d 年</string>
     <string name="topics_topic_cd">话题 %1$s，%2$d 条微博，跨越 %3$d 年</string>
-    <string name="topics_detail_summary">%1$d 条微博 · %2$d 个身份 · 按时间先后排列</string>
+    <string name="topics_detail_summary">%1$d 条微博 · %2$d 个身份 · 最新在前</string>
+    <string name="topics_detail_merged">已合并：%1$s</string>
     <string name="topics_discuss_again">再来一帖</string>
     <string name="topics_year_header">%1$d 年 · %2$d 条</string>
     <string name="topics_detail_empty">该话题暂无微博</string>
+    <string name="topics_detail_more_cd">话题操作</string>
+    <string name="topics_merge_into">合并到其他话题…</string>
+    <string name="topics_unmerge_action">取消合并（%1$d 个写法）</string>
+    <string name="topics_restore_excluded_action">恢复移出的微博（%1$d）</string>
+    <string name="topics_merge_dialog_title">将「%1$s」合并到…</string>
+    <string name="topics_merge_dialog_hint">合并后，两种写法下的微博会出现在同一个话题里。</string>
+    <string name="topics_merge_dialog_search">搜索目标话题</string>
+    <string name="topics_merge_no_targets">没有可合并的话题</string>
+    <string name="topics_merge_target_count">%1$d 条</string>
+    <string name="topics_remove_post_cd">从该话题移出</string>
 
     <!-- TODO: first-class marker posts and actual reminder firing history -->
     <string name="topics_section_topics">话题 · %1$d</string>

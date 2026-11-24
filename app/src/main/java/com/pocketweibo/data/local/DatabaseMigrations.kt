@@ -210,6 +210,32 @@ object DatabaseMigrations {
         }
     }
 
+    /** Manual topic organization: merge aliases + per-post exclusions. */
+    val MIGRATION_15_16 = object : Migration(15, 16) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `topic_aliases` (
+                    `fromKey` TEXT NOT NULL,
+                    `toKey` TEXT NOT NULL,
+                    PRIMARY KEY(`fromKey`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `topic_exclusions` (
+                    `topicKey` TEXT NOT NULL,
+                    `postId` INTEGER NOT NULL,
+                    PRIMARY KEY(`topicKey`, `postId`),
+                    FOREIGN KEY(`postId`) REFERENCES `posts`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_topic_exclusions_postId` ON `topic_exclusions` (`postId`)")
+        }
+    }
+
     val MIGRATION_10_11 = object : Migration(10, 11) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(

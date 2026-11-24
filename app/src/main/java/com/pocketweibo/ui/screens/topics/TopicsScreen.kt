@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,10 +23,18 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CallMerge
+import androidx.compose.material.icons.filled.CallSplit
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.RemoveCircleOutline
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -34,6 +43,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -65,17 +75,20 @@ import com.pocketweibo.R
 import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.ui.components.Avatar
+import com.pocketweibo.ui.components.HighlightText
 import com.pocketweibo.ui.components.ListPostImageIndicator
 import com.pocketweibo.ui.components.SelectableCopyDialog
 import com.pocketweibo.ui.components.TopicText
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.util.RelativeTimePreset
-import com.pocketweibo.ui.util.extractTopicTags
 import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
-import com.pocketweibo.ui.util.stripTopicPrefix
+import com.pocketweibo.ui.util.parseSearchKeywords
 import com.pocketweibo.ui.util.postOrCommentBodyForDisplay
+import com.pocketweibo.ui.util.resolveTopicKey
+import com.pocketweibo.ui.util.stripTopicPrefix
+import com.pocketweibo.ui.util.topicKeysForPost
 import java.util.Calendar
 
 enum class TopicsSection { TOPICS, TODO }
@@ -116,6 +129,9 @@ fun TopicsScreen(
     val searchResults by viewModel.searchResults.collectAsState()
     val unfinishedTodos by viewModel.unfinishedTodos.collectAsState()
     val completedTodos by viewModel.completedTodos.collectAsState()
+    val topicAliases by viewModel.topicAliases.collectAsState()
+    val topicExclusions by viewModel.topicExclusions.collectAsState()
+    var mergeSource by remember { mutableStateOf<TopicItem?>(null) }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val globalSearchFocusRequester = remember { FocusRequester() }
@@ -132,7 +148,11 @@ fun TopicsScreen(
         }
     }
 
-    val selectedTopic = selectedTopicKey?.let { key -> topics.find { it.key == key } }
+    val selectedTopic = selectedTopicKey?.let { key ->
+        val resolved = resolveTopicKey(key, topicAliases)
+        topics.find { it.key == resolved }
+    }
+    val searchKeywords = parseSearchKeywords(searchQuery)
 
     Column(
         modifier = modifier
@@ -141,6 +161,14 @@ fun TopicsScreen(
     ) {
         when {
             selectedTopic != null -> {
+                val mergedSourceKeys = topicAliases
+                    .filterValues { resolveTopicKey(it, topicAliases) == selectedTopic.key }
+                    .keys
+                    .sorted()
+                val excludedPostIds = topicExclusions
+                    .filter { it.first == selectedTopic.key }
+                    .map { it.second }
+                    .toSet()
                 WeiboTitleBar(
                     title = "#${selectedTopic.displayName}",
                     leftIcon = {
@@ -151,14 +179,31 @@ fun TopicsScreen(
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
+                    },
+                    rightIcon = {
+                        TopicDetailMenu(
+                            mergedCount = mergedSourceKeys.size,
+                            excludedCount = excludedPostIds.size,
+                            onMerge = { mergeSource = selectedTopic },
+                            onUnmerge = { viewModel.unmergeTopicAliases(selectedTopic.key) },
+                            onRestoreExcluded = {
+                                viewModel.restoreExcludedPosts(selectedTopic.key)
+                            }
+                        )
                     }
                 )
                 TopicDetailContent(
                     topic = selectedTopic,
                     posts = allPosts,
+                    aliases = topicAliases,
+                    excludedPostIds = excludedPostIds,
+                    mergedSourceKeys = mergedSourceKeys,
                     listState = topicTimelineListState,
                     onTopicClick = onTopicClick,
                     onPostClick = onPostClick,
+                    onRemoveFromTopic = { postId ->
+                        viewModel.excludePostFromTopic(selectedTopic.key, postId)
+                    },
                     onDiscussAgain = { onDiscussAgain(selectedTopic.key, selectedTopic.displayName) }
                 )
             }
@@ -218,6 +263,7 @@ fun TopicsScreen(
                 } else {
                     SearchResultsContent(
                         results = searchResults,
+                        keywords = searchKeywords,
                         listState = searchListState,
                         onIdentityClick = { identity ->
                             focusManager.clearFocus()
@@ -295,7 +341,8 @@ fun TopicsScreen(
                         topics = topics,
                         query = topicQuery,
                         listState = topicListState,
-                        onTopicClick = { topic -> onOpenTopic(topic.key) }
+                        onTopicClick = { topic -> onOpenTopic(topic.key) },
+                        onTopicLongClick = { topic -> mergeSource = topic }
                     )
                 } else {
                     TodoListContent(
@@ -313,6 +360,19 @@ fun TopicsScreen(
             }
         }
     }
+
+    mergeSource?.let { source ->
+        MergeTopicDialog(
+            source = source,
+            topics = topics,
+            onDismiss = { mergeSource = null },
+            onMerge = { target ->
+                viewModel.mergeTopics(source.key, target.key)
+                mergeSource = null
+                onOpenTopic(target.key)
+            }
+        )
+    }
 }
 
 @Composable
@@ -320,7 +380,8 @@ private fun TopicListContent(
     topics: List<TopicItem>,
     query: String,
     listState: LazyListState,
-    onTopicClick: (TopicItem) -> Unit
+    onTopicClick: (TopicItem) -> Unit,
+    onTopicLongClick: (TopicItem) -> Unit
 ) {
     val filtered = remember(topics, query) {
         val q = stripTopicPrefix(query)
@@ -357,13 +418,23 @@ private fun TopicListContent(
     }
     LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
         items(filtered) { topic ->
-            TopicCard(topic = topic, onClick = { onTopicClick(topic) })
+            TopicCard(
+                topic = topic,
+                onClick = { onTopicClick(topic) },
+                onLongClick = { onTopicLongClick(topic) }
+            )
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun TopicCard(topic: TopicItem, onClick: () -> Unit) {
+internal fun TopicCard(
+    topic: TopicItem,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
+    highlightKeywords: List<String> = emptyList()
+) {
     val context = LocalContext.current
     val lastActivity = context.resources.formatRelativeTime(
         topic.lastAt,
@@ -380,7 +451,7 @@ internal fun TopicCard(topic: TopicItem, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 5.dp)
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .semantics { contentDescription = cardCd },
         shape = RoundedCornerShape(10.dp),
         color = MaterialTheme.colorScheme.surface
@@ -399,11 +470,14 @@ internal fun TopicCard(topic: TopicItem, onClick: () -> Unit) {
                 Text(text = "#", color = WeiboOrange, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "#${topic.displayName}",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                HighlightText(
+                    text = topic.displayName,
+                    keywords = highlightKeywords,
+                    style = TextStyle(
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -427,6 +501,15 @@ internal fun TopicCard(topic: TopicItem, onClick: () -> Unit) {
                     )
                 }
             }
+            if (onLongClick != null) {
+                IconButton(onClick = onLongClick) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.topics_detail_more_cd),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }
@@ -444,15 +527,19 @@ private sealed class TimelineRow {
 private fun TopicDetailContent(
     topic: TopicItem,
     posts: List<PostWithIdentity>,
+    aliases: Map<String, String>,
+    excludedPostIds: Set<Long>,
+    mergedSourceKeys: List<String>,
     listState: LazyListState,
     onTopicClick: (String) -> Unit,
     onPostClick: (Long) -> Unit,
+    onRemoveFromTopic: (Long) -> Unit,
     onDiscussAgain: () -> Unit
 ) {
-    val entries = remember(topic.key, posts) {
+    val entries = remember(topic.key, posts, aliases, excludedPostIds) {
         posts.filter { post ->
-            extractTopicTags(post.content).any { it.key == topic.key }
-        }.sortedBy { it.createdAt }
+            post.id !in excludedPostIds && topic.key in topicKeysForPost(post.content, aliases)
+        }.sortedByDescending { it.createdAt }
     }
     val rows = remember(entries) {
         val result = mutableListOf<TimelineRow>()
@@ -491,6 +578,17 @@ private fun TopicDetailContent(
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (mergedSourceKeys.isNotEmpty()) {
+                    Text(
+                        text = stringResource(
+                            R.string.topics_detail_merged,
+                            mergedSourceKeys.joinToString("、") { "#$it" }
+                        ),
+                        fontSize = 11.sp,
+                        color = WeiboOrange,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     modifier = Modifier.clickable(onClick = onDiscussAgain),
@@ -545,7 +643,8 @@ private fun TopicDetailContent(
                             TopicPostItem(
                                 post = row.post,
                                 onTopicClick = onTopicClick,
-                                onClick = { onPostClick(row.post.id) }
+                                onClick = { onPostClick(row.post.id) },
+                                onRemoveFromTopic = { onRemoveFromTopic(row.post.id) }
                             )
                         }
                     }
@@ -555,16 +654,163 @@ private fun TopicDetailContent(
     }
 }
 
+@Composable
+private fun TopicDetailMenu(
+    mergedCount: Int,
+    excludedCount: Int,
+    onMerge: () -> Unit,
+    onUnmerge: () -> Unit,
+    onRestoreExcluded: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = stringResource(R.string.topics_detail_more_cd),
+                tint = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.topics_merge_into)) },
+                leadingIcon = { Icon(Icons.Default.CallMerge, contentDescription = null) },
+                onClick = {
+                    expanded = false
+                    onMerge()
+                }
+            )
+            if (mergedCount > 0) {
+                DropdownMenuItem(
+                    text = {
+                        Text(stringResource(R.string.topics_unmerge_action, mergedCount))
+                    },
+                    leadingIcon = { Icon(Icons.Default.CallSplit, contentDescription = null) },
+                    onClick = {
+                        expanded = false
+                        onUnmerge()
+                    }
+                )
+            }
+            if (excludedCount > 0) {
+                DropdownMenuItem(
+                    text = {
+                        Text(stringResource(R.string.topics_restore_excluded_action, excludedCount))
+                    },
+                    leadingIcon = { Icon(Icons.Default.Restore, contentDescription = null) },
+                    onClick = {
+                        expanded = false
+                        onRestoreExcluded()
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MergeTopicDialog(
+    source: TopicItem,
+    topics: List<TopicItem>,
+    onDismiss: () -> Unit,
+    onMerge: (TopicItem) -> Unit
+) {
+    var query by remember { mutableStateOf("") }
+    val candidates = remember(topics, source.key, query) {
+        val q = stripTopicPrefix(query)
+        topics.filter { topic ->
+            topic.key != source.key &&
+                (q.isEmpty() || topic.displayName.contains(q, ignoreCase = true))
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.topics_merge_dialog_title, source.displayName)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.topics_merge_dialog_hint),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = {
+                        Text(
+                            stringResource(R.string.topics_merge_dialog_search),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                )
+                if (candidates.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.topics_merge_no_targets),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                } else {
+                    LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
+                        items(candidates, key = { it.key }) { target ->
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onMerge(target) },
+                                color = Color.Transparent
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "#${target.displayName}",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        text = stringResource(
+                                            R.string.topics_merge_target_count,
+                                            target.postCount
+                                        ),
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TopicPostItem(
     post: PostWithIdentity,
     onTopicClick: (String) -> Unit,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onRemoveFromTopic: () -> Unit
 ) {
     var showSelectableCopy by remember { mutableStateOf(false) }
     val displayName = identityDisplayName(post.identityName)
     val voiceOnlyLabel = stringResource(R.string.comment_body_voice_only)
+    val removeFromTopicLabel = stringResource(R.string.topics_remove_post_cd)
     val body = postOrCommentBodyForDisplay(post.content, post.audioPath, voiceOnlyLabel)
     val context = LocalContext.current
     val time = context.resources.formatRelativeTime(post.createdAt, RelativeTimePreset.FeedCard)
@@ -604,6 +850,8 @@ private fun TopicPostItem(
                     TopicText(
                         text = body,
                         onTopicClick = onTopicClick,
+                        onClick = onClick,
+                        onLongClick = { showSelectableCopy = true },
                         style = TextStyle(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface),
                         maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
@@ -620,6 +868,21 @@ private fun TopicPostItem(
                         )
                         Spacer(modifier = Modifier.weight(1f))
                         ListPostImageIndicator(imageUris = post.imageUris)
+                        IconButton(
+                            onClick = onRemoveFromTopic,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .semantics {
+                                    contentDescription = removeFromTopicLabel
+                                }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.RemoveCircleOutline,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }

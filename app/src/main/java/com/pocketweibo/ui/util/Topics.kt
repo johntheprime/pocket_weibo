@@ -50,6 +50,29 @@ fun extractTopicTags(content: String): List<TopicTag> =
 /** True for the reserved `TODO` / `#TODO` tag. */
 fun isReservedTopicKey(key: String): Boolean = key.lowercase(Locale.ROOT) == RESERVED_TOPIC_KEY
 
+/**
+ * Follows manual merge aliases to the canonical topic key.
+ *
+ * Aliases may form a chain (`a → b → c`); cycles are treated as a no-op so corrupt or
+ * self-referential merge data can never hang the UI.
+ */
+fun resolveTopicKey(key: String, aliases: Map<String, String>): String {
+    var current = key.lowercase(Locale.ROOT)
+    val visited = mutableSetOf<String>()
+    while (visited.add(current)) {
+        val next = aliases[current]?.lowercase(Locale.ROOT) ?: return current
+        if (next.isBlank() || next == current) return current
+        current = next
+    }
+    return current
+}
+
+/** Distinct canonical topic keys referenced by [content], after applying manual merges. */
+fun topicKeysForPost(content: String, aliases: Map<String, String>): List<String> =
+    extractTopicTags(content)
+        .map { resolveTopicKey(it.key, aliases) }
+        .distinct()
+
 /** Removes a leading ASCII or full-width hash from a typed topic name. */
 fun stripTopicPrefix(value: String): String = value.trim().trimStart('#', '＃').trim()
 

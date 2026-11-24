@@ -30,6 +30,7 @@ class PocketWeiboApp : Application() {
             database.commentDao(),
             database.postReminderDao(),
             database.postReminderFiringDao(),
+            database.topicDao(),
             this
         )
     }
