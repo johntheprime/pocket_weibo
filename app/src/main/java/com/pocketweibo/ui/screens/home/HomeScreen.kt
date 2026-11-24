@@ -266,6 +266,7 @@ fun HomeScreen(
         }
     )
 
+    val searchKeywords = remember(searchQuery) { parseSearchKeywords(searchQuery) }
     val filteredPosts = remember(posts, searchQuery, homeIdentityFilterId, commentSearchRows) {
         var list = posts
         val fid = homeIdentityFilterId
@@ -453,7 +454,8 @@ fun HomeScreen(
                                     onPostClick = { onPostClick(post.id) },
                                     onTopicClick = onTopicClick,
                                     reminderFireAtMillis =
-                                        nextReminderByPostId[post.id]?.fireAtMillis
+                                        nextReminderByPostId[post.id]?.fireAtMillis,
+                                    highlightKeywords = searchKeywords
                                 )
                             }
                             if (showCommentSheet) {

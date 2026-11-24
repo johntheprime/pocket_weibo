@@ -109,14 +109,28 @@ fun PostCard(
                         .weight(1f)
                         .padding(start = 10.dp)
                 ) {
-                    Text(
-                        text = displayName,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    if (highlightKeywords.isEmpty()) {
+                        Text(
+                            text = displayName,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    } else {
+                        HighlightText(
+                            text = displayName,
+                            keywords = highlightKeywords,
+                            style = TextStyle(
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

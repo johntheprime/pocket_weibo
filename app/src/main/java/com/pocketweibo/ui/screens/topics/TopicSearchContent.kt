@@ -45,6 +45,7 @@ import com.pocketweibo.data.local.dao.CommentSearchRow
 import com.pocketweibo.data.local.dao.PostWithIdentity
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.ui.components.Avatar
+import com.pocketweibo.ui.components.HighlightText
 import com.pocketweibo.ui.components.ListPostImageIndicator
 import com.pocketweibo.ui.components.SelectableCopyDialog
 import com.pocketweibo.ui.components.TopicText
@@ -120,6 +121,7 @@ internal fun SearchHintItem(title: String, description: String, icon: ImageVecto
 @Composable
 internal fun SearchResultsContent(
     results: List<SearchResult>,
+    keywords: List<String>,
     listState: LazyListState,
     onIdentityClick: (IdentityEntity) -> Unit,
     onOpenTopic: (String) -> Unit,
@@ -156,7 +158,11 @@ internal fun SearchResultsContent(
                 SectionTitle(text = stringResource(R.string.discover_section_identity))
             }
             items(identityResults) { result ->
-                IdentitySearchItem(identity = result.identity, onClick = { onIdentityClick(result.identity) })
+                IdentitySearchItem(
+                    identity = result.identity,
+                    keywords = keywords,
+                    onClick = { onIdentityClick(result.identity) }
+                )
             }
         }
         if (topicResults.isNotEmpty()) {
@@ -164,7 +170,11 @@ internal fun SearchResultsContent(
                 SectionTitle(text = stringResource(R.string.discover_section_topics))
             }
             items(topicResults) { result ->
-                TopicCard(topic = result.topic, onClick = { onOpenTopic(result.topic.key) })
+                TopicCard(
+                    topic = result.topic,
+                    highlightKeywords = keywords,
+                    onClick = { onOpenTopic(result.topic.key) }
+                )
             }
         }
         if (postResults.isNotEmpty()) {
@@ -174,6 +184,7 @@ internal fun SearchResultsContent(
             items(postResults) { result ->
                 PostSearchItem(
                     post = result.post,
+                    keywords = keywords,
                     onTopicClick = onTopicClick,
                     onClick = { onPostClick(result.post.id) }
                 )
@@ -186,6 +197,7 @@ internal fun SearchResultsContent(
             items(commentResults) { result ->
                 CommentSearchItem(
                     row = result.row,
+                    keywords = keywords,
                     onTopicClick = onTopicClick,
                     onOpenPost = { onPostClick(result.row.postId) }
                 )
@@ -206,7 +218,11 @@ internal fun SectionTitle(text: String) {
 }
 
 @Composable
-internal fun IdentitySearchItem(identity: IdentityEntity, onClick: () -> Unit) {
+internal fun IdentitySearchItem(
+    identity: IdentityEntity,
+    keywords: List<String>,
+    onClick: () -> Unit
+) {
     Surface(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         color = MaterialTheme.colorScheme.surface
@@ -224,7 +240,17 @@ internal fun IdentitySearchItem(identity: IdentityEntity, onClick: () -> Unit) {
                 customAvatarUri = identity.customAvatarUri
             )
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = identity.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                HighlightText(
+                    text = identity.name,
+                    keywords = keywords,
+                    style = TextStyle(
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Text(
                     text = stringResource(R.string.identity_search_subtitle),
                     fontSize = 12.sp,
@@ -245,6 +271,7 @@ internal fun IdentitySearchItem(identity: IdentityEntity, onClick: () -> Unit) {
 @Composable
 internal fun PostSearchItem(
     post: PostWithIdentity,
+    keywords: List<String>,
     onTopicClick: (String) -> Unit,
     onClick: () -> Unit
 ) {
@@ -269,11 +296,14 @@ internal fun PostSearchItem(
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
+                        HighlightText(
                             text = displayName,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
+                            keywords = keywords,
+                            style = TextStyle(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
@@ -283,6 +313,9 @@ internal fun PostSearchItem(
                     TopicText(
                         text = body,
                         onTopicClick = onTopicClick,
+                        onClick = onClick,
+                        onLongClick = { showSelectableCopy = true },
+                        highlightKeywords = keywords,
                         style = TextStyle(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -301,6 +334,7 @@ internal fun PostSearchItem(
 @Composable
 internal fun CommentSearchItem(
     row: CommentSearchRow,
+    keywords: List<String>,
     onTopicClick: (String) -> Unit,
     onOpenPost: () -> Unit
 ) {
@@ -331,11 +365,14 @@ internal fun CommentSearchItem(
                     modifier = Modifier.padding(top = 2.dp).size(28.dp)
                 )
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
+                    HighlightText(
                         text = commentAuthor,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        keywords = keywords,
+                        style = TextStyle(
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -348,15 +385,21 @@ internal fun CommentSearchItem(
                     TopicText(
                         text = body,
                         onTopicClick = onTopicClick,
+                        onClick = onOpenPost,
+                        onLongClick = { showSelectableCopy = true },
+                        highlightKeywords = keywords,
                         style = TextStyle(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface),
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 6.dp)
                     )
-                    Text(
+                    HighlightText(
                         text = postLine,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        keywords = keywords,
+                        style = TextStyle(
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 6.dp)
