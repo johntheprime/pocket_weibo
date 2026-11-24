@@ -47,7 +47,10 @@ import com.pocketweibo.PocketWeiboApp
 import com.pocketweibo.reminder.ReminderRepeatRule
 import com.pocketweibo.ui.components.Avatar
 import com.pocketweibo.ui.components.WeiboTitleBar
+import com.pocketweibo.ui.util.extractTopicTags
 import com.pocketweibo.ui.util.identityDisplayName
+import com.pocketweibo.ui.util.isReservedTopicKey
+import com.pocketweibo.ui.util.resolveTopicKey
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
@@ -72,6 +75,9 @@ fun MeScreen(
     val configuration = LocalConfiguration.current
     val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
     val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
+    val posts by app.repository.allPosts.collectAsState(initial = emptyList())
+    val comments by app.repository.allCommentsForSearch.collectAsState(initial = emptyList())
+    val topicAliasRows by app.repository.topicAliases.collectAsState(initial = emptyList())
     val pendingReminders by app.repository.observePendingRemindersWithPreview()
         .collectAsState(initial = emptyList())
     var nowMillis by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -86,6 +92,19 @@ fun MeScreen(
     val reminderListMaxHeight = (configuration.screenHeightDp * 0.36f).dp
         .coerceAtMost(300.dp)
         .coerceAtLeast(168.dp)
+
+    val topicAliases = remember(topicAliasRows) {
+        topicAliasRows.associate { it.fromKey to it.toKey }
+    }
+    val topicCount = remember(posts, topicAliases) {
+        posts.flatMap { post ->
+            extractTopicTags(post.content)
+                .map { resolveTopicKey(it.key, topicAliases) }
+                .filterNot { isReservedTopicKey(it) }
+        }.distinct().size
+    }
+    val weekAgo = remember(nowMillis) { nowMillis - 7L * 24 * 60 * 60 * 1000 }
+    val postsLastWeek = remember(posts, weekAgo) { posts.count { it.createdAt >= weekAgo } }
 
     Column(
         modifier = modifier
@@ -216,6 +235,17 @@ fun MeScreen(
                 }
             }
 
+            item {
+                Divider(thickness = 0.5.dp)
+                MeStatsSection(
+                    posts = posts.size,
+                    comments = comments.size,
+                    topics = topicCount,
+                    identities = identities.size,
+                    postsLastWeek = postsLastWeek
+                )
+            }
+
             if (pendingReminders.isNotEmpty()) {
                 item {
                     Divider(thickness = 0.5.dp)
@@ -327,6 +357,83 @@ fun MeScreen(
                 }
             }
         }
+    }
+}
+
+/** Compact, read-only totals. Kept on the Me page so feeds stay uncluttered. */
+@Composable
+private fun MeStatsSection(
+    posts: Int,
+    comments: Int,
+    topics: Int,
+    identities: Int,
+    postsLastWeek: Int
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = SurfaceColor
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Text(
+                text = stringResource(R.string.me_stats_title),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = GrayDark
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+            ) {
+                StatCell(
+                    label = stringResource(R.string.me_stats_posts),
+                    value = posts,
+                    modifier = Modifier.weight(1f)
+                )
+                StatCell(
+                    label = stringResource(R.string.me_stats_comments),
+                    value = comments,
+                    modifier = Modifier.weight(1f)
+                )
+                StatCell(
+                    label = stringResource(R.string.me_stats_topics),
+                    value = topics,
+                    modifier = Modifier.weight(1f)
+                )
+                StatCell(
+                    label = stringResource(R.string.me_stats_identities),
+                    value = identities,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Text(
+                text = stringResource(R.string.me_stats_last7days, postsLastWeek),
+                fontSize = 11.sp,
+                color = WeiboOrange,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatCell(label: String, value: Int, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = value.toString(),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = GrayDark
+        )
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            color = GrayMiddle,
+            modifier = Modifier.padding(top = 2.dp)
+        )
     }
 }
 
