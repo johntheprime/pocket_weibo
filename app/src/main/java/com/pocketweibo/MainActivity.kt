@@ -26,6 +26,7 @@ import com.pocketweibo.ui.components.SwipeBackHandler
 import com.pocketweibo.ui.components.WeiboBottomTabBar
 import com.pocketweibo.ui.screens.compose.ComposeScreen
 import com.pocketweibo.ui.screens.detail.PostDetailScreen
+import com.pocketweibo.ui.screens.topics.TopicManageScreen
 import com.pocketweibo.ui.screens.topics.TopicsScreen
 import com.pocketweibo.ui.screens.topics.TopicsSection
 import com.pocketweibo.ui.screens.home.HomeScreen
@@ -92,12 +93,11 @@ class MainActivity : AppCompatActivity() {
 fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     val homeListState = rememberLazyListState()
     val topicListState = rememberLazyListState()
-    val discoverSearchListState = rememberLazyListState()
     val topicTimelineListState = rememberLazyListState()
     val todoListState = rememberLazyListState()
     var selectedTab by remember { mutableStateOf(MainTab.HOME) }
     var selectedTopicKey by remember { mutableStateOf<String?>(null) }
-    var showTopicGlobalSearch by remember { mutableStateOf(false) }
+    var showTopicManage by remember { mutableStateOf(false) }
     var topicQuery by remember { mutableStateOf("") }
     var topicSection by remember { mutableStateOf(TopicsSection.TOPICS) }
     var showTopicCompleted by remember { mutableStateOf(false) }
@@ -132,7 +132,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
         showIdentityList = false
         postDetailId = null
         selectedTopicKey = null
-        showTopicGlobalSearch = false
+        showTopicManage = false
         topicComposeOriginKey = null
         showIdentitySchedule = false
         showMeSettings = false
@@ -146,11 +146,11 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
 
     fun navigateBack() {
         // Pop the most recently opened layer first: a post opened from a topic returns to
-        // that topic; a topic opened from search returns to search; search returns to the list.
+        // that topic; topic management returns to the Discover list.
         when {
             postDetailId != null -> postDetailId = null
             selectedTopicKey != null -> selectedTopicKey = null
-            showTopicGlobalSearch -> showTopicGlobalSearch = false
+            showTopicManage -> showTopicManage = false
             identityDetailId != null -> identityDetailId = null
             showIdentityList -> showIdentityList = false
             showCompose -> showCompose = false
@@ -159,7 +159,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
         }
     }
 
-    val canSwipeBack = postDetailId != null || selectedTopicKey != null || showTopicGlobalSearch ||
+    val canSwipeBack = postDetailId != null || selectedTopicKey != null || showTopicManage ||
         identityDetailId != null || showIdentityList || showCompose || showIdentitySchedule || showMeSettings
 
     /** Opens a topic referenced by a hashtag; back returns to the list/search it came from. */
@@ -173,7 +173,7 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             if (!showCompose && !showIdentityList && identityDetailId == null && postDetailId == null &&
-                selectedTopicKey == null && !showTopicGlobalSearch && !showIdentitySchedule && !showMeSettings
+                selectedTopicKey == null && !showTopicManage && !showIdentitySchedule && !showMeSettings
             ) {
                 WeiboBottomTabBar(
                     selectedTab = selectedTab,
@@ -277,6 +277,12 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
+                showTopicManage -> {
+                    TopicManageScreen(
+                        onBack = { showTopicManage = false },
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                }
                 else -> {
                     when (selectedTab) {
                         MainTab.HOME ->                         HomeScreen(
@@ -295,9 +301,6 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                         MainTab.PHOTO -> PhotoScreen(modifier = Modifier.padding(paddingValues))
                         MainTab.DISCOVER -> TopicsScreen(
                             selectedTopicKey = selectedTopicKey,
-                            showGlobalSearch = showTopicGlobalSearch,
-                            onOpenSearch = { showTopicGlobalSearch = true },
-                            onCloseSearch = { showTopicGlobalSearch = false },
                             topicQuery = topicQuery,
                             onTopicQueryChange = { topicQuery = it },
                             section = topicSection,
@@ -317,10 +320,10 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                                 selectedTopicKey = null
                                 showCompose = true
                             },
+                            onOpenManage = { showTopicManage = true },
                             topicListState = topicListState,
                             topicTimelineListState = topicTimelineListState,
                             todoListState = todoListState,
-                            searchListState = discoverSearchListState,
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.ME -> MeScreen(

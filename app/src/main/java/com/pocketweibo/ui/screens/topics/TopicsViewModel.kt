@@ -3,30 +3,18 @@ package com.pocketweibo.ui.screens.topics
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.pocketweibo.data.local.dao.CommentSearchRow
 import com.pocketweibo.data.local.dao.PostWithIdentity
-import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.repository.WeiboRepository
 import com.pocketweibo.ui.util.extractTopicTags
 import com.pocketweibo.ui.util.isReservedTopicKey
 import com.pocketweibo.ui.util.isTodoMarked
-import com.pocketweibo.ui.util.matchesAnySearchKeyword
-import com.pocketweibo.ui.util.parseSearchKeywords
 import com.pocketweibo.ui.util.resolveTopicKey
 import com.pocketweibo.ui.util.stableTopicDisplayName
-import com.pocketweibo.ui.util.stripTopicPrefix
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-
-sealed class SearchResult {
-    data class IdentityResult(val identity: IdentityEntity) : SearchResult()
-    data class TopicResult(val topic: TopicItem) : SearchResult()
-    data class PostResult(val post: PostWithIdentity) : SearchResult()
-    data class CommentResult(val row: CommentSearchRow) : SearchResult()
-}
 
 /** A topic derived from hashtags. `key` is stable across capitalization changes. */
 data class TopicItem(
@@ -78,12 +66,6 @@ private data class TopicSnapshot(
 
 class TopicsViewModel(private val repository: WeiboRepository) : ViewModel() {
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
-    private val _searchResults = MutableStateFlow<List<SearchResult>>(emptyList())
-    val searchResults: StateFlow<List<SearchResult>> = _searchResults.asStateFlow()
-
     private val _topics = MutableStateFlow<List<TopicItem>>(emptyList())
     val topics: StateFlow<List<TopicItem>> = _topics.asStateFlow()
 
@@ -107,7 +89,6 @@ class TopicsViewModel(private val repository: WeiboRepository) : ViewModel() {
 
     init {
         observeTopics()
-        observeSearch()
         observeReminderFirings()
         observeTodos()
     }
@@ -171,64 +152,6 @@ class TopicsViewModel(private val repository: WeiboRepository) : ViewModel() {
         )
     }
 
-    private fun observeSearch() {
-        viewModelScope.launch {
-            combine(
-                _searchQuery,
-                repository.allIdentities,
-                _topics,
-                repository.allPosts,
-                repository.allCommentsForSearch
-            ) { query, identities, topics, posts, comments ->
-                val keywords = parseSearchKeywords(query)
-                if (keywords.isEmpty()) {
-                    emptyList()
-                } else {
-                    val results = mutableListOf<SearchResult>()
-
-                    identities.filter { identity ->
-                        matchesAnySearchKeyword(keywords, identity.name)
-                    }.forEach {
-                        results.add(SearchResult.IdentityResult(it))
-                    }
-
-                    val topicKeywords = keywords.map(::stripTopicPrefix).filter { it.isNotEmpty() }
-                    topics.filter { topic ->
-                        topicKeywords.any { keyword ->
-                            topic.displayName.contains(keyword, ignoreCase = true) ||
-                                topic.key.contains(keyword, ignoreCase = true) ||
-                                topic.sourceKeys.any { it.contains(keyword, ignoreCase = true) }
-                        }
-                    }.forEach {
-                        results.add(SearchResult.TopicResult(it))
-                    }
-
-                    posts.filter { post ->
-                        matchesAnySearchKeyword(keywords, post.identityName, post.content)
-                    }.forEach {
-                        results.add(SearchResult.PostResult(it))
-                    }
-
-                    comments.filter { row ->
-                        matchesAnySearchKeyword(
-                            keywords,
-                            row.content,
-                            row.commentAuthorName,
-                            row.postContent,
-                            row.postAuthorName
-                        )
-                    }.forEach { row ->
-                        results.add(SearchResult.CommentResult(row))
-                    }
-
-                    results
-                }
-            }.collect { results ->
-                _searchResults.value = results
-            }
-        }
-    }
-
     private fun observeReminderFirings() {
         viewModelScope.launch {
             repository.observeLastReminderFirings().collect { rows ->
@@ -281,10 +204,6 @@ class TopicsViewModel(private val repository: WeiboRepository) : ViewModel() {
         viewModelScope.launch {
             repository.setTodoDoneAt(postId, null)
         }
-    }
-
-    fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
     }
 
     fun mergeTopics(fromKey: String, toKey: String) {

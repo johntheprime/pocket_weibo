@@ -1,0 +1,278 @@
+package com.pocketweibo.ui.screens.topics
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.pocketweibo.PocketWeiboApp
+import com.pocketweibo.R
+import com.pocketweibo.ui.components.WeiboTitleBar
+import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.util.RelativeTimePreset
+import com.pocketweibo.ui.util.formatRelativeTime
+import com.pocketweibo.ui.util.resolveTopicKey
+
+/**
+ * One place for all topic housekeeping: pick a topic, then merge it, split its
+ * spellings apart, or restore posts that were removed from it.
+ */
+@Composable
+fun TopicManageScreen(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val app = context.applicationContext as PocketWeiboApp
+    val viewModel: TopicsViewModel = viewModel(
+        factory = TopicsViewModel.Factory(app.repository)
+    )
+
+    val topics by viewModel.topics.collectAsState()
+    val aliases by viewModel.topicAliases.collectAsState()
+    val exclusions by viewModel.topicExclusions.collectAsState()
+    var selectedKey by remember { mutableStateOf<String?>(null) }
+    var mergeSource by remember { mutableStateOf<TopicItem?>(null) }
+
+    val selectedTopic = topics.find { it.key == selectedKey }
+    val mergedSourceKeys = if (selectedTopic != null) {
+        aliases.filterValues { resolveTopicKey(it, aliases) == selectedTopic.key }.keys.sorted()
+    } else {
+        emptyList()
+    }
+    val excludedPostIds = if (selectedTopic != null) {
+        exclusions.filter { it.first == selectedTopic.key }.map { it.second }.toSet()
+    } else {
+        emptySet()
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        WeiboTitleBar(
+            title = stringResource(R.string.topics_manage_title),
+            leftIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = stringResource(R.string.back_cd),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        )
+        Text(
+            text = stringResource(R.string.topics_manage_hint),
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+        if (topics.isEmpty()) {
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.topics_empty_title),
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(topics, key = { it.key }) { topic ->
+                    val mergedKeys = aliases
+                        .filterValues { resolveTopicKey(it, aliases) == topic.key }
+                        .keys
+                        .sorted()
+                    TopicManageRow(
+                        topic = topic,
+                        mergedKeys = mergedKeys,
+                        selected = topic.key == selectedKey,
+                        onClick = {
+                            selectedKey = if (topic.key == selectedKey) null else topic.key
+                        }
+                    )
+                }
+            }
+        }
+        Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
+            Row(
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                TextButton(
+                    onClick = { selectedTopic?.let { mergeSource = it } },
+                    enabled = selectedTopic != null,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.topics_manage_merge), fontSize = 12.sp)
+                }
+                TextButton(
+                    onClick = {
+                        selectedTopic?.let { viewModel.unmergeTopicAliases(it.key) }
+                        selectedKey = null
+                    },
+                    enabled = mergedSourceKeys.isNotEmpty(),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.topics_manage_unmerge), fontSize = 12.sp)
+                }
+                TextButton(
+                    onClick = {
+                        selectedTopic?.let { viewModel.restoreExcludedPosts(it.key) }
+                        selectedKey = null
+                    },
+                    enabled = excludedPostIds.isNotEmpty(),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        stringResource(
+                            R.string.topics_restore_excluded_action,
+                            excludedPostIds.size
+                        ),
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+    }
+
+    mergeSource?.let { source ->
+        MergeTopicDialog(
+            source = source,
+            topics = topics,
+            onDismiss = { mergeSource = null },
+            onMerge = { target ->
+                viewModel.mergeTopics(source.key, target.key)
+                mergeSource = null
+                selectedKey = null
+            }
+        )
+    }
+}
+
+@Composable
+private fun TopicManageRow(
+    topic: TopicItem,
+    mergedKeys: List<String>,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val context = LocalContext.current
+    val lastActivity = context.resources.formatRelativeTime(
+        topic.lastAt,
+        RelativeTimePreset.FeedCard
+    )
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(10.dp),
+        color = if (selected) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surface
+        },
+        border = BorderStroke(if (selected) 1.dp else 0.dp, WeiboOrange)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(WeiboOrange.copy(alpha = 0.12f), RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "#",
+                    color = WeiboOrange,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = topic.displayName,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = stringResource(
+                        R.string.topics_topic_meta,
+                        topic.postCount,
+                        topic.identityCount,
+                        lastActivity
+                    ),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                if (mergedKeys.isNotEmpty()) {
+                    Text(
+                        text = stringResource(
+                            R.string.topics_detail_merged,
+                            mergedKeys.joinToString("、") { "#$it" }
+                        ),
+                        fontSize = 11.sp,
+                        color = WeiboOrange,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = WeiboOrange,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
+}

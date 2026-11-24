@@ -31,12 +31,12 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,18 +45,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -84,7 +80,6 @@ import com.pocketweibo.ui.theme.WeiboOrange
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.identityDisplayName
-import com.pocketweibo.ui.util.parseSearchKeywords
 import com.pocketweibo.ui.util.postOrCommentBodyForDisplay
 import com.pocketweibo.ui.util.resolveTopicKey
 import com.pocketweibo.ui.util.stripTopicPrefix
@@ -97,9 +92,6 @@ enum class TopicsSection { TOPICS, TODO }
 @Composable
 fun TopicsScreen(
     selectedTopicKey: String?,
-    showGlobalSearch: Boolean,
-    onOpenSearch: () -> Unit,
-    onCloseSearch: () -> Unit,
     topicQuery: String,
     onTopicQueryChange: (String) -> Unit,
     section: TopicsSection,
@@ -111,10 +103,10 @@ fun TopicsScreen(
     onTopicClick: (String) -> Unit,
     onPostClick: (Long) -> Unit,
     onDiscussAgain: (key: String, name: String) -> Unit,
+    onOpenManage: () -> Unit,
     topicListState: LazyListState,
     topicTimelineListState: LazyListState,
     todoListState: LazyListState,
-    searchListState: LazyListState,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -125,34 +117,19 @@ fun TopicsScreen(
 
     val topics by viewModel.topics.collectAsState()
     val allPosts by viewModel.allPosts.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val searchResults by viewModel.searchResults.collectAsState()
     val unfinishedTodos by viewModel.unfinishedTodos.collectAsState()
     val completedTodos by viewModel.completedTodos.collectAsState()
     val topicAliases by viewModel.topicAliases.collectAsState()
     val topicExclusions by viewModel.topicExclusions.collectAsState()
+    // Only the topic-detail menu opens a merge dialog; list cards use the central Manage screen.
     var mergeSource by remember { mutableStateOf<TopicItem?>(null) }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val globalSearchFocusRequester = remember { FocusRequester() }
-
-    // Search text lives in the ViewModel (Activity-scoped) so it survives opening a post.
-    // Clear it only when search is deliberately closed, then focus the field as soon as it opens.
-    LaunchedEffect(showGlobalSearch) {
-        if (showGlobalSearch) {
-            withFrameNanos { }
-            globalSearchFocusRequester.requestFocus()
-            keyboardController?.show()
-        } else {
-            viewModel.updateSearchQuery("")
-        }
-    }
 
     val selectedTopic = selectedTopicKey?.let { key ->
         val resolved = resolveTopicKey(key, topicAliases)
         topics.find { it.key == resolved }
     }
-    val searchKeywords = parseSearchKeywords(searchQuery)
 
     Column(
         modifier = modifier
@@ -208,100 +185,13 @@ fun TopicsScreen(
                 )
             }
 
-            showGlobalSearch -> {
-                WeiboTitleBar(
-                    title = stringResource(R.string.title_search),
-                    leftIcon = {
-                        IconButton(onClick = {
-                            focusManager.clearFocus()
-                            onCloseSearch()
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = stringResource(R.string.back_cd),
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                    }
-                )
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { viewModel.updateSearchQuery(it) },
-                    placeholder = { Text(stringResource(R.string.discover_search_hint), color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                                Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = stringResource(R.string.discover_clear_search_cd),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    shape = RoundedCornerShape(24.dp),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = {
-                        focusManager.clearFocus()
-                        keyboardController?.hide()
-                    }),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .focusRequester(globalSearchFocusRequester)
-                )
-                if (searchQuery.isEmpty()) {
-                    SearchTipsContent()
-                } else {
-                    SearchResultsContent(
-                        results = searchResults,
-                        keywords = searchKeywords,
-                        listState = searchListState,
-                        onIdentityClick = { identity ->
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
-                            viewModel.updateSearchQuery(identity.name)
-                        },
-                        onOpenTopic = onOpenTopic,
-                        onTopicClick = onTopicClick,
-                        onPostClick = onPostClick
-                    )
-                }
-            }
-
             else -> {
-                WeiboTitleBar(
-                    title = stringResource(R.string.title_topics_library),
-                    centerBelowTitle = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(
-                                selected = section == TopicsSection.TOPICS,
-                                onClick = { onSectionChange(TopicsSection.TOPICS) },
-                                label = { Text(stringResource(R.string.topics_section_topics, topics.size)) }
-                            )
-                            FilterChip(
-                                selected = section == TopicsSection.TODO,
-                                onClick = { onSectionChange(TopicsSection.TODO) },
-                                label = { Text(stringResource(R.string.topics_section_todo, unfinishedTodos.size)) }
-                            )
-                        }
-                    },
-                    rightIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = stringResource(R.string.home_search_cd),
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    },
-                    onRightIconClick = onOpenSearch
+                TopicsHeader(
+                    section = section,
+                    topicCount = topics.size,
+                    todoCount = unfinishedTodos.size,
+                    onSectionChange = onSectionChange,
+                    onOpenManage = onOpenManage
                 )
                 if (section == TopicsSection.TOPICS) {
                     OutlinedTextField(
@@ -341,8 +231,7 @@ fun TopicsScreen(
                         topics = topics,
                         query = topicQuery,
                         listState = topicListState,
-                        onTopicClick = { topic -> onOpenTopic(topic.key) },
-                        onTopicLongClick = { topic -> mergeSource = topic }
+                        onTopicClick = { topic -> onOpenTopic(topic.key) }
                     )
                 } else {
                     TodoListContent(
@@ -376,12 +265,89 @@ fun TopicsScreen(
 }
 
 @Composable
+private fun TopicsHeader(
+    section: TopicsSection,
+    topicCount: Int,
+    todoCount: Int,
+    onSectionChange: (TopicsSection) -> Unit,
+    onOpenManage: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TopicSectionTab(
+                label = stringResource(R.string.topics_section_topics, topicCount),
+                selected = section == TopicsSection.TOPICS,
+                onClick = { onSectionChange(TopicsSection.TOPICS) },
+                modifier = Modifier.weight(1f)
+            )
+            TopicSectionTab(
+                label = stringResource(R.string.topics_section_todo, todoCount),
+                selected = section == TopicsSection.TODO,
+                onClick = { onSectionChange(TopicsSection.TODO) },
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = onOpenManage, modifier = Modifier.padding(start = 4.dp)) {
+                Icon(
+                    imageVector = Icons.Default.Tune,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = stringResource(R.string.topics_manage),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TopicSectionTab(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.clickable(onClick = onClick).padding(vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            color = if (selected) WeiboOrange else MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Box(
+            modifier = Modifier
+                .padding(top = 6.dp)
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(
+                    if (selected) WeiboOrange else Color.Transparent,
+                    RoundedCornerShape(1.dp)
+                )
+        )
+    }
+}
+
+@Composable
 private fun TopicListContent(
     topics: List<TopicItem>,
     query: String,
     listState: LazyListState,
-    onTopicClick: (TopicItem) -> Unit,
-    onTopicLongClick: (TopicItem) -> Unit
+    onTopicClick: (TopicItem) -> Unit
 ) {
     val filtered = remember(topics, query) {
         val q = stripTopicPrefix(query)
@@ -420,19 +386,16 @@ private fun TopicListContent(
         items(filtered) { topic ->
             TopicCard(
                 topic = topic,
-                onClick = { onTopicClick(topic) },
-                onLongClick = { onTopicLongClick(topic) }
+                onClick = { onTopicClick(topic) }
             )
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun TopicCard(
     topic: TopicItem,
     onClick: () -> Unit,
-    onLongClick: (() -> Unit)? = null,
     highlightKeywords: List<String> = emptyList()
 ) {
     val context = LocalContext.current
@@ -451,7 +414,7 @@ internal fun TopicCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 5.dp)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .clickable(onClick = onClick)
             .semantics { contentDescription = cardCd },
         shape = RoundedCornerShape(10.dp),
         color = MaterialTheme.colorScheme.surface
@@ -498,15 +461,6 @@ internal fun TopicCard(
                         fontSize = 11.sp,
                         color = WeiboOrange,
                         modifier = Modifier.padding(top = 2.dp)
-                    )
-                }
-            }
-            if (onLongClick != null) {
-                IconButton(onClick = onLongClick) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = stringResource(R.string.topics_detail_more_cd),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -709,7 +663,7 @@ private fun TopicDetailMenu(
 }
 
 @Composable
-private fun MergeTopicDialog(
+internal fun MergeTopicDialog(
     source: TopicItem,
     topics: List<TopicItem>,
     onDismiss: () -> Unit,

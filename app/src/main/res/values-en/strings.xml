@@ -17,7 +17,6 @@
     <string name="title_photo">Photos</string>
     <string name="title_discover">Discover</string>
     <string name="title_topics">Discover</string>
-    <string name="title_topics_library">Topics &amp; To-Do</string>
     <string name="title_search">Search</string>
     <string name="title_me">Me</string>
     <string name="title_settings">Settings</string>
@@ -151,30 +150,17 @@
     <string name="post_audio_play">Play</string>
     <string name="post_audio_pause">Pause</string>
 
-    <string name="discover_search_identity_title">Search identities</string>
-    <string name="discover_search_identity_desc">Type a name, e.g. Su Shi, Shakespeare</string>
-    <string name="discover_search_content_title">Search posts</string>
-    <string name="discover_search_content_desc">Match post text; comments also appear under Comments in results</string>
-    <string name="discover_search_comment_title">Search comments</string>
-    <string name="discover_search_comment_desc">Match comment text, commenter, or parent post body and author</string>
-    <string name="discover_search_multi_title">Multiple keywords</string>
-    <string name="discover_search_multi_desc">Separate with | to match any keyword, e.g. Su Shi|Li Bai</string>
-    <string name="discover_section_topics">Topics</string>
-    <string name="discover_section_comments">Comments</string>
-    <string name="discover_comment_parent_post_line">Post: %1$s</string>
-    <string name="discover_comment_open_post_cd">Open the post this comment belongs to</string>
-    <string name="comment_search_result_subtitle">Comment match</string>
     <string name="discover_trending_identities">Trending identities</string>
     <string name="discover_trending_posts">Trending posts</string>
-    <string name="discover_search_tips">Search tips</string>
-    <string name="discover_search_hint">Search posts, identities, or comments (separate with |)</string>
     <string name="discover_empty_results">No results</string>
-    <string name="discover_section_identity">Identities</string>
-    <string name="discover_section_posts">Posts</string>
-    <string name="discover_identity_view_posts">View posts</string>
     <string name="discover_clear_search_cd">Clear</string>
 
     <!-- Topics: hashtag-derived long-lived discussion pages -->
+    <string name="topics_manage">Manage</string>
+    <string name="topics_manage_title">Manage topics</string>
+    <string name="topics_manage_hint">Select a topic to merge it, split merged spellings, or restore removed posts.</string>
+    <string name="topics_manage_merge">Merge into…</string>
+    <string name="topics_manage_unmerge">Unmerge</string>
     <string name="topics_search_hint">Type a topic name or #</string>
     <string name="topics_empty_title">No topics yet</string>
     <string name="topics_empty_subtitle">Write #TopicName in a post to create a topic. End a tag with a space or punctuation.</string>

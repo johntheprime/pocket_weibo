@@ -17,7 +17,6 @@
     <string name="title_photo">图片</string>
     <string name="title_discover">发现</string>
     <string name="title_topics">发现</string>
-    <string name="title_topics_library">话题与待办</string>
     <string name="title_search">搜索</string>
     <string name="title_me">我</string>
     <string name="title_settings">设置</string>
@@ -151,30 +150,17 @@
     <string name="post_audio_play">播放</string>
     <string name="post_audio_pause">暂停</string>
 
-    <string name="discover_search_identity_title">搜索身份</string>
-    <string name="discover_search_identity_desc">输入身份名称，如：苏轼、莎士比亚</string>
-    <string name="discover_search_content_title">搜索内容</string>
-    <string name="discover_search_content_desc">输入微博正文关键词；评论正文与评论者昵称也可在结果「评论」区匹配</string>
-    <string name="discover_search_comment_title">搜索评论</string>
-    <string name="discover_search_comment_desc">匹配评论文字、评论者，或所属微博正文与作者</string>
-    <string name="discover_search_multi_title">多个关键词</string>
-    <string name="discover_search_multi_desc">用 | 分隔，匹配任意一个，如：苏轼|李白</string>
-    <string name="discover_section_topics">话题</string>
-    <string name="discover_section_comments">评论</string>
-    <string name="discover_comment_parent_post_line">原微博：%1$s</string>
-    <string name="discover_comment_open_post_cd">打开此评论所属的微博</string>
-    <string name="comment_search_result_subtitle">评论匹配</string>
     <string name="discover_trending_identities">热门身份</string>
     <string name="discover_trending_posts">热门微博</string>
-    <string name="discover_search_tips">搜索提示</string>
-    <string name="discover_search_hint">搜索内容、身份、评论（多个用 | 分隔）</string>
     <string name="discover_empty_results">未找到相关结果</string>
-    <string name="discover_section_identity">身份</string>
-    <string name="discover_section_posts">微博</string>
-    <string name="discover_identity_view_posts">查看微博</string>
     <string name="discover_clear_search_cd">清除</string>
 
     <!-- Topics: hashtag-derived long-lived discussion pages -->
+    <string name="topics_manage">管理话题</string>
+    <string name="topics_manage_title">话题管理</string>
+    <string name="topics_manage_hint">选择一个话题后，可合并、取消合并或恢复移出的微博。</string>
+    <string name="topics_manage_merge">合并到…</string>
+    <string name="topics_manage_unmerge">取消合并</string>
     <string name="topics_search_hint">输入 # 或话题名筛选</string>
     <string name="topics_empty_title">还没有话题</string>
     <string name="topics_empty_subtitle">在微博正文里写 #话题名，话题会自动出现在这里；用空格或标点结束标签。</string>
