@@ -21,8 +21,16 @@ class ComposeIntentViewModel : ViewModel() {
     private val _composeRequests = MutableStateFlow(0)
     val composeRequests: StateFlow<Int> = _composeRequests.asStateFlow()
 
-    fun offerShareText(text: String?) {
-        val t = text?.trim().orEmpty()
+    /**
+     * Prefills the composer. [keepTrailingWhitespace] is used by "Post again" so the cursor
+     * lands one space after the topic hashtag; normal shared text is trimmed.
+     */
+    fun offerShareText(text: String?, keepTrailingWhitespace: Boolean = false) {
+        val t = if (keepTrailingWhitespace) {
+            text?.trimStart().orEmpty()
+        } else {
+            text?.trim().orEmpty()
+        }
         _pendingShareText.value = if (t.isEmpty()) null else clipComposeText(t)
     }
 

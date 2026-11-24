@@ -233,7 +233,7 @@ fun TopicsScreen(
 
             else -> {
                 WeiboTitleBar(
-                    title = stringResource(R.string.title_topics),
+                    title = stringResource(R.string.title_topics_library),
                     centerBelowTitle = {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(

@@ -65,6 +65,8 @@ fun PostCard(
     showPostImages: Boolean = false,
     /** Next pending reminder for this post; shows an orange badge when non-null. */
     reminderFireAtMillis: Long? = null,
+    /** Search terms to highlight in the author name and body. */
+    highlightKeywords: List<String> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     var showSelectableCopy by remember { mutableStateOf(false) }
@@ -157,6 +159,9 @@ fun PostCard(
             TopicText(
                 text = post.content,
                 onTopicClick = onTopicClick,
+                onClick = onPostClick,
+                onLongClick = { showSelectableCopy = true },
+                highlightKeywords = highlightKeywords,
                 style = TextStyle(
                     color = Color.Black,
                     fontSize = 14.sp,

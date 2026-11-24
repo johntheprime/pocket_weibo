@@ -33,13 +33,26 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
 
     private val _reminders = MutableStateFlow<List<PostReminderEntity>>(emptyList())
     val reminders: StateFlow<List<PostReminderEntity>> = _reminders.asStateFlow()
-    
+
+    /** Last reminder firing for this post; makes reminder-driven TODOs visible in detail. */
+    private val _todoLastFiredAt = MutableStateFlow<Long?>(null)
+    val todoLastFiredAt: StateFlow<Long?> = _todoLastFiredAt.asStateFlow()
+
+    private var todoFiringJob: Job? = null
+
     fun loadPost(postId: Long) {
         activePostId = postId
         postRefreshJob?.cancel()
         commentsJob?.cancel()
         remindersJob?.cancel()
+        todoFiringJob?.cancel()
         _reminders.value = emptyList()
+        _todoLastFiredAt.value = null
+        todoFiringJob = viewModelScope.launch {
+            repository.observeLastReminderFirings().collect { firings ->
+                _todoLastFiredAt.value = firings.firstOrNull { it.postId == postId }?.lastFiredAtMillis
+            }
+        }
         postRefreshJob = viewModelScope.launch {
             repository.allPosts.collect { posts ->
                 _post.value = posts.find { it.id == postId }
@@ -74,6 +87,7 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
         postRefreshJob?.cancel()
         commentsJob?.cancel()
         remindersJob?.cancel()
+        todoFiringJob?.cancel()
         super.onCleared()
     }
 
@@ -88,6 +102,12 @@ class PostDetailViewModel(private val repository: WeiboRepository) : ViewModel()
     fun togglePin() {
         viewModelScope.launch {
             repository.togglePostPin(activePostId)
+        }
+    }
+
+    fun setTodoDone(done: Boolean) {
+        viewModelScope.launch {
+            repository.setTodoDoneAt(activePostId, if (done) System.currentTimeMillis() else null)
         }
     }
 

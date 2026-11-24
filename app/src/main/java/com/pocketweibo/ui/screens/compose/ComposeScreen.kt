@@ -72,7 +72,9 @@ import androidx.core.content.FileProvider
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -120,7 +122,7 @@ fun ComposeScreen(
     var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
 
     var selectedIdentity by remember { mutableStateOf<IdentityEntity?>(null) }
-    var content by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf(TextFieldValue("")) }
     var showIdentityPicker by remember { mutableStateOf(false) }
     var preparedImageFiles by remember { mutableStateOf(listOf<File>()) }
     var isPreparingImages by remember { mutableStateOf(false) }
@@ -290,13 +292,22 @@ fun ComposeScreen(
 
     LaunchedEffect(Unit) {
         if (initialShareText.isNotBlank()) {
-            content = clipComposeText(initialShareText.trim())
+            // Keep a trailing space (topic "Post again" prefill) and put the cursor after it.
+            val prefilled = clipComposeText(initialShareText.trimStart())
+            content = TextFieldValue(
+                text = prefilled,
+                selection = TextRange(prefilled.length)
+            )
             lastContentEditedAt = SystemClock.elapsedRealtime()
             onConsumeInitialShare()
         } else {
             val draft = app.repository.loadDraft()
             if (draft != null) {
-                content = clipComposeText(draft.first)
+                val draftText = clipComposeText(draft.first)
+                content = TextFieldValue(
+                    text = draftText,
+                    selection = TextRange(draftText.length)
+                )
                 lastContentEditedAt = SystemClock.elapsedRealtime()
                 val identityId = draft.second
                 val identity = identities.find { it.id == identityId }
@@ -314,8 +325,8 @@ fun ComposeScreen(
 
     fun saveAndDismiss() {
         scope.launch {
-            if (content.isNotBlank() && selectedIdentity != null) {
-                app.repository.saveDraft(content, selectedIdentity!!.id)
+            if (content.text.isNotBlank() && selectedIdentity != null) {
+                app.repository.saveDraft(content.text, selectedIdentity!!.id)
             }
             onDismiss()
         }
@@ -329,12 +340,12 @@ fun ComposeScreen(
 
     fun performSend() {
         if (selectedIdentity == null) return
-        if (!content.isNotBlank() && preparedImageFiles.isEmpty()) return
+        if (!content.text.isNotBlank() && preparedImageFiles.isEmpty()) return
         if (isSending || isPreparingImages) return
         isSending = true
         lastPostedAt = SystemClock.elapsedRealtime()
         val identityId = selectedIdentity!!.id
-        val text = content
+        val text = content.text
         val filesToSend = preparedImageFiles.toList()
         scope.launch {
             try {
@@ -382,7 +393,7 @@ fun ComposeScreen(
     }
 
     val canQuickSend =
-        (content.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
+        (content.text.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
             selectedIdentity != null &&
             !isSending &&
             !isPreparingImages
@@ -390,7 +401,7 @@ fun ComposeScreen(
     val performSendAction by rememberUpdatedState(newValue = { performSend() })
 
     ShakeToSendEffect(
-        canSend = (content.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
+        canSend = (content.text.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
             selectedIdentity != null &&
             !isSending &&
             !isPreparingImages,
@@ -426,8 +437,8 @@ fun ComposeScreen(
             ) {
                 IconButton(onClick = {
                     pendingComposeReminder = null
-                    if (content.isNotBlank()) {
-                        scope.launch { app.repository.saveDraft(content, selectedIdentity?.id ?: 0L) }
+                    if (content.text.isNotBlank()) {
+                        scope.launch { app.repository.saveDraft(content.text, selectedIdentity?.id ?: 0L) }
                     }
                     onDismiss()
                 }) {
@@ -447,7 +458,7 @@ fun ComposeScreen(
 
                 Button(
                     onClick = { performSend() },
-                    enabled = (content.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
+                    enabled = (content.text.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
                         selectedIdentity != null &&
                         !isSending &&
                         !isPreparingImages,
@@ -561,13 +572,21 @@ fun ComposeScreen(
 
                         TextField(
                             value = content,
-                            onValueChange = { newText ->
+                            onValueChange = { newValue ->
                                 // Never reject an edit (e.g. a large clipboard paste) outright:
                                 // keep as much as fits in the character limit instead.
-                                val clipped = clipComposeText(newText)
-                                if (clipped != content) {
-                                    content = clipped
+                                val clipped = clipComposeText(newValue.text)
+                                if (clipped != content.text) {
+                                    content = newValue.copy(
+                                        text = clipped,
+                                        selection = TextRange(
+                                            newValue.selection.start.coerceAtMost(clipped.length),
+                                            newValue.selection.end.coerceAtMost(clipped.length)
+                                        )
+                                    )
                                     lastContentEditedAt = SystemClock.elapsedRealtime()
+                                } else {
+                                    content = newValue
                                 }
                             },
                             placeholder = { Text(stringResource(R.string.compose_content_hint), color = GrayMiddle) },
@@ -591,9 +610,9 @@ fun ComposeScreen(
                             horizontalArrangement = Arrangement.End
                         ) {
                             Text(
-                                text = "${content.length}/$COMPOSE_MAX_CHARS",
+                                text = "${content.text.length}/$COMPOSE_MAX_CHARS",
                                 fontSize = 12.sp,
-                                color = if (content.length > COMPOSE_MAX_CHARS - 100) Color(0xFFFF5136) else GrayMiddle
+                                color = if (content.text.length > COMPOSE_MAX_CHARS - 100) Color(0xFFFF5136) else GrayMiddle
                             )
                         }
                         if (preparedImageFiles.isNotEmpty()) {
@@ -754,7 +773,7 @@ fun ComposeScreen(
                         showRemindPicker = false
                         val canPublishNow =
                             selectedIdentity != null &&
-                                (content.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
+                                (content.text.isNotBlank() || preparedImageFiles.isNotEmpty()) &&
                                 !isSending &&
                                 !isPreparingImages
                         if (canPublishNow) {

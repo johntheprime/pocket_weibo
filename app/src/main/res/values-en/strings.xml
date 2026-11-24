@@ -17,6 +17,7 @@
     <string name="title_photo">Photos</string>
     <string name="title_discover">Discover</string>
     <string name="title_topics">Discover</string>
+    <string name="title_topics_library">Topics &amp; To-Do</string>
     <string name="title_search">Search</string>
     <string name="title_me">Me</string>
     <string name="title_settings">Settings</string>
@@ -200,6 +201,18 @@
     <string name="todo_mark_done_cd">Mark done</string>
     <string name="todo_reopen_cd">Reopen</string>
     <string name="todo_done_at">Done at %1$s</string>
+    <string name="post_detail_todo_done_title">To-do completed</string>
+    <string name="post_detail_todo_pending_title">To-do not completed</string>
+    <string name="post_detail_todo_done_at">Completed %1$s</string>
+    <string name="post_detail_todo_reminder_fired">Reminder fired: %1$s</string>
+    <string name="post_detail_todo_mark_done">Mark done</string>
+    <string name="post_detail_todo_reopen">Reopen</string>
+    <string name="me_stats_title">Activity</string>
+    <string name="me_stats_posts">Posts</string>
+    <string name="me_stats_comments">Comments</string>
+    <string name="me_stats_topics">Topics</string>
+    <string name="me_stats_identities">Identities</string>
+    <string name="me_stats_last7days">%1$d posts in the last 7 days</string>
     <string name="count_likes">%1$d likes</string>
     <string name="count_comments">%1$d comments</string>
     <string name="identity_search_subtitle">Historical figure · microblog</string>

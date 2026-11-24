@@ -17,6 +17,7 @@
     <string name="title_photo">图片</string>
     <string name="title_discover">发现</string>
     <string name="title_topics">发现</string>
+    <string name="title_topics_library">话题与待办</string>
     <string name="title_search">搜索</string>
     <string name="title_me">我</string>
     <string name="title_settings">设置</string>
@@ -200,6 +201,18 @@
     <string name="todo_mark_done_cd">标为完成</string>
     <string name="todo_reopen_cd">重新打开</string>
     <string name="todo_done_at">完成于 %1$s</string>
+    <string name="post_detail_todo_done_title">待办已完成</string>
+    <string name="post_detail_todo_pending_title">待办未完成</string>
+    <string name="post_detail_todo_done_at">完成于 %1$s</string>
+    <string name="post_detail_todo_reminder_fired">提醒已响：%1$s</string>
+    <string name="post_detail_todo_mark_done">标记完成</string>
+    <string name="post_detail_todo_reopen">重新打开</string>
+    <string name="me_stats_title">动态统计</string>
+    <string name="me_stats_posts">微博</string>
+    <string name="me_stats_comments">评论</string>
+    <string name="me_stats_topics">话题</string>
+    <string name="me_stats_identities">身份</string>
+    <string name="me_stats_last7days">最近 7 天发布 %1$d 条</string>
     <string name="count_likes">%1$d 赞</string>
     <string name="count_comments">%1$d 评论</string>
     <string name="identity_search_subtitle">历史人物 · 微博达人</string>

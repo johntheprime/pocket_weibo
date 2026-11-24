@@ -221,6 +221,8 @@ internal fun TodoRow(
                     TopicText(
                         text = body,
                         onTopicClick = onTopicClick,
+                        onClick = onPostClick,
+                        onLongClick = { showSelectableCopy = true },
                         style = TextStyle(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface),
                         maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
@@ -312,6 +314,8 @@ internal fun CompletedTodoRow(
                     TopicText(
                         text = body,
                         onTopicClick = onTopicClick,
+                        onClick = onPostClick,
+                        onLongClick = { showSelectableCopy = true },
                         style = TextStyle(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant),
                         maxLines = 3,
                         overflow = TextOverflow.Ellipsis,

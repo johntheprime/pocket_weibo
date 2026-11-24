@@ -34,12 +34,14 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.MoreVert
@@ -110,7 +112,11 @@ import com.pocketweibo.ui.reminder.ReminderPickerDialog
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
+import com.pocketweibo.ui.theme.TodoDone
+import com.pocketweibo.ui.theme.TodoPending
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.util.formatExactTime
+import com.pocketweibo.ui.util.isTodoMarked
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -245,6 +251,7 @@ fun PostDetailScreen(
     val hiddenComments = comments.filter { it.hiddenAt != 0L }
     var hiddenCommentsExpanded by remember(postId) { mutableStateOf(false) }
     val reminders by viewModel.reminders.collectAsState()
+    val todoLastFiredAt by viewModel.todoLastFiredAt.collectAsState()
     var commentText by remember { mutableStateOf("") }
     var lastCommentEditedAt by remember(postId) { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     var lastShakeReminderScheduledAt by remember(postId) { mutableLongStateOf(0L) }
@@ -456,6 +463,10 @@ fun PostDetailScreen(
                             },
                             onDeletePost = { viewModel.deletePost(onBack) },
                             onTogglePin = { viewModel.togglePin() },
+                            todoLastFiredAt = todoLastFiredAt,
+                            onToggleTodoDone = {
+                                viewModel.setTodoDone(currentPost.todoDoneAt == null)
+                            },
                             onScheduleReminderAt = scheduleReminderAt,
                             onOpenExactAlarmSettings = openExactAlarmSettings,
                             onOpenAppDetailsSettings = openAppDetailsSettings
@@ -531,6 +542,8 @@ private fun PostDetailCard(
     onCopyPost: () -> Unit,
     onDeletePost: () -> Unit,
     onTogglePin: () -> Unit,
+    todoLastFiredAt: Long?,
+    onToggleTodoDone: () -> Unit,
     onScheduleReminderAt: (Long, String, String?) -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
     onOpenAppDetailsSettings: () -> Unit
@@ -634,7 +647,19 @@ private fun PostDetailCard(
                     }
                 }
             }
-            
+
+            val todoRelevant = post.todoDoneAt != null ||
+                isTodoMarked(post.content) ||
+                todoLastFiredAt != null
+            if (todoRelevant) {
+                PostTodoStatus(
+                    doneAt = post.todoDoneAt,
+                    lastFiredAt = todoLastFiredAt,
+                    onToggleDone = onToggleTodoDone,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+            }
+
             SelectablePostBody(
                 text = post.content,
                 onTopicClick = onTopicClick,
@@ -724,6 +749,82 @@ private fun PostDetailCard(
                     onOpenAppDetailsSettings = onOpenAppDetailsSettings,
                     titleText = stringResource(R.string.post_detail_remind_title),
                     additionalHint = null
+                )
+            }
+        }
+    }
+}
+
+/** TODO status is part of the post itself, so it is visible from detail and can be toggled there. */
+@Composable
+private fun PostTodoStatus(
+    doneAt: Long?,
+    lastFiredAt: Long?,
+    onToggleDone: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val resources = LocalContext.current.resources
+    val done = doneAt != null
+    val accent = if (done) TodoDone else TodoPending
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = accent.copy(alpha = 0.12f)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (done) Icons.Default.Check else Icons.Default.Schedule,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(18.dp)
+            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 8.dp)
+            ) {
+                Text(
+                    text = stringResource(
+                        if (done) R.string.post_detail_todo_done_title
+                        else R.string.post_detail_todo_pending_title
+                    ),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = accent
+                )
+                if (doneAt != null) {
+                    Text(
+                        text = stringResource(
+                            R.string.post_detail_todo_done_at,
+                            resources.formatExactTime(doneAt)
+                        ),
+                        fontSize = 11.sp,
+                        color = GrayMiddle,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                } else if (lastFiredAt != null) {
+                    Text(
+                        text = stringResource(
+                            R.string.post_detail_todo_reminder_fired,
+                            resources.formatExactTime(lastFiredAt)
+                        ),
+                        fontSize = 11.sp,
+                        color = GrayMiddle,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+            TextButton(onClick = onToggleDone) {
+                Text(
+                    text = stringResource(
+                        if (done) R.string.post_detail_todo_reopen
+                        else R.string.post_detail_todo_mark_done
+                    ),
+                    fontSize = 12.sp,
+                    color = accent
                 )
             }
         }

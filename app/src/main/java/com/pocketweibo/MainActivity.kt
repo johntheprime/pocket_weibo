@@ -310,7 +310,10 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             onPostClick = { postId -> postDetailId = postId },
                             onDiscussAgain = { key, name ->
                                 topicComposeOriginKey = key
-                                composeIntentViewModel.offerShareText("#$name ")
+                                composeIntentViewModel.offerShareText(
+                                    "#$name ",
+                                    keepTrailingWhitespace = true
+                                )
                                 selectedTopicKey = null
                                 showCompose = true
                             },
