@@ -25,10 +25,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CallMerge
 import androidx.compose.material.icons.filled.CallSplit
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
@@ -45,6 +46,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -123,6 +125,12 @@ fun TopicsScreen(
     val topicExclusions by viewModel.topicExclusions.collectAsState()
     // Only the topic-detail menu opens a merge dialog; list cards use the central Manage screen.
     var mergeSource by remember { mutableStateOf<TopicItem?>(null) }
+    var removalMode by remember { mutableStateOf(false) }
+    var postsToRemove by remember { mutableStateOf(emptySet<Long>()) }
+    LaunchedEffect(selectedTopicKey) {
+        removalMode = false
+        postsToRemove = emptySet()
+    }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -162,13 +170,65 @@ fun TopicsScreen(
                             mergedCount = mergedSourceKeys.size,
                             excludedCount = excludedPostIds.size,
                             onMerge = { mergeSource = selectedTopic },
-                            onUnmerge = { viewModel.unmergeTopicAliases(selectedTopic.key) },
+                            onUnmerge = { viewModel.unmergeTopicAliases(listOf(selectedTopic.key)) },
                             onRestoreExcluded = {
-                                viewModel.restoreExcludedPosts(selectedTopic.key)
+                                viewModel.restoreExcludedPosts(listOf(selectedTopic.key))
+                            },
+                            onEnterRemoveMode = {
+                                postsToRemove = emptySet()
+                                removalMode = true
                             }
                         )
                     }
                 )
+                if (removalMode) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.topics_remove_mode_hint),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(
+                                text = stringResource(
+                                    R.string.topics_remove_mode_selected,
+                                    postsToRemove.size
+                                ),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            TextButton(onClick = {
+                                removalMode = false
+                                postsToRemove = emptySet()
+                            }) {
+                                Text(stringResource(R.string.cancel), fontSize = 12.sp)
+                            }
+                            TextButton(
+                                enabled = postsToRemove.isNotEmpty(),
+                                onClick = {
+                                    viewModel.excludePostsFromTopic(
+                                        selectedTopic.key,
+                                        postsToRemove.toList()
+                                    )
+                                    removalMode = false
+                                    postsToRemove = emptySet()
+                                }
+                            ) {
+                                Text(
+                                    stringResource(R.string.topics_remove_mode_confirm),
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                    }
+                }
                 TopicDetailContent(
                     topic = selectedTopic,
                     posts = allPosts,
@@ -176,10 +236,16 @@ fun TopicsScreen(
                     excludedPostIds = excludedPostIds,
                     mergedSourceKeys = mergedSourceKeys,
                     listState = topicTimelineListState,
+                    removalMode = removalMode,
+                    selectedPostIds = postsToRemove,
                     onTopicClick = onTopicClick,
                     onPostClick = onPostClick,
-                    onRemoveFromTopic = { postId ->
-                        viewModel.excludePostFromTopic(selectedTopic.key, postId)
+                    onTogglePostSelection = { postId ->
+                        postsToRemove = if (postId in postsToRemove) {
+                            postsToRemove - postId
+                        } else {
+                            postsToRemove + postId
+                        }
                     },
                     onDiscussAgain = { onDiscussAgain(selectedTopic.key, selectedTopic.displayName) }
                 )
@@ -252,11 +318,11 @@ fun TopicsScreen(
 
     mergeSource?.let { source ->
         MergeTopicDialog(
-            source = source,
+            sources = listOf(source),
             topics = topics,
             onDismiss = { mergeSource = null },
             onMerge = { target ->
-                viewModel.mergeTopics(source.key, target.key)
+                viewModel.mergeTopics(listOf(source.key), target.key)
                 mergeSource = null
                 onOpenTopic(target.key)
             }
@@ -485,9 +551,11 @@ private fun TopicDetailContent(
     excludedPostIds: Set<Long>,
     mergedSourceKeys: List<String>,
     listState: LazyListState,
+    removalMode: Boolean,
+    selectedPostIds: Set<Long>,
     onTopicClick: (String) -> Unit,
     onPostClick: (Long) -> Unit,
-    onRemoveFromTopic: (Long) -> Unit,
+    onTogglePostSelection: (Long) -> Unit,
     onDiscussAgain: () -> Unit
 ) {
     val entries = remember(topic.key, posts, aliases, excludedPostIds) {
@@ -596,9 +664,11 @@ private fun TopicDetailContent(
                         is TimelineRow.Post -> item(key = "post-${row.post.id}") {
                             TopicPostItem(
                                 post = row.post,
+                                removalMode = removalMode,
+                                selected = row.post.id in selectedPostIds,
                                 onTopicClick = onTopicClick,
                                 onClick = { onPostClick(row.post.id) },
-                                onRemoveFromTopic = { onRemoveFromTopic(row.post.id) }
+                                onToggleSelection = { onTogglePostSelection(row.post.id) }
                             )
                         }
                     }
@@ -614,7 +684,8 @@ private fun TopicDetailMenu(
     excludedCount: Int,
     onMerge: () -> Unit,
     onUnmerge: () -> Unit,
-    onRestoreExcluded: () -> Unit
+    onRestoreExcluded: () -> Unit,
+    onEnterRemoveMode: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     Box {
@@ -626,6 +697,14 @@ private fun TopicDetailMenu(
             )
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.topics_remove_posts_mode)) },
+                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                onClick = {
+                    expanded = false
+                    onEnterRemoveMode()
+                }
+            )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.topics_merge_into)) },
                 leadingIcon = { Icon(Icons.Default.CallMerge, contentDescription = null) },
@@ -664,26 +743,38 @@ private fun TopicDetailMenu(
 
 @Composable
 internal fun MergeTopicDialog(
-    source: TopicItem,
+    sources: List<TopicItem>,
     topics: List<TopicItem>,
     onDismiss: () -> Unit,
     onMerge: (TopicItem) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
-    val candidates = remember(topics, source.key, query) {
+    val sourceKeys = remember(sources) { sources.map { it.key }.toSet() }
+    val candidates = remember(topics, sourceKeys, query) {
         val q = stripTopicPrefix(query)
         topics.filter { topic ->
-            topic.key != source.key &&
+            topic.key !in sourceKeys &&
                 (q.isEmpty() || topic.displayName.contains(q, ignoreCase = true))
         }
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.topics_merge_dialog_title, source.displayName)) },
+        title = {
+            Text(
+                if (sources.size == 1) {
+                    stringResource(R.string.topics_merge_dialog_title, sources.first().displayName)
+                } else {
+                    stringResource(R.string.topics_merge_dialog_title_multi, sources.size)
+                }
+            )
+        },
         text = {
             Column {
                 Text(
-                    text = stringResource(R.string.topics_merge_dialog_hint),
+                    text = stringResource(
+                        if (sources.size == 1) R.string.topics_merge_dialog_hint
+                        else R.string.topics_merge_dialog_hint_multi
+                    ),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -757,23 +848,30 @@ internal fun MergeTopicDialog(
 @Composable
 private fun TopicPostItem(
     post: PostWithIdentity,
+    removalMode: Boolean,
+    selected: Boolean,
     onTopicClick: (String) -> Unit,
     onClick: () -> Unit,
-    onRemoveFromTopic: () -> Unit
+    onToggleSelection: () -> Unit
 ) {
     var showSelectableCopy by remember { mutableStateOf(false) }
     val displayName = identityDisplayName(post.identityName)
     val voiceOnlyLabel = stringResource(R.string.comment_body_voice_only)
-    val removeFromTopicLabel = stringResource(R.string.topics_remove_post_cd)
     val body = postOrCommentBodyForDisplay(post.content, post.audioPath, voiceOnlyLabel)
     val context = LocalContext.current
     val time = context.resources.formatRelativeTime(post.createdAt, RelativeTimePreset.FeedCard)
+    val rowClick = if (removalMode) onToggleSelection else onClick
+    val rowLongClick: (() -> Unit)? = if (removalMode) null else ({ showSelectableCopy = true })
     Box(modifier = Modifier.fillMaxWidth()) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .combinedClickable(onClick = onClick, onLongClick = { showSelectableCopy = true }),
-            color = MaterialTheme.colorScheme.surface
+                .combinedClickable(onClick = rowClick, onLongClick = rowLongClick),
+            color = if (removalMode && selected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
         ) {
             Row(
                 modifier = Modifier
@@ -803,9 +901,9 @@ private fun TopicPostItem(
                     }
                     TopicText(
                         text = body,
-                        onTopicClick = onTopicClick,
-                        onClick = onClick,
-                        onLongClick = { showSelectableCopy = true },
+                        onTopicClick = if (removalMode) { { onToggleSelection() } } else onTopicClick,
+                        onClick = rowClick,
+                        onLongClick = rowLongClick,
                         style = TextStyle(fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface),
                         maxLines = 4,
                         overflow = TextOverflow.Ellipsis,
@@ -822,18 +920,11 @@ private fun TopicPostItem(
                         )
                         Spacer(modifier = Modifier.weight(1f))
                         ListPostImageIndicator(imageUris = post.imageUris)
-                        IconButton(
-                            onClick = onRemoveFromTopic,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .semantics {
-                                    contentDescription = removeFromTopicLabel
-                                }
-                        ) {
+                        if (removalMode && selected) {
                             Icon(
-                                imageVector = Icons.Default.RemoveCircleOutline,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = stringResource(R.string.topics_post_selected_cd),
+                                tint = WeiboOrange,
                                 modifier = Modifier.size(18.dp)
                             )
                         }

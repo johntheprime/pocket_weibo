@@ -158,7 +158,10 @@
     <!-- Topics: hashtag-derived long-lived discussion pages -->
     <string name="topics_manage">管理话题</string>
     <string name="topics_manage_title">话题管理</string>
-    <string name="topics_manage_hint">选择一个话题后，可合并、取消合并或恢复移出的微博。</string>
+    <string name="topics_manage_hint">选择多个话题后，可一次性合并、取消合并或恢复移出的微博。</string>
+    <string name="topics_manage_select_all">全选</string>
+    <string name="topics_manage_clear_selection">取消全选</string>
+    <string name="topics_manage_selected">已选 %1$d 个</string>
     <string name="topics_manage_merge">合并到…</string>
     <string name="topics_manage_unmerge">取消合并</string>
     <string name="topics_search_hint">输入 # 或话题名筛选</string>
@@ -177,11 +180,17 @@
     <string name="topics_unmerge_action">取消合并（%1$d 个写法）</string>
     <string name="topics_restore_excluded_action">恢复移出的微博（%1$d）</string>
     <string name="topics_merge_dialog_title">将「%1$s」合并到…</string>
+    <string name="topics_merge_dialog_title_multi">将 %1$d 个话题合并到…</string>
     <string name="topics_merge_dialog_hint">合并后，两种写法下的微博会出现在同一个话题里。</string>
+    <string name="topics_merge_dialog_hint_multi">合并后，这些话题下的微博会出现在同一个话题里。</string>
     <string name="topics_merge_dialog_search">搜索目标话题</string>
     <string name="topics_merge_no_targets">没有可合并的话题</string>
     <string name="topics_merge_target_count">%1$d 条</string>
-    <string name="topics_remove_post_cd">从该话题移出</string>
+    <string name="topics_remove_posts_mode">批量移出微博…</string>
+    <string name="topics_remove_mode_hint">点按微博选择，可同时移出多篇</string>
+    <string name="topics_remove_mode_selected">已选 %1$d 篇</string>
+    <string name="topics_remove_mode_confirm">移出</string>
+    <string name="topics_post_selected_cd">已选中</string>
 
     <!-- TODO: first-class marker posts and actual reminder firing history -->
     <string name="topics_section_topics">话题 · %1$d</string>

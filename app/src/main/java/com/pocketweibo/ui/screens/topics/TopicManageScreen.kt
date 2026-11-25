@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -48,8 +47,8 @@ import com.pocketweibo.ui.util.formatRelativeTime
 import com.pocketweibo.ui.util.resolveTopicKey
 
 /**
- * One place for all topic housekeeping: pick a topic, then merge it, split its
- * spellings apart, or restore posts that were removed from it.
+ * One place for all topic housekeeping. Several topics can be selected at once;
+ * merge, split and restore actions then apply to the whole selection.
  */
 @Composable
 fun TopicManageScreen(
@@ -65,20 +64,14 @@ fun TopicManageScreen(
     val topics by viewModel.topics.collectAsState()
     val aliases by viewModel.topicAliases.collectAsState()
     val exclusions by viewModel.topicExclusions.collectAsState()
-    var selectedKey by remember { mutableStateOf<String?>(null) }
-    var mergeSource by remember { mutableStateOf<TopicItem?>(null) }
+    var selectedKeys by remember { mutableStateOf(emptySet<String>()) }
+    var mergeSources by remember { mutableStateOf<List<TopicItem>?>(null) }
 
-    val selectedTopic = topics.find { it.key == selectedKey }
-    val mergedSourceKeys = if (selectedTopic != null) {
-        aliases.filterValues { resolveTopicKey(it, aliases) == selectedTopic.key }.keys.sorted()
-    } else {
-        emptyList()
-    }
-    val excludedPostIds = if (selectedTopic != null) {
-        exclusions.filter { it.first == selectedTopic.key }.map { it.second }.toSet()
-    } else {
-        emptySet()
-    }
+    val allSelected = topics.isNotEmpty() && selectedKeys.containsAll(topics.map { it.key })
+    val mergedSourceKeys = aliases.keys
+        .filter { resolveTopicKey(it, aliases) in selectedKeys }
+        .sorted()
+    val excludedPostCount = exclusions.count { it.first in selectedKeys }
 
     Column(
         modifier = modifier
@@ -103,6 +96,24 @@ fun TopicManageScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.End
+        ) {
+            TextButton(
+                onClick = {
+                    selectedKeys = if (allSelected) emptySet() else topics.map { it.key }.toSet()
+                }
+            ) {
+                Text(
+                    text = stringResource(
+                        if (allSelected) R.string.topics_manage_clear_selection
+                        else R.string.topics_manage_select_all
+                    ),
+                    fontSize = 12.sp
+                )
+            }
+        }
         if (topics.isEmpty()) {
             Box(
                 modifier = Modifier.weight(1f),
@@ -124,65 +135,76 @@ fun TopicManageScreen(
                     TopicManageRow(
                         topic = topic,
                         mergedKeys = mergedKeys,
-                        selected = topic.key == selectedKey,
+                        selected = topic.key in selectedKeys,
                         onClick = {
-                            selectedKey = if (topic.key == selectedKey) null else topic.key
+                            selectedKeys = if (topic.key in selectedKeys) {
+                                selectedKeys - topic.key
+                            } else {
+                                selectedKeys + topic.key
+                            }
                         }
                     )
                 }
             }
         }
         Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                TextButton(
-                    onClick = { selectedTopic?.let { mergeSource = it } },
-                    enabled = selectedTopic != null,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.topics_manage_merge), fontSize = 12.sp)
-                }
-                TextButton(
-                    onClick = {
-                        selectedTopic?.let { viewModel.unmergeTopicAliases(it.key) }
-                        selectedKey = null
-                    },
-                    enabled = mergedSourceKeys.isNotEmpty(),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(R.string.topics_manage_unmerge), fontSize = 12.sp)
-                }
-                TextButton(
-                    onClick = {
-                        selectedTopic?.let { viewModel.restoreExcludedPosts(it.key) }
-                        selectedKey = null
-                    },
-                    enabled = excludedPostIds.isNotEmpty(),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        stringResource(
-                            R.string.topics_restore_excluded_action,
-                            excludedPostIds.size
-                        ),
-                        fontSize = 12.sp
-                    )
+            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
+                Text(
+                    text = stringResource(R.string.topics_manage_selected, selectedKeys.size),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(
+                        onClick = {
+                            mergeSources = topics.filter { it.key in selectedKeys }
+                        },
+                        enabled = selectedKeys.isNotEmpty(),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(R.string.topics_manage_merge), fontSize = 12.sp)
+                    }
+                    TextButton(
+                        onClick = {
+                            viewModel.unmergeTopicAliases(selectedKeys.toList())
+                            selectedKeys = emptySet()
+                        },
+                        enabled = mergedSourceKeys.isNotEmpty(),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(R.string.topics_manage_unmerge), fontSize = 12.sp)
+                    }
+                    TextButton(
+                        onClick = {
+                            viewModel.restoreExcludedPosts(selectedKeys.toList())
+                            selectedKeys = emptySet()
+                        },
+                        enabled = excludedPostCount > 0,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            stringResource(
+                                R.string.topics_restore_excluded_action,
+                                excludedPostCount
+                            ),
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
         }
     }
 
-    mergeSource?.let { source ->
+    mergeSources?.let { sources ->
         MergeTopicDialog(
-            source = source,
+            sources = sources,
             topics = topics,
-            onDismiss = { mergeSource = null },
+            onDismiss = { mergeSources = null },
             onMerge = { target ->
-                viewModel.mergeTopics(source.key, target.key)
-                mergeSource = null
-                selectedKey = null
+                viewModel.mergeTopics(sources.map { it.key }, target.key)
+                mergeSources = null
+                selectedKeys = emptySet()
             }
         )
     }
