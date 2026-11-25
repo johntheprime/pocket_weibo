@@ -9,9 +9,16 @@
     <string name="tab_me">Me</string>
     <string name="tab_compose_cd">New post</string>
 
-    <!-- Launcher long-press shortcut: long-press the app icon (logo) → new post directly -->
+    <!-- Launcher long-press shortcut: long-press the app icon (logo) → isolated private composer -->
     <string name="shortcut_new_post_short">New post</string>
-    <string name="shortcut_new_post_long">Compose a new post</string>
+    <string name="shortcut_new_post_long">Compose a new post privately</string>
+
+    <string name="private_publish_title">Published</string>
+    <string name="private_publish_done">Done</string>
+    <string name="private_publish_hint">Only the new post is shown. Done exits without opening the feed.</string>
+    <string name="private_publish_unavailable">Post unavailable</string>
+    <string name="private_publish_images_only">(images only)</string>
+    <string name="private_publish_image_count">%1$d image(s) attached</string>
 
     <string name="title_home">Home</string>
     <string name="title_photo">Photos</string>

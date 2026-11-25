@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Launcher long-press shortcuts for the app icon (the "logo").
-     "New post" jumps straight into ComposeScreen via MainActivity.ACTION_NEW_POST. -->
+     "New post" opens the isolated composer via MainActivity.ACTION_NEW_POST; MainActivity
+     relaunches itself with CLEAR_TASK so no existing feed task is left behind. -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut
         android:shortcutId="new_post"
