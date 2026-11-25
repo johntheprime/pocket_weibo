@@ -8,6 +8,7 @@ This file records **resolved requirements** and the **standard process** for eve
 
 | Date (UTC) | Requirement | Resolution | Verified |
 |-------------|---------------|------------|----------|
+| 2026-11-25 | **话题管理入口位置**：「管理话题」按钮跟在「待办」标签后面，看起来像第三个分区标签 | 从分区标签行移除该按钮，改为话题搜索框尾部的 **Tune** 图标（带「管理话题」无障碍标签）；搜索词非空时与清除图标并列，标签行只保留「话题 / 待办」两个分区。版本 **3.71.1 (215)**。 | `./gradlew test assembleDebug assembleRelease` — BUILD SUCCESSFUL |
 | 2026-11-23 | **发现页回归与话题体验**：点正文无法进详情、话题卡片出现两个 `#`、详情看不到待办完成时间、页面标题重复「发现」、不同写法的同义话题无法合并/移出、再来一帖光标停在 `#` 前、话题详情为时间正序 | `TopicText` 对非 hashtag 的点击回退到行点击并保留长按复制；话题卡片只保留图标里的 `#`；详情新增待办状态卡（完成时间 / 提醒已响 / 标记完成 / 重新打开）；页面标题改为「话题与待办」；新增 `topic_aliases` / `topic_exclusions`（Room v16）与合并/取消合并/移出/恢复 UI；「再来一帖」保留话题后的空格并用 `TextFieldValue` 把光标放到末尾；话题详情改为最新在前。版本 **3.69.0 (212)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-11-21 | **发现页返回 / 键盘 / 筛选状态混乱**：微博详情、话题详情、全局搜索之间返回会退出或落到错误层；全局搜索需再次点击输入框才聚焦；话题筛选与完成状态切换页面后丢失；「再来一帖」发布后回首页 | 在 `MainScreen` 按「详情 → 来源层」统一 `navigateBack` 与侧滑返回；进入搜索即聚焦并弹键盘，内联筛选改用 **Done**、全局搜索改用 **Search**；筛选词 / 分段 / 已完成状态提升到 Activity 状态并跨导航保留；记录 `topicComposeOriginKey`，发帖成功回到原话题。版本 **3.68.0 (211)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |
 | 2026-11-21 | **话题搜索不完整**：全局搜索找不到话题，身份结果点击只是悄悄替换查询；全角 `＃` 不被识别 | 话题从正文 hashtag 派生后进入全局搜索结果「话题」分区（支持 `#` / `＃` 及多关键词），身份结果增加明确的「查看微博 / View posts」入口并收起键盘；`Topics.kt` 同时识别 `＃`，筛选与搜索均先剥离半/全角前缀；正文中的每个 hashtag（含重复）都生成可点击 span。新增 `TopicsTest` 覆盖链接范围、全角与稳定显示名。版本 **3.68.0 (211)**。 | `./gradlew test assembleDebug` — BUILD SUCCESSFUL |

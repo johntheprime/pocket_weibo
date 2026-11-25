@@ -256,8 +256,7 @@ fun TopicsScreen(
                     section = section,
                     topicCount = topics.size,
                     todoCount = unfinishedTodos.size,
-                    onSectionChange = onSectionChange,
-                    onOpenManage = onOpenManage
+                    onSectionChange = onSectionChange
                 )
                 if (section == TopicsSection.TOPICS) {
                     OutlinedTextField(
@@ -272,13 +271,29 @@ fun TopicsScreen(
                             )
                         },
                         trailingIcon = {
-                            if (topicQuery.isNotEmpty()) {
-                                IconButton(onClick = { onTopicQueryChange("") }) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = onOpenManage,
+                                    modifier = Modifier.size(40.dp)
+                                ) {
                                     Icon(
-                                        imageVector = Icons.Default.Clear,
-                                        contentDescription = stringResource(R.string.discover_clear_search_cd),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        imageVector = Icons.Default.Tune,
+                                        contentDescription = stringResource(R.string.topics_manage),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(18.dp)
                                     )
+                                }
+                                if (topicQuery.isNotEmpty()) {
+                                    IconButton(
+                                        onClick = { onTopicQueryChange("") },
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Clear,
+                                            contentDescription = stringResource(R.string.discover_clear_search_cd),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         },
@@ -335,8 +350,7 @@ private fun TopicsHeader(
     section: TopicsSection,
     topicCount: Int,
     todoCount: Int,
-    onSectionChange: (TopicsSection) -> Unit,
-    onOpenManage: () -> Unit
+    onSectionChange: (TopicsSection) -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -358,20 +372,6 @@ private fun TopicsHeader(
                 onClick = { onSectionChange(TopicsSection.TODO) },
                 modifier = Modifier.weight(1f)
             )
-            TextButton(onClick = onOpenManage, modifier = Modifier.padding(start = 4.dp)) {
-                Icon(
-                    imageVector = Icons.Default.Tune,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = stringResource(R.string.topics_manage),
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp)
-                )
-            }
         }
     }
 }
