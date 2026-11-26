@@ -15,9 +15,9 @@ android {
         minSdk = 26
         targetSdk = 34
         // versionName: semantic versioning (MAJOR.MINOR.PATCH). Bump when you ship user-facing changes.
-        versionName = "3.73.1"
+        versionName = "3.73.2"
         // versionCode: must increase for every release APK that should upgrade in-place (same signing key).
-        versionCode = 218
+        versionCode = 219
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -44,6 +44,23 @@ android {
             keyAlias = p.getProperty("keyAlias") ?: "pocketweibo"
             keyPassword = p.getProperty("keyPassword")
         }
+    }
+
+    // Roadmap P1: Room schema JSONs are exported to app/schemas (commit them) and exposed to tests.
+    sourceSets {
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+        getByName("test").assets.srcDir("$projectDir/schemas")
+    }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+
+    // Roadmap P1: explicit lint policy, enforced in CI. Pre-existing issues live in the baseline.
+    lint {
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
+        checkDependencies = false
     }
 
     buildTypes {
@@ -80,6 +97,10 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 configurations.configureEach {
@@ -119,6 +140,12 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     testImplementation("junit:junit:4.13.2")
+    // Roadmap P1: in-memory Room / repository tests on the JVM.
+    testImplementation("org.robolectric:robolectric:4.11.1")
+    testImplementation("androidx.test:core:1.5.0")
+    testImplementation("androidx.room:room-testing:2.6.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    androidTestImplementation("androidx.room:room-testing:2.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test:core:1.5.0")
 

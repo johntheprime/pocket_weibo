@@ -148,7 +148,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew test assembleRelease --no-daemon --stacktrace
+          ./gradlew test lint assembleRelease --no-daemon --stacktrace
 
       - name: Build debug APK (no release signing secrets)
         if: ${{ steps.signing.outputs.enabled != 'true' }}
@@ -156,7 +156,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew test assembleDebug --no-daemon --stacktrace
+          ./gradlew test lint assembleDebug --no-daemon --stacktrace
 
       - name: Rename APK with version and run id
         id: apkname

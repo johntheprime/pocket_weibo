@@ -14,9 +14,9 @@ import com.pocketweibo.diagnostic.DiagnosticLog
 import com.pocketweibo.diagnostic.DiagnosticLogBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 class PocketWeiboApp : Application() {
 
@@ -36,6 +36,15 @@ class PocketWeiboApp : Application() {
         )
     }
 
+    /** Startup reschedule work; see [onCreate]. */
+    @Volatile
+    private var startupJob: Job? = null
+
+    /** Suspends until startup rescheduling has finished (no-op if already done). */
+    suspend fun awaitStartup() {
+        startupJob?.join()
+    }
+
     var onExitConfirm: (() -> Unit)? = null
     private var lastBackPressTime = 0L
 
@@ -52,18 +61,20 @@ class PocketWeiboApp : Application() {
     override fun onCreate() {
         super.onCreate()
         ensureReminderChannel()
-        // Restore diagnostic flag and alarm registrations on IO before any BroadcastReceiver runs
-        // (avoids racing overdue recovery with an in-flight alarm delivery).
-        runBlocking(Dispatchers.IO) {
+        // Roadmap P1: restore the diagnostic flag and alarm registrations on IO without blocking the
+        // main thread. Ordering guarantee: every BroadcastReceiver calls [awaitStartup] before touching
+        // reminders/schedules, so overdue recovery never races an in-flight alarm delivery.
+        startupJob = applicationScope.launch(Dispatchers.IO) {
             DiagnosticLogBuffer.captureEnabled =
                 UiPreferences.isDiagnosticLogCaptureEnabled(this@PocketWeiboApp)
+            if (DiagnosticLogBuffer.captureEnabled) {
+                DiagnosticLog.i("PW_Reminder", "Diagnostic capture on at process start")
+            }
             repository.rescheduleAllPostRemindersFromDb()
             repository.rescheduleAllIdentitySchedulesFromDb()
         }
-        if (DiagnosticLogBuffer.captureEnabled) {
-            DiagnosticLog.i("PW_Reminder", "Diagnostic capture on at process start")
-        }
         applicationScope.launch(Dispatchers.IO) {
+            awaitStartup()
             DataSeeder.seedIfEmpty(repository)
             AutoDailyBackup.runIfDue(this@PocketWeiboApp, repository)
         }

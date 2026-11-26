@@ -35,6 +35,32 @@ object UiPreferences {
 
     suspend fun setLanguageCode(context: Context, code: String) {
         context.uiPreferencesDataStore.edit { it[KEY_APP_LANGUAGE] = code }
+        writeLanguageMirror(context, code)
+    }
+
+    // Roadmap P1: a tiny SharedPreferences mirror of the language code so Activity.onCreate can
+    // apply it synchronously (needed before super.onCreate to avoid a recreate) without
+    // runBlocking on DataStore. DataStore stays the source of truth.
+    private const val SYNC_PREFS = "ui_prefs_sync"
+    private const val SYNC_KEY_LANGUAGE = "app_language"
+
+    private fun writeLanguageMirror(context: Context, code: String) {
+        context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+            .edit().putString(SYNC_KEY_LANGUAGE, code).apply()
+    }
+
+    /** Language code from the sync mirror, or null if it has never been written. */
+    fun languageCodeFromMirror(context: Context): String? =
+        context.getSharedPreferences(SYNC_PREFS, Context.MODE_PRIVATE)
+            .getString(SYNC_KEY_LANGUAGE, null)
+
+    /** Re-syncs the mirror from DataStore and applies it if it changed (call off the main thread). */
+    suspend fun refreshLanguageMirror(context: Context) {
+        val code = getLanguageCode(context)
+        if (languageCodeFromMirror(context) != code) {
+            writeLanguageMirror(context, code)
+            applyLanguageCode(code)
+        }
     }
 
     fun applyLanguageCode(code: String) {

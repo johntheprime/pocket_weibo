@@ -40,7 +40,8 @@ import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.ui.ComposeIntentViewModel
 import com.pocketweibo.ui.theme.PocketWeiboTheme
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
@@ -54,8 +55,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        runBlocking { UiPreferences.applyStored(applicationContext) }
+        // Roadmap P1: no runBlocking on the main thread. Apply the mirrored language synchronously
+        // (cheap SharedPreferences read); the first launch after upgrade back-fills it asynchronously.
+        UiPreferences.languageCodeFromMirror(applicationContext)?.let { UiPreferences.applyLanguageCode(it) }
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch(Dispatchers.IO) { UiPreferences.refreshLanguageMirror(applicationContext) }
         processLaunchIntent(intent)
         enableEdgeToEdge()
         setContent {

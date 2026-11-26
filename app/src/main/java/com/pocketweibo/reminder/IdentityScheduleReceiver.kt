@@ -22,6 +22,7 @@ class IdentityScheduleReceiver : BroadcastReceiver() {
         scope.launch {
             try {
                 val app = context.applicationContext as PocketWeiboApp
+                app.awaitStartup()
                 val dao = app.database.identityScheduleDao()
                 val row = dao.getById(scheduleId) ?: return@launch
                 if (!row.enabled) return@launch

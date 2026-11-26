@@ -54,12 +54,12 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Run unit tests and build debug APK
+      - name: Run unit tests, lint and build debug APK
         shell: bash
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew test assembleDebug --no-daemon --stacktrace
+          ./gradlew test lint assembleDebug --no-daemon --stacktrace
 
       - name: Upload test reports on failure
         if: ${{ failure() }}
@@ -69,5 +69,6 @@ jobs:
           path: |
             app/build/reports/tests/**
             app/build/test-results/**
+            app/build/reports/lint-results*
           if-no-files-found: ignore
           retention-days: 7

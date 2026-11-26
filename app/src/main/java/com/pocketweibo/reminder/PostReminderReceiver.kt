@@ -36,6 +36,7 @@ class PostReminderReceiver : BroadcastReceiver() {
         scope.launch {
             try {
                 val app = context.applicationContext as PocketWeiboApp
+                app.awaitStartup()
                 val dao = app.database.postReminderDao()
                 val row = dao.getById(reminderId)
                 if (row == null) {

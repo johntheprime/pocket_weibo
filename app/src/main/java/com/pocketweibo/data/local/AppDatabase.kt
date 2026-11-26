@@ -23,7 +23,7 @@ import com.pocketweibo.data.local.entity.TopicExclusionEntity
 @Database(
     entities = [IdentityEntity::class, PostEntity::class, CommentEntity::class, PostReminderEntity::class, IdentityScheduleEntity::class, PostReminderFiringEntity::class, TopicAliasEntity::class, TopicExclusionEntity::class],
     version = 16,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun identityDao(): IdentityDao
