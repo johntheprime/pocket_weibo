@@ -312,7 +312,8 @@ The captures under `docs/screenshots/` are older than the current UI: the bottom
 - [`docs/RULES.md`](docs/RULES.md) — workflow, bilingual rules, versioning
 - [`docs/FEATURE.md`](docs/FEATURE.md) — shipped feature ledger (F-xxx) and backlog detail
 - [`docs/FIX.md`](docs/FIX.md) — fix ledger, CI/signing notes
-- [`docs/BACKUP_ARCHIVE.md`](docs/BACKUP_ARCHIVE.md) — JSON/ZIP/Markdown backup formats
+- [`docs/REVIEW.md`](docs/REVIEW.md) — consolidated engineering review, bug register, remaining roadmap
+- Backup formats (JSON/ZIP/Markdown): [`docs/RULES.md` §5](docs/RULES.md)
 - [Chinese README](README.zh-CN.md) — full Chinese translation
 
 ## Privacy and license

@@ -12,14 +12,14 @@ Treat **each** user request as one delivery unit. **Always** follow this sequenc
 |------|------------|
 | **1. Plan** | Restate the goal, scope (files/areas), and risks. For multi-step work, use a **todo list** in the editor and keep it updated. |
 | **2. Implement** | Make the smallest change that satisfies the request; match existing patterns (`RULES.md`, nearby code). |
-| **3. Verify** | Run **`./gradlew test assembleDebug`** (and `assembleRelease` when signing/release behavior changes). **Fix failures before you commit.** A passing build is required to treat the request as done. |
+| **3. Verify** | Run **`./gradlew test lint assembleDebug`** — the same command CI runs (and `assembleRelease` when signing/release behavior changes). **Fix failures before you commit.** A passing build is required to treat the request as done. |
 | **4. Record** | Update **`FEATURE.md`** for user-facing product changes and **`FIX.md`** for notable fixes, per the tables/workflows in those files. Bump **`versionName` / `versionCode`** in `app/build.gradle.kts` when shipping (see §2). |
-| **5. Commit** | Create **one git commit per user request** (one fix, one feature, or one combined fix+feature if the user asked for both together). Do **not** mix unrelated requests into the same commit. The commit should reflect a **green** verify step. |
+| **5. Commit** | Work on a short-lived branch (`feat/…`, `fix/…`, `chore/…`, `docs/…`) and merge to `main` through a PR. Create **one git commit per user request** (one fix, one feature, or one combined fix+feature if the user asked for both together). Do **not** mix unrelated requests into the same commit. The commit should reflect a **green** verify step. |
 | **6. Todos** | Mark planning/todo items **completed** (or cancelled if dropped) before ending the session so the next session sees an accurate state. |
 
 **Mixed fix + feature:** If a single request includes both, one commit covering that request is correct. If the user sends **separate** requests, use **separate** commits (each passing tests).
 
-See also the checklist in **`FIX.md`** (“Workflow for every request”) for the human-facing ledger style.
+When recording, always add the **commit hash and date**: FEATURE.md status `✅ Done · \`<hash>\` <YYYY-MM-DD>`, FIX.md **Commit** column, REVIEW.md status column.
 
 ---
 
@@ -33,7 +33,7 @@ PocketWeibo is a **bilingual** UI: default locale strings live in `app/src/main/
 - Prefer `stringResource(R.string.*)` in Compose and `context.getString(R.string.*)` where a `Context` is available.
 - Covers **all** UI chrome: titles, tabs, placeholders, content descriptions, toasts, dialogs, empty states, relative times, clipboard labels, markdown export headings/labels, etc. (Seed/demo **data** in `DataSeeder.kt` does not need translation.)
 
-**Parity check:** any `R.string.*` referenced in code must exist in **both** resource files before you merge.
+**Parity check:** any `R.string.*` referenced in code must exist in **both** resource files before you merge. `StringParityTest` enforces matching string / plurals / string-array keys in `./gradlew test`.
 
 ---
 
@@ -59,12 +59,70 @@ Aligns with **§0**; use this as a quick pass before commit:
 
 1. Strings: **zh + en** parity for all new/changed UI.
 2. Version: bump **minor** or **patch** (and **versionCode**) per section 2.
-3. Build: **`./gradlew test assembleDebug`** green (and `assembleRelease` when touching release/signing behavior).
+3. Build: **`./gradlew test lint assembleDebug`** green (and `assembleRelease` when touching release/signing behavior).
 4. Product log: **`FEATURE.md`** and/or **`FIX.md`** updated when the change is user-visible or notable.
 5. **Git:** one commit per request, after tests pass.
 
 ---
 
-## 4. Where this is enforced for Cursor
+## 4. Documentation map (`docs/`)
+
+Only these documents are kept; add new material to the matching one instead of creating a new file.
+
+| File | Owns |
+|---|---|
+| `RULES.md` | Workflow, bilingual rules, versioning, **backup format contract** (§5) |
+| `FEATURE.md` | Shipped feature ledger (F-xxx, with commit + date), F-010–F-020 design notes, **proposed backlog** |
+| `FIX.md` | Fix ledger (with commit), release / CI / signing notes |
+| `REVIEW.md` | Consolidated engineering review: all review passes, bug register (BUG-xxx), decisions, remaining roadmap |
+| `screenshots/` | README images |
+
+---
+
+## 5. Backup format contract
+
+Every new entity column must be written by **both** exporters and read by `postFromJson` / `identityFromJson` / `commentFromJson` (BUG-001 was a missing column). Bump the export `version` and keep new fields **optional** on import so older files still load. `WeiboRepositoryDataTest` covers the round-trip.
+
+### Full JSON export (`exportAllData` / `importData`)
+
+- Single UTF-8 JSON object. **`version`: `4`** (since 3.73.1; `1`–`3` still import).
+- Top-level keys: `identities`, `posts`, `comments`, `postReminderFirings`, `topicAliases`, `topicExclusions`, `exportedAt`, `version`.
+- **Posts:** `id`, `identityId` (nullable), `content` (may be empty for image-only posts), `imageUris`, `audioPath`, `extrasJson`, `createdAt`, `likeCount`, `commentCount`, `isLiked`, **`isPinned`** (since v4; missing → `false`), `todoDoneAt` (epoch millis or `null`; older files may omit it).
+  - `imageUris` — JSON array of paths relative to `filesDir`, e.g. `["post_attachments/12/0.jpg"]`, or legacy comma-separated values. Images over ~1.5 MB may have been re-encoded to JPEG at publish time unless **本帖原图 / Original files for this post** was on.
+  - `extrasJson` — JSON object string, default `{}`, reserved for future fields. Older backups may carry a legacy `location` key (no longer written). Importers should preserve unknown keys when merging.
+- **Identities:** `id`, `name`, `avatarResName`, `customAvatarUri` (optional), `nationality`, `gender`, `birthYear` / `deathYear` (nullable; negative = BC), `occupation`, `motto`, `famousWork`, `bio`, `isActive`.
+- **Comments:** `id`, `postId`, `identityId`, `content`, `audioPath`, `createdAt`, `replyingToCommentId`, `likeCount`, `likedBy` (comma-terminated identity ids, e.g. `"1,11,"`), `hiddenAt` (0 = visible).
+- **`postReminderFirings`:** delivered-notification history (`postId`, `reminderId` nullable, `scheduledForMillis`, `firedAtMillis`, `repeatRule`) used by the TODO list.
+- **`topicAliases`** (`fromKey`, `toKey`) and **`topicExclusions`** (`topicKey`, `postId`), keys lower-cased.
+- JSON alone contains no binary media; paths only resolve on the same device or after a ZIP restore.
+
+### Automatic text backup (`AutoDailyBackup`)
+
+- Text-only JSON, `kind: "pocket_weibo_text_auto_backup"`, **`version`: `3`** (since 3.73.1; `1`–`2` still import).
+- Keys: `kind`, `exportedAt`, `version`, `identities` (no `customAvatarUri`), `posts` (empty `imageUris`), `comments`, `postReminders`, `postReminderFirings`, `topicAliases`, `topicExclusions`.
+- Encrypted with AES-256-GCM (`PWB1` header) under `filesDir/auto_text_backups/`, one file per day, newest **3** days kept. The key is derived from `ANDROID_ID` + package name, so files only decrypt on the same device and signing key; with no `ANDROID_ID` the backup is skipped (fail closed). Key strategy is an open decision — see REVIEW.md §5.
+
+### ZIP (full backup, recommended when posts have media)
+
+- `data.json` (full JSON above) plus `post_attachments/<postId>/…` (images and voice), `comment_attachments/<commentId>/…` (voice) and `identity_avatars/<identityId>.jpg`.
+- **Import (both modes):** the ZIP is streamed into a private staging dir under `filesDir` (`ZipSafety`: entries escaping the root are skipped; caps 512 MB per entry / 2 GB total) and `data.json` is parsed before anything changes.
+  - **Replace:** all row deletes + inserts run in one Room transaction; only after commit are the live media trees swapped for the staged ones (rolled back on failure), old alarms / calendar events cancelled and alarms re-armed.
+  - **Merge:** rows get new ids; media are copied from staging into the new per-row folders.
+- The export ZIP is written to `cache/shared/` for the share sheet; stale files are removed by `CacheSweeper` after 24 h.
+
+### Markdown export
+
+Human-readable only, with an attached-image count per post; no media files.
+
+### Schema notes
+
+- Room **v4** added `posts.extrasJson` (default `'{}'`).
+- Room **v15** added nullable `posts.todoDoneAt` and the `post_reminder_firings` table.
+- Room **v16** added `topic_aliases` / `topic_exclusions`.
+- New media is always stored under `filesDir/post_attachments/`, `comment_attachments/`, `identity_avatars/`.
+
+---
+
+## 6. Where this is enforced for Cursor
 
 `.cursor/rules/pocket-weibo-shipping.mdc` is set to **always apply** so agents load these expectations on new features and fixes. This file remains the full reference.

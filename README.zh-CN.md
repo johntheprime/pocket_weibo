@@ -257,7 +257,8 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 - [`docs/RULES.md`](docs/RULES.md) — 工作流、双语规则、版本管理
 - [`docs/FEATURE.md`](docs/FEATURE.md) — 已交付功能记录（F-xxx）和 backlog 说明
 - [`docs/FIX.md`](docs/FIX.md) — 修复记录、CI/签名说明
-- [`docs/BACKUP_ARCHIVE.md`](docs/BACKUP_ARCHIVE.md) — JSON/ZIP/Markdown 备份格式
+- [`docs/REVIEW.md`](docs/REVIEW.md) — 工程评审汇总、缺陷清单与后续路线图
+- 备份格式（JSON/ZIP/Markdown）：[`docs/RULES.md` §5](docs/RULES.md)
 - [English README](README.md) — 英文版说明
 
 ## 隐私与许可
