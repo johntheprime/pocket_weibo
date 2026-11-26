@@ -594,7 +594,7 @@ fun IdentityDetailScreen(
                     ) {
                         OutlinedTextField(
                             value = birthYear,
-                            onValueChange = { birthYear = it.filter { c -> c.isDigit() }.take(4) },
+                            onValueChange = { birthYear = signedYearInput(it) },
                             label = { Text(stringResource(R.string.identity_label_birth)) },
                             placeholder = { Text(stringResource(R.string.identity_ph_birth)) },
                             singleLine = true,
@@ -602,7 +602,7 @@ fun IdentityDetailScreen(
                         )
                         OutlinedTextField(
                             value = deathYear,
-                            onValueChange = { deathYear = it.filter { c -> c.isDigit() }.take(4) },
+                            onValueChange = { deathYear = signedYearInput(it) },
                             label = { Text(stringResource(R.string.identity_label_death)) },
                             placeholder = { Text(stringResource(R.string.identity_ph_death)) },
                             singleLine = true,
@@ -835,4 +835,15 @@ private fun DetailItem(label: String, value: String) {
             )
         }
     }
+}
+
+/**
+ * BUG-004: year fields accept an optional leading minus (BC years such as -551) plus up to 4 digits.
+ * Internal so it can be unit-tested.
+ */
+internal fun signedYearInput(raw: String): String {
+    val trimmed = raw.trim()
+    val negative = trimmed.startsWith("-") || trimmed.startsWith("\u2212")
+    val digits = trimmed.filter { it.isDigit() }.take(4)
+    return if (negative) "-$digits" else digits
 }

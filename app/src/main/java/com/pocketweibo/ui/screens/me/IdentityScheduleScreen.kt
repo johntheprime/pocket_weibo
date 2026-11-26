@@ -34,7 +34,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +52,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pocketweibo.PocketWeiboApp
+import android.app.AlarmManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.compose.material3.TextButton
 import com.pocketweibo.R
 import com.pocketweibo.data.local.dao.IdentityScheduleWithIdentityName
 import com.pocketweibo.data.local.entity.IdentityEntity
@@ -97,6 +103,31 @@ fun IdentityScheduleScreen(
                 }
             }
         )
+        // REVIEW-3 §4.1: identity schedules degrade to inexact alarms without this permission.
+        val canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+            (context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager)?.canScheduleExactAlarms() == true
+        if (!canExact && schedules.isNotEmpty()) {
+            TextButton(
+                onClick = {
+                    runCatching {
+                        context.startActivity(
+                            Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                                data = Uri.parse("package:${context.packageName}")
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.post_detail_remind_open_exact_alarm),
+                    color = WeiboOrange
+                )
+            }
+        }
         if (schedules.isEmpty()) {
             Column(
                 modifier = Modifier
@@ -439,6 +470,19 @@ private fun EditScheduleDialog(
                                 fontSize = 13.sp
                             )
                         },
+                        modifier = Modifier.weight(1f)
+                    )
+                    // BUG-005: one-tap weekday / weekend presets (F-059).
+                    FilterChip(
+                        selected = selectedDays == "1,2,3,4,5",
+                        onClick = { selectedDays = "1,2,3,4,5" },
+                        label = { Text(stringResource(R.string.schedule_label_weekdays), fontSize = 13.sp) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = selectedDays == "6,7",
+                        onClick = { selectedDays = "6,7" },
+                        label = { Text(stringResource(R.string.schedule_label_weekends), fontSize = 13.sp) },
                         modifier = Modifier.weight(1f)
                     )
                 }

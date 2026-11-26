@@ -35,4 +35,11 @@ class PostReminderNotificationIdsTest {
         val b = PostReminderNotificationIds.notifyId(2L, 1L)
         assertTrue(a != b)
     }
+
+    /** BUG-008: distinct reminder rows never share a notification id (within the Int range). */
+    @Test
+    fun notifyId_isUniquePerReminderRow() {
+        val ids = (1L..20_000L).map { PostReminderNotificationIds.notifyId(it * 7 % 1000, it) }
+        assertEquals(ids.size, ids.toSet().size)
+    }
 }

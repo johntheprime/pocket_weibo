@@ -224,7 +224,8 @@ fun HomeScreen(
 
     val postsByIdentity = remember(posts) {
         posts.groupBy { it.identityId }.mapValues { (_, list) ->
-            list.sortedByDescending { it.createdAt }
+            // BUG-006: pinned first, same order as the main feed.
+            list.sortedWith(compareByDescending<PostWithIdentity> { it.isPinned }.thenByDescending { it.createdAt })
         }
     }
     val sortedIdentitiesForSheet = remember(identities, activeIdentity?.id) {

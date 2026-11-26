@@ -16,6 +16,9 @@ interface IdentityDao {
     suspend fun getIdentityById(id: Long): IdentityEntity?
 
     /** New row only ([IdentityEntity.id] = 0 for auto id). Never use REPLACE on this table: SQLite deletes the old row first and can orphan linked rows unpredictably. */
+    @Query("SELECT id FROM identities")
+    suspend fun listAllIds(): List<Long>
+
     @Insert
     suspend fun insert(identity: IdentityEntity): Long
 

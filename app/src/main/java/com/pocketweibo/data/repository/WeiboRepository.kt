@@ -152,17 +152,23 @@ class WeiboRepository(
 
     suspend fun deleteIdentity(identity: IdentityEntity) = withContext(Dispatchers.IO) {
         val wasActive = identity.isActive
-        IdentityAvatarStorage.deleteForIdentity(context, identity.id)
-        identityDao.delete(identity)
-        if (wasActive) {
-            identityDao.deactivateAll()
-            identityDao.getFirstIdentityByCreatedAt()?.let { identityDao.activate(it.id) }
+        // REVIEW-3 §2.1: delete + active reassignment commit together; the file goes after commit.
+        database.withTransaction {
+            identityDao.delete(identity)
+            if (wasActive) {
+                identityDao.deactivateAll()
+                identityDao.getFirstIdentityByCreatedAt()?.let { identityDao.activate(it.id) }
+            }
         }
+        IdentityAvatarStorage.deleteForIdentity(context, identity.id)
     }
 
     suspend fun setActiveIdentity(id: Long) {
-        identityDao.deactivateAll()
-        identityDao.activate(id)
+        // REVIEW-3 §2.1: never observable with zero active identities.
+        database.withTransaction {
+            identityDao.deactivateAll()
+            identityDao.activate(id)
+        }
     }
 
     fun observeIdentitySchedules(): Flow<List<IdentityScheduleWithIdentityName>> =
@@ -444,10 +450,12 @@ class WeiboRepository(
         val existing = topicDao.listAliases().associate { it.fromKey to it.toKey }
         // Refuse cycles such as a → b while b already resolves to a.
         if (resolveTopicKey(to, existing) == from) return@withContext
-        topicDao.retargetAliases(fromKey = from, toKey = to)
-        topicDao.copyExclusions(fromKey = from, toKey = to)
-        topicDao.clearExclusions(topicKey = from)
-        topicDao.upsertAlias(TopicAliasEntity(fromKey = from, toKey = to))
+        database.withTransaction {
+            topicDao.retargetAliases(fromKey = from, toKey = to)
+            topicDao.copyExclusions(fromKey = from, toKey = to)
+            topicDao.clearExclusions(topicKey = from)
+            topicDao.upsertAlias(TopicAliasEntity(fromKey = from, toKey = to))
+        }
     }
 
     /** Drops merge aliases that currently resolve to [canonicalKey], splitting them back out. */
@@ -495,10 +503,10 @@ class WeiboRepository(
             commentDao.getCommentsByPost(postId, identity?.id ?: -1L)
         }
 
-    suspend fun insertComment(comment: CommentEntity): Long {
+    suspend fun insertComment(comment: CommentEntity): Long = database.withTransaction {
         val newId = commentDao.insert(comment)
         postDao.incrementCommentCount(comment.postId)
-        return newId
+        newId
     }
 
     /**
@@ -541,9 +549,11 @@ class WeiboRepository(
 
     suspend fun deleteComment(commentId: Long) {
         val entity = commentDao.getEntityById(commentId) ?: return
+        database.withTransaction {
+            commentDao.delete(entity)
+            postDao.decrementCommentCount(entity.postId)
+        }
         CommentAttachmentStorage.deleteForComment(context, commentId)
-        commentDao.delete(entity)
-        postDao.decrementCommentCount(entity.postId)
     }
 
     suspend fun likeComment(commentId: Long, identityId: Long) {
@@ -1502,6 +1512,30 @@ class WeiboRepository(
             row.calendarEventId?.let { PostReminderCalendarSync.deleteEvent(context, it) }
         }
         for (id in effects.scheduleIds) IdentityScheduleAlarmScheduler.cancel(context, id)
+    }
+
+    /**
+     * REVIEW-3 §2.4: removes media folders whose post / comment / identity row no longer exists
+     * (left behind by crashes or failed imports). Only numeric-id entries are touched.
+     */
+    suspend fun sweepOrphanMedia(): Int = withContext(Dispatchers.IO) {
+        val postIds = postDao.listAllIds().toHashSet()
+        val commentIds = commentDao.listAllIds().toHashSet()
+        val identityIds = identityDao.listAllIds().toHashSet()
+        var removed = 0
+        PostAttachmentStorage.rootDir(context).listFiles()?.forEach { f ->
+            val id = f.name.toLongOrNull() ?: return@forEach
+            if (id !in postIds && f.deleteRecursively()) removed++
+        }
+        CommentAttachmentStorage.rootDir(context).listFiles()?.forEach { f ->
+            val id = f.name.toLongOrNull() ?: return@forEach
+            if (id !in commentIds && f.deleteRecursively()) removed++
+        }
+        java.io.File(context.filesDir, IdentityAvatarStorage.REL_ROOT).listFiles()?.forEach { f ->
+            val id = f.nameWithoutExtension.toLongOrNull() ?: return@forEach
+            if (id !in identityIds && f.delete()) removed++
+        }
+        removed
     }
 
     suspend fun clearAllData() {

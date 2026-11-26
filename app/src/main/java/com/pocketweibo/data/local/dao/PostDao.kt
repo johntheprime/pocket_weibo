@@ -73,6 +73,9 @@ interface PostDao {
     @Query("DELETE FROM posts")
     suspend fun deleteAll()
 
+    @Query("SELECT id FROM posts")
+    suspend fun listAllIds(): List<Long>
+
     @Query("SELECT * FROM posts WHERE id = :id LIMIT 1")
     suspend fun getPostEntityById(id: Long): PostEntity?
 }

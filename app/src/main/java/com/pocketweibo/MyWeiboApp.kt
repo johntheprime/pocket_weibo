@@ -76,6 +76,7 @@ class PocketWeiboApp : Application() {
         applicationScope.launch(Dispatchers.IO) {
             awaitStartup()
             runCatching { com.pocketweibo.data.media.CacheSweeper.sweep(this@PocketWeiboApp) }
+            runCatching { repository.sweepOrphanMedia() }
             DataSeeder.seedIfFirstRun(this@PocketWeiboApp, repository)
             AutoDailyBackup.runIfDue(this@PocketWeiboApp, repository)
         }

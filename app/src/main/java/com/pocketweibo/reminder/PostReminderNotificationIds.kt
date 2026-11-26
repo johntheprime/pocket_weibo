@@ -1,10 +1,14 @@
 package com.pocketweibo.reminder
 
-import java.util.Objects
-
 object PostReminderNotificationIds {
 
-    /** Stable, non-negative id for [NotificationManager.notify] (some OEMs mishandle negative ids). */
+    /**
+     * Stable, non-negative id for [NotificationManager.notify] (some OEMs mishandle negative ids).
+     * BUG-008: derived from the reminder row id alone, which is unique, instead of a hash of
+     * (postId, reminderId) that could collide and replace another post's notification.
+     * [postId] is kept in the signature for call-site compatibility.
+     */
+    @Suppress("UNUSED_PARAMETER")
     fun notifyId(postId: Long, reminderId: Long): Int =
-        Objects.hash(postId, reminderId) and Int.MAX_VALUE
+        (reminderId and Int.MAX_VALUE.toLong()).toInt()
 }

@@ -82,6 +82,9 @@ interface CommentDao {
     @Query("SELECT * FROM comments WHERE id = :id LIMIT 1")
     suspend fun getEntityById(id: Long): CommentEntity?
 
+    @Query("SELECT id FROM comments")
+    suspend fun listAllIds(): List<Long>
+
     @Query("SELECT id FROM comments WHERE postId = :postId")
     suspend fun listCommentIdsForPost(postId: Long): List<Long>
 
