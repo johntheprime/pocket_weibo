@@ -14,10 +14,19 @@ import kotlinx.coroutines.launch
  */
 class PostReminderBootReceiver : BroadcastReceiver() {
 
+    private companion object {
+        /** AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED (API 31+). */
+        const val ACTION_EXACT_ALARM_PERMISSION_CHANGED =
+            "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED"
+    }
+
     override fun onReceive(context: Context, intent: Intent?) {
         when (intent?.action) {
             Intent.ACTION_BOOT_COMPLETED,
-            Intent.ACTION_MY_PACKAGE_REPLACED -> Unit
+            Intent.ACTION_MY_PACKAGE_REPLACED,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED,
+            ACTION_EXACT_ALARM_PERMISSION_CHANGED -> Unit
             else -> return
         }
         val pendingResult = goAsync()

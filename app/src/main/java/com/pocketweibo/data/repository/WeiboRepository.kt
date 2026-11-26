@@ -3,6 +3,7 @@ package com.pocketweibo.data.repository
 import android.content.Context
 import androidx.room.withTransaction
 import com.pocketweibo.data.local.AppDatabase
+import com.pocketweibo.data.backup.ZipSafety
 import kotlinx.coroutines.flow.flatMapLatest
 import android.net.Uri
 import com.pocketweibo.diagnostic.DiagnosticLog
@@ -57,7 +58,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 private val Context.draftDataStore by preferencesDataStore(name = "draft")
@@ -947,104 +947,70 @@ class WeiboRepository(
         }
     }
 
-    private suspend fun importZipBackup(uri: Uri, override: Boolean): Boolean {
-        return try {
+    /**
+     * REVIEW-3 §1.1/§1.2/§6.1: both modes extract into a private staging dir first (Zip Slip guard,
+     * streamed with size caps), validate `data.json`, then import. Replace mode only swaps the live
+     * media trees after the database transaction has committed, so a failed import leaves the
+     * existing data and media untouched.
+     */
+    private suspend fun importZipBackup(uri: Uri, override: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val staging = File(context.filesDir, "pw_import_staging_${System.currentTimeMillis()}")
+        try {
+            val rejected = context.contentResolver.openInputStream(uri)?.use { raw ->
+                ZipSafety.extractTo(raw, staging)
+            } ?: return@withContext false
+            if (rejected.isNotEmpty()) {
+                DiagnosticLog.w("PW_Import", "skipped ${rejected.size} unsafe ZIP entries")
+            }
+            val jsonFile = File(staging, "data.json")
+            if (!jsonFile.isFile) return@withContext false
+            val jsonText = jsonFile.readText()
+            JSONObject(jsonText.trim().trimStart('\uFEFF')) // validate before touching anything
             if (override) {
-                clearAllData()
-                readZip(uri) { name, content ->
-                    when {
-                        name == "data.json" -> Unit
-                        name.startsWith("${PostAttachmentStorage.REL_ROOT}/") -> {
-                            val out = PostAttachmentStorage.fileForRelativePath(context, name)
-                            out.parentFile?.mkdirs()
-                            out.writeBytes(content)
-                        }
-                        name.startsWith("${CommentAttachmentStorage.REL_ROOT}/") -> {
-                            val out = CommentAttachmentStorage.fileForRelativePath(context, name)
-                            out.parentFile?.mkdirs()
-                            out.writeBytes(content)
-                        }
-                        name.startsWith("${IdentityAvatarStorage.REL_ROOT}/") -> {
-                            val out = File(context.filesDir, name)
-                            out.parentFile?.mkdirs()
-                            out.writeBytes(content)
-                        }
-                    }
-                }
-                val jsonText = readZipEntryBytes(uri, "data.json")?.toString(Charsets.UTF_8)
-                if (jsonText == null) {
-                    false
-                } else {
-                    importData(
-                        jsonText,
-                        override = true,
-                        mergeAttachmentStaging = null,
-                        skipClearOnOverride = true
-                    )
-                }
+                importData(jsonText, override = true, mergeAttachmentStaging = null, replaceMediaFrom = staging)
             } else {
-                val staging = File(context.cacheDir, "pw_import_${System.currentTimeMillis()}")
-                staging.mkdirs()
-                try {
-                    readZip(uri) { name, content ->
-                        if (name.endsWith("/")) return@readZip
-                        val out = File(staging, name.replace('\\', '/'))
-                        out.parentFile?.mkdirs()
-                        out.writeBytes(content)
-                    }
-                    val jsonFile = File(staging, "data.json")
-                    if (!jsonFile.exists()) {
-                        false
-                    } else {
-                        importData(
-                            jsonFile.readText(),
-                            override = false,
-                            mergeAttachmentStaging = staging,
-                            skipClearOnOverride = false
-                        )
-                    }
-                } finally {
-                    staging.deleteRecursively()
-                }
+                importData(jsonText, override = false, mergeAttachmentStaging = staging)
             }
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        } finally {
+            staging.deleteRecursively()
         }
     }
 
-    private fun readZipEntryBytes(uri: Uri, entryName: String): ByteArray? {
-        var found: ByteArray? = null
-        context.contentResolver.openInputStream(uri)?.use { raw ->
-            ZipInputStream(BufferedInputStream(raw)).use { zis ->
-                var entry = zis.nextEntry
-                while (entry != null) {
-                    val name = entry.name.replace('\\', '/').trimStart('/')
-                    if (name == entryName) {
-                        found = zis.readBytes()
-                        break
-                    }
-                    zis.closeEntry()
-                    entry = zis.nextEntry
-                }
-            }
-        }
-        return found
-    }
+    private val mediaRoots = listOf(
+        PostAttachmentStorage.REL_ROOT,
+        CommentAttachmentStorage.REL_ROOT,
+        IdentityAvatarStorage.REL_ROOT
+    )
 
-    private fun readZip(uri: Uri, onEntry: (name: String, bytes: ByteArray) -> Unit) {
-        context.contentResolver.openInputStream(uri)?.use { raw ->
-            ZipInputStream(BufferedInputStream(raw)).use { zis ->
-                var entry = zis.nextEntry
-                while (entry != null) {
-                    val name = entry.name.replace('\\', '/').trimStart('/')
-                    if (!entry.isDirectory && name.isNotEmpty()) {
-                        onEntry(name, zis.readBytes())
-                    }
-                    zis.closeEntry()
-                    entry = zis.nextEntry
+    /** Replaces live media trees with the ones in [staging]; rolls back on failure. */
+    private fun swapMediaTrees(staging: File?) {
+        val moved = mutableListOf<String>()
+        try {
+            for (root in mediaRoots) {
+                val live = File(context.filesDir, root)
+                val old = File(context.filesDir, "$root.old")
+                old.deleteRecursively()
+                if (live.exists() && !live.renameTo(old)) throw java.io.IOException("cannot move $root")
+                moved += root
+                val src = staging?.let { File(it, root) }
+                if (src != null && src.exists() && !src.renameTo(live)) {
+                    src.copyRecursively(live, overwrite = true)
                 }
             }
+            for (root in mediaRoots) File(context.filesDir, "$root.old").deleteRecursively()
+        } catch (e: Exception) {
+            for (root in moved) {
+                val live = File(context.filesDir, root)
+                val old = File(context.filesDir, "$root.old")
+                if (old.exists()) {
+                    live.deleteRecursively()
+                    old.renameTo(live)
+                }
+            }
+            throw e
         }
     }
 
@@ -1052,15 +1018,19 @@ class WeiboRepository(
         jsonString: String,
         override: Boolean,
         mergeAttachmentStaging: File?,
-        skipClearOnOverride: Boolean = false
+        skipClearOnOverride: Boolean = false,
+        /** Replace mode only: staging dir whose media trees replace the live ones after commit. */
+        replaceMediaFrom: File? = null
     ): Boolean {
+        var sideEffects: ClearSideEffects? = null
         return try {
-            // Roadmap P0: all DB writes are atomic; a failure mid-import rolls back (incl. an override clear).
+            // Roadmap P0 / REVIEW-3 §1.2: all DB writes are atomic; file and alarm side effects
+            // of the clear run only after the transaction has committed.
             database.withTransaction {
             val json = JSONObject(jsonString.trim().trimStart('\uFEFF'))
 
             if (override) {
-                if (!skipClearOnOverride) clearAllData()
+                if (!skipClearOnOverride) sideEffects = clearAllRows()
                 if (json.has("identities")) {
                     val identitiesArray = json.getJSONArray("identities")
                     for (i in 0 until identitiesArray.length()) {
@@ -1282,6 +1252,12 @@ class WeiboRepository(
             }
 
             }
+            if (override) {
+                sideEffects?.let { applyClearSideEffects(it) }
+                swapMediaTrees(replaceMediaFrom)
+                rescheduleAllPostRemindersFromDb()
+                rescheduleAllIdentitySchedulesFromDb()
+            }
 
             true
         } catch (e: Exception) {
@@ -1498,16 +1474,39 @@ class WeiboRepository(
         )
     }
 
-    suspend fun clearAllData() {
-        for (row in postReminderDao.listAll()) {
-            row.calendarEventId?.let { PostReminderCalendarSync.deleteEvent(context, it) }
-        }
+    /** Alarms and calendar events that belonged to rows removed by [clearAllRows]. */
+    private class ClearSideEffects(
+        val reminders: List<PostReminderEntity>,
+        val scheduleIds: List<Long>
+    )
+
+    /** Deletes all rows (no files, alarms or calendar events); safe inside a transaction. */
+    private suspend fun clearAllRows(): ClearSideEffects {
+        val effects = ClearSideEffects(
+            reminders = postReminderDao.listAll(),
+            scheduleIds = identityScheduleDao.listEnabled().map { it.id }
+        )
         commentDao.deleteAll()
         postReminderFiringDao.deleteAll()
         topicDao.clearAllAliases()
         topicDao.clearAllExclusions()
         postDao.deleteAll()
         identityDao.deleteAll()
+        return effects
+    }
+
+    /** BUG-003: cancel alarms and calendar mirrors of cleared rows so nothing fires afterwards. */
+    private fun applyClearSideEffects(effects: ClearSideEffects) {
+        for (row in effects.reminders) {
+            PostReminderAlarmScheduler.cancel(context, row.id, row.postId)
+            row.calendarEventId?.let { PostReminderCalendarSync.deleteEvent(context, it) }
+        }
+        for (id in effects.scheduleIds) IdentityScheduleAlarmScheduler.cancel(context, id)
+    }
+
+    suspend fun clearAllData() {
+        val effects = database.withTransaction { clearAllRows() }
+        applyClearSideEffects(effects)
         PostAttachmentStorage.deleteEntireAttachmentTree(context)
         CommentAttachmentStorage.deleteEntireTree(context)
         IdentityAvatarStorage.deleteEntireTree(context)
