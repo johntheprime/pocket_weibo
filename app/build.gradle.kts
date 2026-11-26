@@ -46,12 +46,6 @@ android {
         }
     }
 
-    // Roadmap P1: Room schema JSONs are exported to app/schemas (commit them) and exposed to tests.
-    sourceSets {
-        getByName("androidTest").assets.srcDir("$projectDir/schemas")
-        getByName("test").assets.srcDir("$projectDir/schemas")
-    }
-
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
@@ -98,10 +92,6 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-}
-
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 configurations.configureEach {
