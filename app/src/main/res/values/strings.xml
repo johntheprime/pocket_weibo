@@ -11,7 +11,18 @@
 
     <!-- Launcher long-press shortcut: long-press the app icon (logo) → new post directly -->
     <string name="shortcut_new_post_short">发微博</string>
+<<<<<<< Updated upstream
     <string name="shortcut_new_post_long">直接写一条新微博</string>
+=======
+    <string name="shortcut_new_post_long">直接写一条新微博（不显示其他微博）</string>
+
+    <string name="private_publish_title">发布成功</string>
+    <string name="private_publish_done">完成</string>
+    <string name="private_publish_hint">仅显示刚发布的微博；1 秒后自动退出（也可点「完成」立即退出），不打开其他微博。</string>
+    <string name="private_publish_unavailable">微博暂不可用</string>
+    <string name="private_publish_images_only">（仅图片）</string>
+    <string name="private_publish_image_count">附图 %1$d 张</string>
+>>>>>>> Stashed changes
 
     <string name="title_home">首页</string>
     <string name="title_photo">图片</string>
