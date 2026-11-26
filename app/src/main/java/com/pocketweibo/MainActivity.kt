@@ -4,6 +4,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
+import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -21,10 +23,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.pocketweibo.ui.components.MainTab
 import com.pocketweibo.ui.components.SwipeBackHandler
 import com.pocketweibo.ui.components.WeiboBottomTabBar
 import com.pocketweibo.ui.screens.compose.ComposeScreen
+import com.pocketweibo.ui.screens.compose.PublishedOnlyScreen
 import com.pocketweibo.ui.screens.detail.PostDetailScreen
 import com.pocketweibo.ui.screens.topics.TopicManageScreen
 import com.pocketweibo.ui.screens.topics.TopicsScreen
@@ -39,6 +43,7 @@ import com.pocketweibo.ui.screens.photo.PhotoScreen
 import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.ui.ComposeIntentViewModel
 import com.pocketweibo.ui.theme.PocketWeiboTheme
+import com.pocketweibo.ui.util.findActivity
 import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
@@ -50,7 +55,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_OPEN_POST_ID = "com.pocketweibo.EXTRA_OPEN_POST_ID"
-        /** Launcher long-press shortcut on the app icon (logo): jump straight into a new post. */
+        /** Launcher long-press shortcut on the app icon (logo): isolated private composer. */
         const val ACTION_NEW_POST = "com.pocketweibo.action.NEW_POST"
     }
 
@@ -60,12 +65,19 @@ class MainActivity : AppCompatActivity() {
         UiPreferences.languageCodeFromMirror(applicationContext)?.let { UiPreferences.applyLanguageCode(it) }
         super.onCreate(savedInstanceState)
         lifecycleScope.launch(Dispatchers.IO) { UiPreferences.refreshLanguageMirror(applicationContext) }
-        processLaunchIntent(intent)
+        // False means this instance relaunched itself into a clean task; do not build UI here.
+        if (!processLaunchIntent(intent)) {
+            finish()
+            return
+        }
         enableEdgeToEdge()
         setContent {
             val darkTheme = isSystemInDarkTheme()
             PocketWeiboTheme(darkTheme = darkTheme) {
-                MainScreen(composeIntentViewModel = composeIntentViewModel)
+                MainScreen(
+                    composeIntentViewModel = composeIntentViewModel,
+                    onExitPrivateMode = { finishAffinity() }
+                )
             }
         }
     }
@@ -73,28 +85,44 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        processLaunchIntent(intent)
+        if (!processLaunchIntent(intent)) finish()
     }
 
-    private fun processLaunchIntent(intent: Intent?) {
-        if (intent == null) return
+    /** Returns false only when the shortcut intent must be relaunched with a cleared task. */
+    private fun processLaunchIntent(intent: Intent?): Boolean {
+        if (intent == null) return true
         if (intent.action == ACTION_NEW_POST) {
-            composeIntentViewModel.requestNewPostCompose()
-            return
+            if (intent.flags and Intent.FLAG_ACTIVITY_CLEAR_TASK == 0) {
+                // Static shortcut intents cannot declare flags; relaunch into a fresh task so
+                // a feed that was already open is never left behind this composer.
+                startActivity(
+                    Intent(this, MainActivity::class.java).apply {
+                        action = ACTION_NEW_POST
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    }
+                )
+                return false
+            }
+            composeIntentViewModel.requestNewPostCompose(privateMode = true)
+            return true
         }
         val postId = intent.getLongExtra(EXTRA_OPEN_POST_ID, -1L)
         if (postId > 0L) {
             composeIntentViewModel.requestOpenPost(postId)
-            return
+            return true
         }
         if (intent.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true) {
             composeIntentViewModel.offerShareText(intent.getStringExtra(Intent.EXTRA_TEXT))
         }
+        return true
     }
 }
 
 @Composable
-fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
+fun MainScreen(
+    composeIntentViewModel: ComposeIntentViewModel,
+    onExitPrivateMode: () -> Unit = {}
+) {
     val homeListState = rememberLazyListState()
     val topicListState = rememberLazyListState()
     val topicTimelineListState = rememberLazyListState()
@@ -108,6 +136,10 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     /** Topic a “Post again” draft came from; return there after publishing. */
     var topicComposeOriginKey by remember { mutableStateOf<String?>(null) }
     var showCompose by remember { mutableStateOf(false) }
+    /** True only for the isolated launcher-shortcut compose flow; never shows the feed. */
+    var privateCompose by remember { mutableStateOf(false) }
+    /** Set after a private publish so only the new post is shown before exiting. */
+    var publishedPostId by remember { mutableStateOf<Long?>(null) }
     var showIdentityList by remember { mutableStateOf(false) }
     var identityDetailId by remember { mutableStateOf<Long?>(null) }
     var postDetailId by remember { mutableStateOf<Long?>(null) }
@@ -123,15 +155,38 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     val openPostId by composeIntentViewModel.openPostId.collectAsStateWithLifecycle()
     val composeRequests by composeIntentViewModel.composeRequests.collectAsStateWithLifecycle()
 
-    LaunchedEffect(pendingShareText) {
-        if (!pendingShareText.isNullOrBlank()) {
-            showCompose = true
+    // Private shortcut mode blocks screenshots and recents thumbnails for the whole flow.
+    val context = LocalContext.current
+    DisposableEffect(privateCompose) {
+        val window = context.findActivity()?.window
+        if (privateCompose) {
+            window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        } else {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+        onDispose {
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         }
     }
+
+    LaunchedEffect(pendingShareText) {
+        if (pendingShareText.isNullOrBlank()) return@LaunchedEffect
+        if (privateCompose) {
+            // An incoming share must not switch the isolated flow back to a feed-returning compose.
+            composeIntentViewModel.consumeShareText()
+            return@LaunchedEffect
+        }
+        privateCompose = false
+        publishedPostId = null
+        showCompose = true
+    }
     // Launcher long-press on the app icon (logo) → "New post" shortcut: close any open
-    // detail/list screen and open the composer.
+    // detail/list screen and open the composer in an isolated task with no feed behind it.
     LaunchedEffect(composeRequests) {
         if (composeRequests <= 0) return@LaunchedEffect
+        privateCompose = composeIntentViewModel.privateCompose.value
+        composeIntentViewModel.consumePrivateCompose()
+        publishedPostId = null
         identityDetailId = null
         showIdentityList = false
         postDetailId = null
@@ -142,13 +197,19 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
         showMeSettings = false
         showCompose = true
     }
-    LaunchedEffect(openPostId) {
+    LaunchedEffect(openPostId, privateCompose) {
         val id = openPostId ?: return@LaunchedEffect
-        postDetailId = id
         composeIntentViewModel.consumeOpenPost()
+        // Reminder/deep-link post opens are ignored while the private shortcut is active.
+        if (privateCompose) return@LaunchedEffect
+        postDetailId = id
     }
 
     fun navigateBack() {
+        if (privateCompose) {
+            onExitPrivateMode()
+            return
+        }
         // Pop the most recently opened layer first: a post opened from a topic returns to
         // that topic; topic management returns to the Discover list.
         when {
@@ -163,8 +224,10 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
         }
     }
 
-    val canSwipeBack = postDetailId != null || selectedTopicKey != null || showTopicManage ||
-        identityDetailId != null || showIdentityList || showCompose || showIdentitySchedule || showMeSettings
+    // Private mode disables in-app Back/swipe entirely: system Back finishes the isolated task.
+    val canSwipeBack = !privateCompose && (postDetailId != null || selectedTopicKey != null ||
+        showTopicManage || identityDetailId != null || showIdentityList || showCompose ||
+        showIdentitySchedule || showMeSettings)
 
     /** Opens a topic referenced by a hashtag; back returns to the list/search it came from. */
     fun openTopic(displayName: String) {
@@ -176,8 +239,9 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (!showCompose && !showIdentityList && identityDetailId == null && postDetailId == null &&
-                selectedTopicKey == null && !showTopicManage && !showIdentitySchedule && !showMeSettings
+            if (!privateCompose && publishedPostId == null && !showCompose && !showIdentityList &&
+                identityDetailId == null && postDetailId == null && selectedTopicKey == null &&
+                !showTopicManage && !showIdentitySchedule && !showMeSettings
             ) {
                 WeiboBottomTabBar(
                     selectedTab = selectedTab,
@@ -203,7 +267,11 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             lastHomeTabTapUptime = 0L
                         }
                     },
-                    onPlusClick = { showCompose = true }
+                    onPlusClick = {
+                        privateCompose = false
+                        publishedPostId = null
+                        showCompose = true
+                    }
                 )
             }
         }
@@ -213,6 +281,13 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
             enabled = canSwipeBack
         ) {
             when {
+                publishedPostId != null -> {
+                    PublishedOnlyScreen(
+                        postId = publishedPostId!!,
+                        onDone = onExitPrivateMode,
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                }
                 identityDetailId != null -> {
                     IdentityDetailScreen(
                         identityId = identityDetailId!!,
@@ -241,23 +316,31 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                         onDismiss = {
                             showCompose = false
                             topicComposeOriginKey = null
+                            // Cancelling a private compose exits instead of revealing the feed.
+                            if (privateCompose && publishedPostId == null) onExitPrivateMode()
                         },
                         initialShareText = pendingShareText.orEmpty(),
                         onConsumeInitialShare = { composeIntentViewModel.consumeShareText() },
-                        onPostPublished = {
-                            val originKey = topicComposeOriginKey
-                            topicComposeOriginKey = null
-                            if (originKey != null) {
-                                selectedTab = MainTab.DISCOVER
-                                selectedTopicKey = originKey
+                        onPublished = { newPostId ->
+                            if (privateCompose) {
+                                publishedPostId = newPostId
                             } else {
-                                selectedTab = MainTab.HOME
-                                mainScope.launch {
-                                    homeListState.scrollToItem(0)
+                                val originKey = topicComposeOriginKey
+                                topicComposeOriginKey = null
+                                if (originKey != null) {
+                                    selectedTab = MainTab.DISCOVER
+                                    selectedTopicKey = originKey
+                                } else {
+                                    selectedTab = MainTab.HOME
+                                    mainScope.launch {
+                                        homeListState.scrollToItem(0)
+                                    }
+                                    homeScrollToLatestSignal++
                                 }
-                                homeScrollToLatestSignal++
                             }
                         },
+                        privateMode = privateCompose,
+                        onExitPrivateMode = onExitPrivateMode,
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
@@ -316,6 +399,8 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
                             onTopicClick = ::openTopic,
                             onPostClick = { postId -> postDetailId = postId },
                             onDiscussAgain = { key, name ->
+                                privateCompose = false
+                                publishedPostId = null
                                 topicComposeOriginKey = key
                                 composeIntentViewModel.offerShareText(
                                     "#$name ",

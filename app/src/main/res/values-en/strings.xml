@@ -9,7 +9,7 @@
     <string name="tab_me">Me</string>
     <string name="tab_compose_cd">New post</string>
 
-    <!-- Launcher long-press shortcut: long-press the app icon (logo) → new post directly -->
+    <!-- Launcher long-press shortcut: long-press the app icon (logo) → isolated private composer -->
     <string name="shortcut_new_post_short">New post</string>
     <string name="shortcut_new_post_long">Compose a new post privately</string>
 
@@ -165,7 +165,10 @@
     <!-- Topics: hashtag-derived long-lived discussion pages -->
     <string name="topics_manage">Manage</string>
     <string name="topics_manage_title">Manage topics</string>
-    <string name="topics_manage_hint">Select a topic to merge it, split merged spellings, or restore removed posts.</string>
+    <string name="topics_manage_hint">Select one or more topics to merge, unmerge, or restore removed posts together.</string>
+    <string name="topics_manage_select_all">Select all</string>
+    <string name="topics_manage_clear_selection">Clear selection</string>
+    <string name="topics_manage_selected">%1$d selected</string>
     <string name="topics_manage_merge">Merge into…</string>
     <string name="topics_manage_unmerge">Unmerge</string>
     <string name="topics_search_hint">Type a topic name or #</string>
@@ -184,11 +187,17 @@
     <string name="topics_unmerge_action">Unmerge (%1$d spellings)</string>
     <string name="topics_restore_excluded_action">Restore removed posts (%1$d)</string>
     <string name="topics_merge_dialog_title">Merge “%1$s” into…</string>
+    <string name="topics_merge_dialog_title_multi">Merge %1$d topics into…</string>
     <string name="topics_merge_dialog_hint">Posts with either spelling will appear in the same topic.</string>
+    <string name="topics_merge_dialog_hint_multi">Posts from all selected topics will appear in one topic.</string>
     <string name="topics_merge_dialog_search">Search target topic</string>
     <string name="topics_merge_no_targets">No topics to merge into</string>
     <string name="topics_merge_target_count">%1$d posts</string>
-    <string name="topics_remove_post_cd">Remove from this topic</string>
+    <string name="topics_remove_posts_mode">Remove posts…</string>
+    <string name="topics_remove_mode_hint">Tap posts to select several, then remove them together</string>
+    <string name="topics_remove_mode_selected">%1$d selected</string>
+    <string name="topics_remove_mode_confirm">Remove</string>
+    <string name="topics_post_selected_cd">Selected</string>
 
     <!-- TODO: first-class marker posts and actual reminder firing history -->
     <string name="topics_section_topics">Topics · %1$d</string>

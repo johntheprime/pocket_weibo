@@ -21,6 +21,10 @@ class ComposeIntentViewModel : ViewModel() {
     private val _composeRequests = MutableStateFlow(0)
     val composeRequests: StateFlow<Int> = _composeRequests.asStateFlow()
 
+    /** True when the current compose request came from the privacy-first launcher shortcut. */
+    private val _privateCompose = MutableStateFlow(false)
+    val privateCompose: StateFlow<Boolean> = _privateCompose.asStateFlow()
+
     /**
      * Prefills the composer. [keepTrailingWhitespace] is used by "Post again" so the cursor
      * lands one space after the topic hashtag; normal shared text is trimmed.
@@ -46,7 +50,12 @@ class ComposeIntentViewModel : ViewModel() {
         _openPostId.value = null
     }
 
-    fun requestNewPostCompose() {
+    fun requestNewPostCompose(privateMode: Boolean = false) {
+        _privateCompose.value = privateMode
         _composeRequests.value += 1
+    }
+
+    fun consumePrivateCompose() {
+        _privateCompose.value = false
     }
 }

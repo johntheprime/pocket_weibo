@@ -59,7 +59,7 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"  
 
 ## Data and migration gotchas
 
-- Room database is version 12 in `AppDatabase.kt`, with `exportSchema = false` and **no** destructive fallback. Any entity/schema change needs a new migration in `DatabaseMigrations.kt` and must be registered in `AppDatabase`.
+- Room database is version 16 in `AppDatabase.kt`, with `exportSchema = false` and **no** destructive fallback. Any entity/schema change needs a new migration in `DatabaseMigrations.kt` and must be registered in `AppDatabase`.
 - Do not use `OnConflictStrategy.REPLACE` for identity inserts. SQLite deletes the old row first, which has caused posts/comments to be cascade-deleted in this project; use insert/update paths instead.
 - Posts and comments keep their content when an identity is deleted (`identityId` becomes null); comments cascade when their post is deleted.
 - Media paths are stored relative to app-private storage (`filesDir`), not absolute paths. Backups and imports assume this layout.

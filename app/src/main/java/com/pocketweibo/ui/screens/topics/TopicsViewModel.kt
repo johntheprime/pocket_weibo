@@ -206,21 +206,31 @@ class TopicsViewModel(private val repository: WeiboRepository) : ViewModel() {
         }
     }
 
-    fun mergeTopics(fromKey: String, toKey: String) {
-        viewModelScope.launch { repository.mergeTopics(fromKey, toKey) }
+    /** Merges every selected topic into [toKey] in one batch. */
+    fun mergeTopics(fromKeys: List<String>, toKey: String) {
+        viewModelScope.launch {
+            for (fromKey in fromKeys) repository.mergeTopics(fromKey, toKey)
+        }
     }
 
-    /** Splits every merged spelling that currently resolves to [canonicalKey] back out. */
-    fun unmergeTopicAliases(canonicalKey: String) {
-        viewModelScope.launch { repository.unmergeTopicAliases(canonicalKey) }
+    /** Splits merged spellings that resolve to any of [canonicalKeys] back out. */
+    fun unmergeTopicAliases(canonicalKeys: List<String>) {
+        viewModelScope.launch {
+            for (key in canonicalKeys) repository.unmergeTopicAliases(key)
+        }
     }
 
-    fun excludePostFromTopic(topicKey: String, postId: Long) {
-        viewModelScope.launch { repository.excludePostFromTopic(topicKey, postId) }
+    /** Removes several posts from the same topic in one batch. */
+    fun excludePostsFromTopic(topicKey: String, postIds: List<Long>) {
+        viewModelScope.launch {
+            for (postId in postIds) repository.excludePostFromTopic(topicKey, postId)
+        }
     }
 
-    fun restoreExcludedPosts(topicKey: String) {
-        viewModelScope.launch { repository.restoreExcludedPosts(topicKey) }
+    fun restoreExcludedPosts(topicKeys: List<String>) {
+        viewModelScope.launch {
+            for (key in topicKeys) repository.restoreExcludedPosts(key)
+        }
     }
 
     class Factory(private val repository: WeiboRepository) : ViewModelProvider.Factory {

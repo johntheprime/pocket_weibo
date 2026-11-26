@@ -1,7 +1,9 @@
 package com.pocketweibo.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ComposeIntentViewModelTest {
@@ -27,6 +29,21 @@ class ComposeIntentViewModelTest {
         assertEquals(2000, vm.pendingShareText.value?.length)
         vm.consumeShareText()
         assertNull(vm.pendingShareText.value)
+    }
+
+    @Test
+    fun privateComposeRequest_isIsolatedAndConsumed() {
+        val vm = ComposeIntentViewModel()
+        vm.requestNewPostCompose(privateMode = true)
+        assertEquals(1, vm.composeRequests.value)
+        assertTrue(vm.privateCompose.value)
+        vm.consumePrivateCompose()
+        assertFalse(vm.privateCompose.value)
+
+        // An ordinary compose request must never inherit privacy-shortcut mode.
+        vm.requestNewPostCompose()
+        assertEquals(2, vm.composeRequests.value)
+        assertFalse(vm.privateCompose.value)
     }
 
     @Test

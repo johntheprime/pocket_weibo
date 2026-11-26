@@ -106,8 +106,11 @@ fun ComposeScreen(
     onDismiss: () -> Unit,
     initialShareText: String = "",
     onConsumeInitialShare: () -> Unit = {},
-    /** Called after a post is saved successfully, before [onDismiss] (e.g. scroll home feed to newest). */
-    onPostPublished: () -> Unit = {},
+    /** Called after a post is saved successfully, before [onDismiss], with the new post id. */
+    onPublished: (Long) -> Unit = {},
+    /** Privacy shortcut mode: never load/save drafts and exit instead of revealing the feed. */
+    privateMode: Boolean = false,
+    onExitPrivateMode: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -301,7 +304,8 @@ fun ComposeScreen(
             )
             lastContentEditedAt = SystemClock.elapsedRealtime()
             onConsumeInitialShare()
-        } else {
+        } else if (!privateMode) {
+            // Private shortcut mode must not surface an older draft on screen.
             val draft = app.repository.loadDraft()
             if (draft != null) {
                 val draftText = clipComposeText(draft.first)
@@ -385,7 +389,7 @@ fun ComposeScreen(
                 }
                 app.repository.clearDraft()
                 preparedImageFiles = emptyList()
-                onPostPublished()
+                onPublished(newPostId)
                 onDismiss()
             } finally {
                 isSending = false
@@ -438,10 +442,14 @@ fun ComposeScreen(
             ) {
                 IconButton(onClick = {
                     pendingComposeReminder = null
-                    if (content.text.isNotBlank()) {
-                        scope.launch { app.repository.saveDraft(content.text, selectedIdentity?.id ?: 0L) }
+                    if (privateMode) {
+                        onExitPrivateMode()
+                    } else {
+                        if (content.text.isNotBlank()) {
+                            scope.launch { app.repository.saveDraft(content.text, selectedIdentity?.id ?: 0L) }
+                        }
+                        onDismiss()
                     }
-                    onDismiss()
                 }) {
                     Icon(
                         imageVector = Icons.Default.Close,
