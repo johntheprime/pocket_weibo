@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.home
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -53,7 +54,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -124,20 +124,20 @@ fun HomeScreen(
         factory = HomeViewModel.Factory(app.repository)
     )
 
-    val posts by app.repository.allPosts.collectAsState(initial = emptyList())
-    val commentSearchRows by app.repository.allCommentsForSearch.collectAsState(initial = emptyList())
-    val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
+    val posts by app.repository.allPosts.collectAsStateWithLifecycle(initialValue = emptyList())
+    val commentSearchRows by app.repository.allCommentsForSearch.collectAsStateWithLifecycle(initialValue = emptyList())
+    val identities by app.repository.allIdentities.collectAsStateWithLifecycle(initialValue = emptyList())
     val pendingReminders by app.repository.observePostReminders()
-        .collectAsState(initial = emptyList())
+        .collectAsStateWithLifecycle(initialValue = emptyList())
     val nextReminderByPostId = remember(pendingReminders) {
         pendingReminders
             .groupBy { it.postId }
             .mapValues { (_, rows) -> rows.minBy { it.fireAtMillis } }
     }
-    val comments by viewModel.comments.collectAsState()
-    val showCommentSheet by viewModel.showCommentSheet.collectAsState()
-    val selectedPostId by viewModel.selectedPostId.collectAsState()
-    val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
+    val comments by viewModel.comments.collectAsStateWithLifecycle()
+    val showCommentSheet by viewModel.showCommentSheet.collectAsStateWithLifecycle()
+    val selectedPostId by viewModel.selectedPostId.collectAsStateWithLifecycle()
+    val activeIdentity by app.repository.activeIdentity.collectAsStateWithLifecycle(initialValue = null)
 
     val commentSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val titleQuickAccessSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)

@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.reminder
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.app.AlarmManager
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -25,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -122,8 +122,8 @@ fun ReminderPickerDialog(
     val context = LocalContext.current
     val appContext = context.applicationContext as PocketWeiboApp
     val scope = rememberCoroutineScope()
-    val quickBar by ReminderQuickPresetStats.barStateFlow(appContext).collectAsState(
-        initial = ReminderQuickPresetStats.defaultBarState()
+    val quickBar by ReminderQuickPresetStats.barStateFlow(appContext).collectAsStateWithLifecycle(
+        initialValue = ReminderQuickPresetStats.defaultBarState()
     )
     var repeatRule by remember { mutableStateOf(ReminderRepeatRule.NONE) }
     var showRepeatOptions by remember { mutableStateOf(false) }

@@ -75,7 +75,7 @@ class PocketWeiboApp : Application() {
         }
         applicationScope.launch(Dispatchers.IO) {
             awaitStartup()
-            DataSeeder.seedIfEmpty(repository)
+            DataSeeder.seedIfFirstRun(this@PocketWeiboApp, repository)
             AutoDailyBackup.runIfDue(this@PocketWeiboApp, repository)
         }
     }

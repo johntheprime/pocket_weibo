@@ -41,7 +41,13 @@ object AutoDailyBackup {
         if (BackupPreferences.getLastAutoTextBackupDay(context) == todayStr) return@withContext
 
         val json = repository.exportTextOnlyForAutoBackup()
-        val encrypted = AutoBackupCrypto.encrypt(json.toByteArray(Charsets.UTF_8), context)
+        val encrypted = try {
+            AutoBackupCrypto.encrypt(json.toByteArray(Charsets.UTF_8), context)
+        } catch (e: IllegalStateException) {
+            // No device key (fail-closed crypto): skip today's backup rather than crash startup.
+            e.printStackTrace()
+            return@withContext
+        }
         val name = "pw_auto_$todayStr.pwb"
         File(directory(context), name).writeBytes(encrypted)
         BackupPreferences.setLastAutoTextBackupDay(context, todayStr)

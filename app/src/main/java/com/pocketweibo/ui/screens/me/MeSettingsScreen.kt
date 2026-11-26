@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.me
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.Manifest
 import android.app.TimePickerDialog
 import android.content.Context
@@ -40,7 +41,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -90,7 +90,7 @@ private fun ShakeReminderSettingsSection() {
     val context = LocalContext.current
     val app = context.applicationContext as PocketWeiboApp
     val scope = rememberCoroutineScope()
-    val settings by UiPreferences.shakeReminderSettingsFlow(app).collectAsState(initial = ShakeReminderSettings.Default)
+    val settings by UiPreferences.shakeReminderSettingsFlow(app).collectAsStateWithLifecycle(initialValue = ShakeReminderSettings.Default)
 
     fun formatLocalTime(hour: Int, minute: Int): String {
         val cal = Calendar.getInstance()

@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.me
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,7 +36,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,8 +73,8 @@ fun IdentityScheduleScreen(
     val context = LocalContext.current
     val app = context.applicationContext as PocketWeiboApp
     val scope = rememberCoroutineScope()
-    val schedules by app.repository.observeIdentitySchedules().collectAsState(initial = emptyList())
-    val allIdentities by app.repository.allIdentities.collectAsState(initial = emptyList())
+    val schedules by app.repository.observeIdentitySchedules().collectAsStateWithLifecycle(initialValue = emptyList())
+    val allIdentities by app.repository.allIdentities.collectAsStateWithLifecycle(initialValue = emptyList())
 
     var showAddDialog by remember { mutableStateOf(false) }
     var editingSchedule by remember { mutableStateOf<IdentityScheduleWithIdentityName?>(null) }

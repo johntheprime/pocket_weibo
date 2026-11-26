@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.me
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -24,7 +25,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,13 +73,13 @@ fun MeScreen(
     val app = context.applicationContext as PocketWeiboApp
     val scope = rememberCoroutineScope()
     val configuration = LocalConfiguration.current
-    val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
-    val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
-    val posts by app.repository.allPosts.collectAsState(initial = emptyList())
-    val comments by app.repository.allCommentsForSearch.collectAsState(initial = emptyList())
-    val topicAliasRows by app.repository.topicAliases.collectAsState(initial = emptyList())
+    val identities by app.repository.allIdentities.collectAsStateWithLifecycle(initialValue = emptyList())
+    val activeIdentity by app.repository.activeIdentity.collectAsStateWithLifecycle(initialValue = null)
+    val posts by app.repository.allPosts.collectAsStateWithLifecycle(initialValue = emptyList())
+    val comments by app.repository.allCommentsForSearch.collectAsStateWithLifecycle(initialValue = emptyList())
+    val topicAliasRows by app.repository.topicAliases.collectAsStateWithLifecycle(initialValue = emptyList())
     val pendingReminders by app.repository.observePendingRemindersWithPreview()
-        .collectAsState(initial = emptyList())
+        .collectAsStateWithLifecycle(initialValue = emptyList())
     var nowMillis by remember { mutableStateOf(System.currentTimeMillis()) }
     LaunchedEffect(Unit) {
         nowMillis = System.currentTimeMillis()

@@ -4,10 +4,10 @@ import com.pocketweibo.data.local.entity.Gender
 import com.pocketweibo.data.local.entity.IdentityEntity
 import com.pocketweibo.data.local.entity.PostEntity
 import com.pocketweibo.data.repository.WeiboRepository
-import kotlinx.coroutines.CoroutineScope
+import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 object DataSeeder {
 
@@ -197,8 +197,17 @@ object DataSeeder {
         )
     )
 
-    fun seedIfEmpty(repository: WeiboRepository) {
-        CoroutineScope(Dispatchers.IO).launch {
+    private const val PREFS = "data_seeder"
+    private const val KEY_SEEDED = "seeded_v1"
+
+    /**
+     * REVIEW-2 §5: seed the sample identities only on the very first run. Previously this ran
+     * whenever the identities table was empty, so "clear all data" silently brought them back.
+     * Existing installs that already have identities are marked as seeded without changes.
+     */
+    suspend fun seedIfFirstRun(context: Context, repository: WeiboRepository) = withContext(Dispatchers.IO) {
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            if (prefs.getBoolean(KEY_SEEDED, false)) return@withContext
             try {
                 val existingIdentities = repository.allIdentities.first()
                 
@@ -239,10 +248,10 @@ object DataSeeder {
                         }
                     }
                 }
+                prefs.edit().putBoolean(KEY_SEEDED, true).apply()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-        }
     }
 
     private data class IdentityFullData(

@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.photo
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,7 +29,6 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -199,7 +199,7 @@ private suspend fun PointerInputScope.detectPhotoFeedTransformGestures(
 fun PhotoScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val app = context.applicationContext as PocketWeiboApp
-    val posts by app.repository.allPosts.collectAsState(initial = emptyList())
+    val posts by app.repository.allPosts.collectAsStateWithLifecycle(initialValue = emptyList())
     val photoPosts = remember(posts) {
         posts
             .filter { PostAttachmentStorage.parseStoredPaths(it.imageUris).isNotEmpty() }

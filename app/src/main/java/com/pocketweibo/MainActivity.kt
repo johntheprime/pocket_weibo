@@ -1,5 +1,6 @@
 package com.pocketweibo
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
@@ -14,7 +15,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -119,9 +119,9 @@ fun MainScreen(composeIntentViewModel: ComposeIntentViewModel) {
     var lastHomeTabTapUptime by remember { mutableStateOf(0L) }
     val mainScope = rememberCoroutineScope()
 
-    val pendingShareText by composeIntentViewModel.pendingShareText.collectAsState()
-    val openPostId by composeIntentViewModel.openPostId.collectAsState()
-    val composeRequests by composeIntentViewModel.composeRequests.collectAsState()
+    val pendingShareText by composeIntentViewModel.pendingShareText.collectAsStateWithLifecycle()
+    val openPostId by composeIntentViewModel.openPostId.collectAsStateWithLifecycle()
+    val composeRequests by composeIntentViewModel.composeRequests.collectAsStateWithLifecycle()
 
     LaunchedEffect(pendingShareText) {
         if (!pendingShareText.isNullOrBlank()) {

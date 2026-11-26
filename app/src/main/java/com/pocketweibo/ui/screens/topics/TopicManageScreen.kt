@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.topics
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,7 +26,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,9 +62,9 @@ fun TopicManageScreen(
         factory = TopicsViewModel.Factory(app.repository)
     )
 
-    val topics by viewModel.topics.collectAsState()
-    val aliases by viewModel.topicAliases.collectAsState()
-    val exclusions by viewModel.topicExclusions.collectAsState()
+    val topics by viewModel.topics.collectAsStateWithLifecycle()
+    val aliases by viewModel.topicAliases.collectAsStateWithLifecycle()
+    val exclusions by viewModel.topicExclusions.collectAsStateWithLifecycle()
     var selectedKey by remember { mutableStateOf<String?>(null) }
     var mergeSource by remember { mutableStateOf<TopicItem?>(null) }
 

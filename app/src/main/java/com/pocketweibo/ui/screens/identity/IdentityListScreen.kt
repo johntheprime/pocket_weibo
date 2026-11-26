@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.identity
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +27,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,9 +49,10 @@ import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
-import kotlinx.coroutines.CoroutineScope
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,8 +64,9 @@ fun IdentityListScreen(
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as PocketWeiboApp
-    val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
-    val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
+    val scope = rememberCoroutineScope()
+    val identities by app.repository.allIdentities.collectAsStateWithLifecycle(initialValue = emptyList())
+    val activeIdentity by app.repository.activeIdentity.collectAsStateWithLifecycle(initialValue = null)
     var identityToDelete by remember { mutableStateOf<IdentityEntity?>(null) }
 
     Column(
@@ -110,8 +112,8 @@ fun IdentityListScreen(
                     onClick = { onIdentityClick(identity.id) },
                     onDelete = { identityToDelete = identity },
                     onActivate = {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            app.repository.setActiveIdentity(identity.id)
+                        scope.launch {
+                            withContext(Dispatchers.IO) { app.repository.setActiveIdentity(identity.id) }
                         }
                     }
                 )
@@ -132,8 +134,8 @@ fun IdentityListScreen(
                     onClick = {
                         val toRemove = identity
                         identityToDelete = null
-                        CoroutineScope(Dispatchers.IO).launch {
-                            app.repository.deleteIdentity(toRemove)
+                        scope.launch {
+                            withContext(Dispatchers.IO) { app.repository.deleteIdentity(toRemove) }
                         }
                     }
                 ) {

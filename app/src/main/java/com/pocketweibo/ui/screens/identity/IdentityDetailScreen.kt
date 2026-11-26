@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.identity
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -45,7 +46,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -174,7 +174,7 @@ fun IdentityDetailScreen(
     var famousWork by remember { mutableStateOf("") }
     var bio by remember { mutableStateOf("") }
     
-    val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
+    val identities by app.repository.allIdentities.collectAsStateWithLifecycle(initialValue = emptyList())
     val scope = rememberCoroutineScope()
 
     var pendingAvatarUri by remember { mutableStateOf<Uri?>(null) }

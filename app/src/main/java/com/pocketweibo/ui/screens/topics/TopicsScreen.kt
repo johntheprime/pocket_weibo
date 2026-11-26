@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.topics
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -45,7 +46,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -115,12 +115,12 @@ fun TopicsScreen(
         factory = TopicsViewModel.Factory(app.repository)
     )
 
-    val topics by viewModel.topics.collectAsState()
-    val allPosts by viewModel.allPosts.collectAsState()
-    val unfinishedTodos by viewModel.unfinishedTodos.collectAsState()
-    val completedTodos by viewModel.completedTodos.collectAsState()
-    val topicAliases by viewModel.topicAliases.collectAsState()
-    val topicExclusions by viewModel.topicExclusions.collectAsState()
+    val topics by viewModel.topics.collectAsStateWithLifecycle()
+    val allPosts by viewModel.allPosts.collectAsStateWithLifecycle()
+    val unfinishedTodos by viewModel.unfinishedTodos.collectAsStateWithLifecycle()
+    val completedTodos by viewModel.completedTodos.collectAsStateWithLifecycle()
+    val topicAliases by viewModel.topicAliases.collectAsStateWithLifecycle()
+    val topicExclusions by viewModel.topicExclusions.collectAsStateWithLifecycle()
     // Only the topic-detail menu opens a merge dialog; list cards use the central Manage screen.
     var mergeSource by remember { mutableStateOf<TopicItem?>(null) }
     val focusManager = LocalFocusManager.current

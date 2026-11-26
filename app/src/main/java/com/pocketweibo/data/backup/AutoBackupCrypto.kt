@@ -29,8 +29,10 @@ object AutoBackupCrypto {
     }
 
     private fun keyFor(context: Context): SecretKeySpec {
+        // REVIEW-2 §3: fail closed - never derive a fixed, guessable key when ANDROID_ID is missing.
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-            ?: "unknown"
+            ?.takeIf { it.isNotBlank() }
+            ?: throw IllegalStateException("ANDROID_ID unavailable; refusing to use a fallback backup key")
         return keyFromDeviceStrings(androidId, context.packageName)
     }
 

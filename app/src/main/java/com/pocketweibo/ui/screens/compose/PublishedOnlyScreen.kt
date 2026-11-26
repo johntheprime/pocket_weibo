@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.compose
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,7 +18,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -65,7 +65,7 @@ fun PublishedOnlyScreen(
         currentOnDone()
     }
     val app = context.applicationContext as PocketWeiboApp
-    val posts by app.repository.allPosts.collectAsState(initial = emptyList())
+    val posts by app.repository.allPosts.collectAsStateWithLifecycle(initialValue = emptyList())
     val post = remember(posts, postId) { posts.firstOrNull { it.id == postId } }
     val imageCount = remember(post) {
         post?.let { PostAttachmentStorage.parseStoredPaths(it.imageUris).size } ?: 0

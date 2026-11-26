@@ -14,6 +14,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,29 +53,37 @@ fun PostAudioPlayerBar(
     } ?: return
 
     var playing by remember(relativeAudioPath) { mutableStateOf(false) }
-    val player = remember(relativeAudioPath) {
-        runCatching {
-            MediaPlayer().apply {
-                setDataSource(file.absolutePath)
-                prepare()
-                setOnCompletionListener {
-                    playing = false
-                    runCatching { seekTo(0) }
-                }
+    // BUG-007: prepare off the main thread; release the player if setDataSource/prepare fails.
+    val player by produceState<MediaPlayer?>(initialValue = null, relativeAudioPath) {
+        value = withContext(Dispatchers.IO) {
+            val mp = MediaPlayer()
+            try {
+                mp.setDataSource(file.absolutePath)
+                mp.prepare()
+                mp
+            } catch (e: Exception) {
+                runCatching { mp.release() }
+                null
             }
-        }.getOrNull()
-    }
-
-    DisposableEffect(relativeAudioPath) {
-        onDispose {
-            runCatching {
-                player?.stop()
-                player?.release()
+        }?.apply {
+            setOnCompletionListener {
+                playing = false
+                runCatching { seekTo(0) }
             }
         }
     }
 
-    if (player == null) return
+    DisposableEffect(player) {
+        val p = player
+        onDispose {
+            runCatching {
+                p?.stop()
+                p?.release()
+            }
+        }
+    }
+
+    val readyPlayer = player ?: return
 
     val playCd = stringResource(R.string.post_audio_play_cd)
     val pauseCd = stringResource(R.string.post_audio_pause_cd)
@@ -99,10 +110,10 @@ fun PostAudioPlayerBar(
         IconButton(
             onClick = {
                 if (playing) {
-                    player.pause()
+                    readyPlayer.pause()
                     playing = false
                 } else {
-                    player.start()
+                    readyPlayer.start()
                     playing = true
                 }
             },

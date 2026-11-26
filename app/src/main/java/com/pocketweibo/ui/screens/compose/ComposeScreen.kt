@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.compose
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -49,7 +50,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -111,8 +111,8 @@ fun ComposeScreen(
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as PocketWeiboApp
-    val identities by app.repository.allIdentities.collectAsState(initial = emptyList())
-    val activeIdentity by app.repository.activeIdentity.collectAsState(initial = null)
+    val identities by app.repository.allIdentities.collectAsStateWithLifecycle(initialValue = emptyList())
+    val activeIdentity by app.repository.activeIdentity.collectAsStateWithLifecycle(initialValue = null)
     val scope = rememberCoroutineScope()
     val prepMutex = remember { Mutex() }
     val contentFocusRequester = remember { FocusRequester() }

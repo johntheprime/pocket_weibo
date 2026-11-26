@@ -15,9 +15,9 @@ android {
         minSdk = 26
         targetSdk = 34
         // versionName: semantic versioning (MAJOR.MINOR.PATCH). Bump when you ship user-facing changes.
-        versionName = "3.73.2"
+        versionName = "3.73.3"
         // versionCode: must increase for every release APK that should upgrade in-place (same signing key).
-        versionCode = 219
+        versionCode = 220
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -106,6 +106,7 @@ ksp {
 configurations.configureEach {
     resolutionStrategy {
         // Keep graph on core 1.12: some transitive deps request 1.17 (compileSdk 36 + AGP 8.9+).
+        // REVIEW-2 §1: reviewed and kept on purpose (AGENTS.md); remove when moving to compileSdk 35+.
         force("androidx.core:core-ktx:1.12.0", "androidx.core:core:1.12.0")
     }
 }
@@ -126,8 +127,8 @@ dependencies {
     implementation("androidx.compose.material:material")
     implementation("androidx.compose.material:material-icons-extended")
 
-    implementation("androidx.navigation:navigation-compose:2.7.5")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
 
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")

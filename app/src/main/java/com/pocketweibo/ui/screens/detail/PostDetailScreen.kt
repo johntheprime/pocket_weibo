@@ -1,5 +1,6 @@
 package com.pocketweibo.ui.screens.detail
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import android.Manifest
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -62,7 +63,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -244,14 +244,14 @@ fun PostDetailScreen(
         detailOpenedAt = SystemClock.elapsedRealtime()
     }
 
-    val post by viewModel.post.collectAsState()
-    val comments by viewModel.comments.collectAsState()
+    val post by viewModel.post.collectAsStateWithLifecycle()
+    val comments by viewModel.comments.collectAsStateWithLifecycle()
     // F-069: hidden comments fold to the bottom of the list until the user restores them.
     val visibleComments = comments.filter { it.hiddenAt == 0L }
     val hiddenComments = comments.filter { it.hiddenAt != 0L }
     var hiddenCommentsExpanded by remember(postId) { mutableStateOf(false) }
-    val reminders by viewModel.reminders.collectAsState()
-    val todoLastFiredAt by viewModel.todoLastFiredAt.collectAsState()
+    val reminders by viewModel.reminders.collectAsStateWithLifecycle()
+    val todoLastFiredAt by viewModel.todoLastFiredAt.collectAsStateWithLifecycle()
     var commentText by remember { mutableStateOf("") }
     var lastCommentEditedAt by remember(postId) { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     var lastShakeReminderScheduledAt by remember(postId) { mutableLongStateOf(0L) }
