@@ -78,6 +78,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import com.pocketweibo.data.media.ShareCache
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Calendar
@@ -452,7 +453,7 @@ fun MeSettingsScreen(
                             }
                             "JSON" -> {
                                 val content = app.repository.exportAllData()
-                                val file = File(context.cacheDir, "pocket_weibo_backup.json")
+                                val file = ShareCache.file(context, "pocket_weibo_backup.json")
                                 file.writeText(content)
                                 val uri = FileProvider.getUriForFile(
                                     context,
@@ -470,7 +471,7 @@ fun MeSettingsScreen(
                             }
                             else -> {
                                 val content = app.repository.exportAllDataToMarkdown()
-                                val file = File(context.cacheDir, "pocket_weibo_backup.md")
+                                val file = ShareCache.file(context, "pocket_weibo_backup.md")
                                 file.writeText(content)
                                 val uri = FileProvider.getUriForFile(
                                     context,
@@ -501,7 +502,7 @@ fun MeSettingsScreen(
 }
 
 private fun shareDecryptedJsonForBackup(context: Context, plain: ByteArray) {
-    val out = File(context.cacheDir, "pw_decrypted_${System.currentTimeMillis()}.json")
+    val out = ShareCache.file(context, "pw_decrypted_${System.currentTimeMillis()}.json")
     out.writeBytes(plain)
     val uri = FileProvider.getUriForFile(
         context,
@@ -770,7 +771,7 @@ private fun DiagnosticLogSection() {
                                     lines.joinToString("\n")
                                 }
                                 val f = File(
-                                    context.cacheDir,
+                                    ShareCache.dir(context),
                                     "pocket_weibo_diag_${System.currentTimeMillis()}.txt"
                                 )
                                 f.writeText(header + body + "\n")

@@ -98,6 +98,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
+import com.pocketweibo.data.media.ShareCache
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -273,7 +274,7 @@ fun ComposeScreen(
     fun startComposeCameraCapture() {
         val slotsLeft = (9 - preparedImageFiles.size).coerceAtLeast(0)
         if (slotsLeft == 0 || isPreparingImages) return
-        val file = File(context.cacheDir, "compose_capture_${System.currentTimeMillis()}.jpg")
+        val file = ShareCache.file(context, "compose_capture_${System.currentTimeMillis()}.jpg")
         val u = FileProvider.getUriForFile(
             context,
             "${context.packageName}.provider",

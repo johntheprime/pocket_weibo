@@ -803,7 +803,7 @@ class WeiboRepository(
      */
     suspend fun exportAllDataZip(): File = withContext(Dispatchers.IO) {
         val json = exportAllData()
-        val outFile = File(context.cacheDir, "pocket_weibo_backup_${System.currentTimeMillis()}.zip")
+        val outFile = com.pocketweibo.data.media.ShareCache.file(context, "pocket_weibo_backup_${System.currentTimeMillis()}.zip")
         ZipOutputStream(FileOutputStream(outFile).buffered()).use { zos ->
             val jsonBytes = json.toByteArray(Charsets.UTF_8)
             zos.putNextEntry(ZipEntry("data.json"))

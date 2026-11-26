@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
-    <cache-path name="cache" path="." />
+    <!-- REVIEW-2 §3: only cache/shared/ is exposed (see ShareCache). -->
+    <cache-path name="shared" path="shared/" />
 </paths>
