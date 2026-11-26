@@ -11,9 +11,6 @@
 
     <!-- Launcher long-press shortcut: long-press the app icon (logo) → new post directly -->
     <string name="shortcut_new_post_short">New post</string>
-<<<<<<< Updated upstream
-    <string name="shortcut_new_post_long">Compose a new post</string>
-=======
     <string name="shortcut_new_post_long">Compose a new post privately</string>
 
     <string name="private_publish_title">Published</string>
@@ -22,7 +19,6 @@
     <string name="private_publish_unavailable">Post unavailable</string>
     <string name="private_publish_images_only">(images only)</string>
     <string name="private_publish_image_count">%1$d image(s) attached</string>
->>>>>>> Stashed changes
 
     <string name="title_home">Home</string>
     <string name="title_photo">Photos</string>
