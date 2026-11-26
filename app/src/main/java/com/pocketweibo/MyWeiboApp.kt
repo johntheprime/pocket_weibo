@@ -24,6 +24,7 @@ class PocketWeiboApp : Application() {
     val database by lazy { AppDatabase.getDatabase(this) }
     val repository by lazy {
         WeiboRepository(
+            database,
             database.identityDao(),
             database.identityScheduleDao(),
             database.postDao(),

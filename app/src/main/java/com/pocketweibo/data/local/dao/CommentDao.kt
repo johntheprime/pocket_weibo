@@ -46,14 +46,14 @@ interface CommentDao {
                (SELECT i2.name FROM comments c2 LEFT JOIN identities i2 ON c2.identityId = i2.id WHERE c2.id = c.replyingToCommentId) as replyingToIdentityName,
                c.likeCount,
                c.likedBy,
-               CASE WHEN c.likedBy LIKE '%' || :currentIdentityId || '%' THEN 1 ELSE 0 END as isLikedByMe,
+               CASE WHEN (',' || c.likedBy) LIKE '%,' || :currentIdentityId || ',%' THEN 1 ELSE 0 END as isLikedByMe,
                c.hiddenAt
         FROM comments c
         LEFT JOIN identities i ON c.identityId = i.id
         WHERE c.postId = :postId
         ORDER BY c.createdAt DESC
     """)
-    fun getCommentsByPost(postId: Long, currentIdentityId: Long = 0): Flow<List<CommentWithIdentity>>
+    fun getCommentsByPost(postId: Long, currentIdentityId: Long): Flow<List<CommentWithIdentity>>
 
     @Query("""
         SELECT c.id, c.postId, c.identityId, i.name as identityName, 
@@ -94,10 +94,12 @@ interface CommentDao {
     @Query("DELETE FROM comments")
     suspend fun deleteAll()
 
-    @Query("UPDATE comments SET likeCount = likeCount + 1, likedBy = likedBy || :identityId || ',' WHERE id = :commentId")
+    /** BUG-002: exact-id, idempotent like (no-op if already liked). Single statement = atomic. */
+    @Query("UPDATE comments SET likeCount = likeCount + 1, likedBy = likedBy || :identityId || ',' WHERE id = :commentId AND (',' || likedBy) NOT LIKE '%,' || :identityId || ',%'")
     suspend fun likeCommentById(commentId: Long, identityId: String)
 
-    @Query("UPDATE comments SET likeCount = likeCount - 1, likedBy = REPLACE(likedBy, :identityId || ',', '') WHERE id = :commentId AND likeCount > 0")
+    /** BUG-002: removes exactly this id (not substrings); no-op if not liked. */
+    @Query("UPDATE comments SET likeCount = MAX(likeCount - 1, 0), likedBy = substr(REPLACE(',' || likedBy, ',' || :identityId || ',', ','), 2) WHERE id = :commentId AND (',' || likedBy) LIKE '%,' || :identityId || ',%'")
     suspend fun unlikeCommentById(commentId: Long, identityId: String)
 
     @Query("UPDATE comments SET content = :newContent WHERE id = :commentId")

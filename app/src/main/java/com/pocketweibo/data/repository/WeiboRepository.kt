@@ -1,6 +1,9 @@
 package com.pocketweibo.data.repository
 
 import android.content.Context
+import androidx.room.withTransaction
+import com.pocketweibo.data.local.AppDatabase
+import kotlinx.coroutines.flow.flatMapLatest
 import android.net.Uri
 import com.pocketweibo.diagnostic.DiagnosticLog
 import androidx.datastore.preferences.core.edit
@@ -62,6 +65,7 @@ private val Context.draftDataStore by preferencesDataStore(name = "draft")
 private const val REMINDER_LOG_TAG = "PW_Reminder"
 
 class WeiboRepository(
+    private val database: AppDatabase,
     private val identityDao: IdentityDao,
     private val identityScheduleDao: IdentityScheduleDao,
     private val postDao: PostDao,
@@ -484,8 +488,12 @@ class WeiboRepository(
     suspend fun togglePostLike(postId: Long) = postDao.toggleLike(postId)
     suspend fun togglePostPin(postId: Long) = postDao.togglePin(postId)
 
+    /** BUG-002: like-state is computed for the currently active identity (exact id match). */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun getCommentsByPost(postId: Long): Flow<List<CommentWithIdentity>> =
-        commentDao.getCommentsByPost(postId)
+        activeIdentity.flatMapLatest { identity ->
+            commentDao.getCommentsByPost(postId, identity?.id ?: -1L)
+        }
 
     suspend fun insertComment(comment: CommentEntity): Long {
         val newId = commentDao.insert(comment)
@@ -623,7 +631,7 @@ class WeiboRepository(
         val comments = mutableListOf<CommentWithIdentity>()
         
         posts.forEach { post ->
-            comments.addAll(commentDao.getCommentsByPost(post.id).first())
+            comments.addAll(commentDao.getCommentsByPostNoAuth(post.id).first())
         }
 
         val json = JSONObject()
@@ -662,6 +670,7 @@ class WeiboRepository(
                 put("likeCount", post.likeCount)
                 put("commentCount", post.commentCount)
                 put("isLiked", post.isLiked)
+                put("isPinned", post.isPinned)
                 if (post.todoDoneAt != null) put("todoDoneAt", post.todoDoneAt) else put("todoDoneAt", JSONObject.NULL)
             }
             postsArray.put(postJson)
@@ -690,7 +699,7 @@ class WeiboRepository(
         json.put("topicExclusions", topicExclusionsJson())
 
         json.put("exportedAt", System.currentTimeMillis())
-        json.put("version", 3)
+        json.put("version", 4)
 
         return json.toString(2)
     }
@@ -708,7 +717,7 @@ class WeiboRepository(
         val json = JSONObject()
         json.put("kind", "pocket_weibo_text_auto_backup")
         json.put("exportedAt", System.currentTimeMillis())
-        json.put("version", 2)
+        json.put("version", 3)
 
         val identitiesArray = JSONArray()
         identities.forEach { identity ->
@@ -743,6 +752,7 @@ class WeiboRepository(
                 put("likeCount", post.likeCount)
                 put("commentCount", post.commentCount)
                 put("isLiked", post.isLiked)
+                put("isPinned", post.isPinned)
                 if (post.todoDoneAt != null) put("todoDoneAt", post.todoDoneAt) else put("todoDoneAt", JSONObject.NULL)
             }
             postsArray.put(postJson)
@@ -1045,6 +1055,8 @@ class WeiboRepository(
         skipClearOnOverride: Boolean = false
     ): Boolean {
         return try {
+            // Roadmap P0: all DB writes are atomic; a failure mid-import rolls back (incl. an override clear).
+            database.withTransaction {
             val json = JSONObject(jsonString.trim().trimStart('\uFEFF'))
 
             if (override) {
@@ -1269,6 +1281,8 @@ class WeiboRepository(
                 }
             }
 
+            }
+
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -1333,6 +1347,7 @@ class WeiboRepository(
             likeCount = postJson.optInt("likeCount", 0),
             commentCount = postJson.optInt("commentCount", 0),
             isLiked = postJson.optBoolean("isLiked", false),
+            isPinned = postJson.optBoolean("isPinned", false),
             todoDoneAt = when {
                 !postJson.has("todoDoneAt") || postJson.isNull("todoDoneAt") -> null
                 else -> postJson.getLong("todoDoneAt")
