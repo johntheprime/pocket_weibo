@@ -85,21 +85,23 @@ Every new entity column must be written by **both** exporters and read by `postF
 
 ### Full JSON export (`exportAllData` / `importData`)
 
-- Single UTF-8 JSON object. **`version`: `4`** (since 3.73.1; `1`–`3` still import).
-- Top-level keys: `identities`, `posts`, `comments`, `postReminderFirings`, `topicAliases`, `topicExclusions`, `exportedAt`, `version`.
+- Single UTF-8 JSON object. **`version`: `5`** (since 3.75.1; `1`–`4` still import).
+- Top-level keys: `identities`, `posts`, `comments`, `postReminders`, `identitySchedules`, `postReminderFirings`, `topicAliases`, `topicExclusions`, `exportedAt`, `version`.
 - **Posts:** `id`, `identityId` (nullable), `content` (may be empty for image-only posts), `imageUris`, `audioPath`, `extrasJson`, `createdAt`, `likeCount`, `commentCount`, `isLiked`, **`isPinned`** (since v4; missing → `false`), `todoDoneAt` (epoch millis or `null`; older files may omit it).
   - `imageUris` — JSON array of paths relative to `filesDir`, e.g. `["post_attachments/12/0.jpg"]`, or legacy comma-separated values. Images over ~1.5 MB may have been re-encoded to JPEG at publish time unless **本帖原图 / Original files for this post** was on.
   - `extrasJson` — JSON object string, default `{}`, reserved for future fields. Older backups may carry a legacy `location` key (no longer written). Importers should preserve unknown keys when merging.
 - **Identities:** `id`, `name`, `avatarResName`, `customAvatarUri` (optional), `nationality`, `gender`, `birthYear` / `deathYear` (nullable; negative = BC), `occupation`, `motto`, `famousWork`, `bio`, `isActive`.
 - **Comments:** `id`, `postId`, `identityId`, `content`, `audioPath`, `createdAt`, `replyingToCommentId`, `likeCount`, `likedBy` (comma-terminated identity ids, e.g. `"1,11,"`), `hiddenAt` (0 = visible).
+- **`postReminders`** (since v5): `id`, `postId`, `fireAtMillis`, `repeatRule`. On import, past one-shot reminders are dropped, repeating ones roll forward, at most one per post, and alarms are re-armed. Calendar event ids are not exported; calendar sync re-creates events.
+- **`identitySchedules`** (since v5): `id`, `identityId`, `hour`, `minute`, `daysOfWeek`, `enabled`. Duplicates (same identity, time and days) are skipped.
 - **`postReminderFirings`:** delivered-notification history (`postId`, `reminderId` nullable, `scheduledForMillis`, `firedAtMillis`, `repeatRule`) used by the TODO list.
 - **`topicAliases`** (`fromKey`, `toKey`) and **`topicExclusions`** (`topicKey`, `postId`), keys lower-cased.
 - JSON alone contains no binary media; paths only resolve on the same device or after a ZIP restore.
 
 ### Automatic text backup (`AutoDailyBackup`)
 
-- Text-only JSON, `kind: "pocket_weibo_text_auto_backup"`, **`version`: `3`** (since 3.73.1; `1`–`2` still import).
-- Keys: `kind`, `exportedAt`, `version`, `identities` (no `customAvatarUri`), `posts` (empty `imageUris`), `comments`, `postReminders`, `postReminderFirings`, `topicAliases`, `topicExclusions`.
+- Text-only JSON, `kind: "pocket_weibo_text_auto_backup"`, **`version`: `4`** (since 3.75.1; `1`–`3` still import).
+- Keys: `kind`, `exportedAt`, `version`, `identities` (no `customAvatarUri`), `posts` (empty `imageUris`), `comments`, `postReminders`, `identitySchedules` (since v4), `postReminderFirings`, `topicAliases`, `topicExclusions`.
 - Encrypted with AES-256-GCM (`PWB1` header) under `filesDir/auto_text_backups/`, one file per day, newest **3** days kept. The key is derived from `ANDROID_ID` + package name, so files only decrypt on the same device and signing key; with no `ANDROID_ID` the backup is skipped (fail closed). Key strategy is an open decision — see REVIEW.md §5.
 
 ### ZIP (full backup, recommended when posts have media)
@@ -109,6 +111,10 @@ Every new entity column must be written by **both** exporters and read by `postF
   - **Replace:** all row deletes + inserts run in one Room transaction; only after commit are the live media trees swapped for the staged ones (rolled back on failure), old alarms / calendar events cancelled and alarms re-armed.
   - **Merge:** rows get new ids; media are copied from staging into the new per-row folders.
 - The export ZIP is written to `cache/shared/` for the share sheet; stale files are removed by `CacheSweeper` after 24 h.
+
+### Timer-only restore
+
+Settings → **从备份恢复提醒与定时 / Restore reminders & schedules** reads a ZIP, JSON or `.pwb` auto-backup and adds only `postReminders` and `identitySchedules`. Posts are matched by (`createdAt`, `content`), identities by `name`; nothing else changes and re-running it adds no duplicates.
 
 ### Markdown export
 

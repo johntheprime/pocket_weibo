@@ -502,4 +502,9 @@
     <string name="settings_storage_hint">Cache only holds temporary files that can be recreated (shared copies, image cache). Clearing it does not delete posts, images or backups.</string>
     <string name="settings_storage_clear">Clear cache</string>
     <string name="settings_storage_cleared">Cache cleared</string>
+    <!-- Timer restore -->
+    <string name="settings_restore_timers_title">Restore reminders &amp; schedules</string>
+    <string name="settings_restore_timers_subtitle">Restores only post reminders and identity schedules; posts and identities stay as they are. Works with ZIP, JSON and auto-backup (.pwb) files</string>
+    <string name="toast_restore_timers_done">Restored %1$d reminders and %2$d identity schedules</string>
+    <string name="toast_restore_timers_fail">Could not read this backup file</string>
 </resources>

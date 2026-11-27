@@ -502,4 +502,9 @@
     <string name="settings_storage_hint">缓存只包含可再生成的临时文件（分享副本、图片缓存等），清除不会删除微博、图片或备份。</string>
     <string name="settings_storage_clear">清除缓存</string>
     <string name="settings_storage_cleared">缓存已清除</string>
+    <!-- Timer restore -->
+    <string name="settings_restore_timers_title">从备份恢复提醒与定时</string>
+    <string name="settings_restore_timers_subtitle">只恢复微博提醒和身份切换定时，不改动微博与身份；支持 ZIP、JSON 和自动备份（.pwb）文件</string>
+    <string name="toast_restore_timers_done">已恢复 %1$d 个提醒、%2$d 个身份定时</string>
+    <string name="toast_restore_timers_fail">无法读取该备份文件</string>
 </resources>

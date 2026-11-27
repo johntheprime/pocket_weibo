@@ -705,11 +705,14 @@ class WeiboRepository(
         }
         json.put("comments", commentsArray)
         json.put("postReminderFirings", reminderFiringsJson(postReminderFiringDao.listAll()))
+        // v5: timers were missing from full exports, so every restore lost them.
+        json.put("postReminders", postRemindersJson(postReminderDao.listAll()))
+        json.put("identitySchedules", identitySchedulesJson())
         json.put("topicAliases", topicAliasesJson())
         json.put("topicExclusions", topicExclusionsJson())
 
         json.put("exportedAt", System.currentTimeMillis())
-        json.put("version", 4)
+        json.put("version", 5)
 
         return json.toString(2)
     }
@@ -727,7 +730,7 @@ class WeiboRepository(
         val json = JSONObject()
         json.put("kind", "pocket_weibo_text_auto_backup")
         json.put("exportedAt", System.currentTimeMillis())
-        json.put("version", 3)
+        json.put("version", 4)
 
         val identitiesArray = JSONArray()
         identities.forEach { identity ->
@@ -799,6 +802,7 @@ class WeiboRepository(
             )
         }
         json.put("postReminders", remindersArray)
+        json.put("identitySchedules", identitySchedulesJson())
         json.put("postReminderFirings", reminderFiringsJson(postReminderFiringDao.listAll()))
         json.put("topicAliases", topicAliasesJson())
         json.put("topicExclusions", topicExclusionsJson())
@@ -1094,6 +1098,15 @@ class WeiboRepository(
                         )
                     }
                 }
+                // Timers: ids are preserved in replace mode, so backup ids map to themselves.
+                val importedPostIds = postDao.listAllIds().toHashSet()
+                val importedIdentityIds = identityDao.listAllIds().toHashSet()
+                json.optJSONArray("postReminders")?.let { arr ->
+                    insertRemindersFromJson(arr) { id -> id.takeIf { it in importedPostIds } }
+                }
+                json.optJSONArray("identitySchedules")?.let { arr ->
+                    insertSchedulesFromJson(arr) { id -> id.takeIf { it in importedIdentityIds } }
+                }
                 if (json.has("topicAliases")) {
                     val aliasesArray = json.getJSONArray("topicAliases")
                     for (i in 0 until aliasesArray.length()) {
@@ -1253,6 +1266,12 @@ class WeiboRepository(
                         )
                     }
                 }
+                json.optJSONArray("postReminders")?.let { arr ->
+                    insertRemindersFromJson(arr) { id -> postOldToNew[id] }
+                }
+                json.optJSONArray("identitySchedules")?.let { arr ->
+                    insertSchedulesFromJson(arr) { id -> identityOldToNew[id] }
+                }
                 if (json.has("topicAliases")) {
                     val aliasesArray = json.getJSONArray("topicAliases")
                     for (i in 0 until aliasesArray.length()) {
@@ -1284,9 +1303,10 @@ class WeiboRepository(
             if (override) {
                 sideEffects?.let { applyClearSideEffects(it) }
                 swapMediaTrees(replaceMediaFrom)
-                rescheduleAllPostRemindersFromDb()
-                rescheduleAllIdentitySchedulesFromDb()
             }
+            // Re-arm alarms for restored timers in both modes (schedule() replaces existing ones).
+            rescheduleAllPostRemindersFromDb()
+            rescheduleAllIdentitySchedulesFromDb()
 
             true
         } catch (e: Exception) {
@@ -1358,6 +1378,154 @@ class WeiboRepository(
                 else -> postJson.getLong("todoDoneAt")
             }
         )
+    }
+
+    // ---- Timers in backups: post reminders + identity schedules ----
+
+    private fun postRemindersJson(rows: List<PostReminderEntity>): JSONArray = JSONArray().apply {
+        rows.forEach { r ->
+            put(JSONObject().apply {
+                put("id", r.id)
+                put("postId", r.postId)
+                put("fireAtMillis", r.fireAtMillis)
+                put("repeatRule", r.repeatRule)
+            })
+        }
+    }
+
+    private suspend fun identitySchedulesJson(): JSONArray = JSONArray().apply {
+        identityScheduleDao.listAll().forEach { r ->
+            put(JSONObject().apply {
+                put("id", r.id)
+                put("identityId", r.identityId)
+                put("hour", r.hour)
+                put("minute", r.minute)
+                put("daysOfWeek", r.daysOfWeek)
+                put("enabled", r.enabled)
+            })
+        }
+    }
+
+    /**
+     * One-shot reminders whose time has passed while they were only in a backup are dropped;
+     * repeating ones are rolled forward to the next occurrence after [now]. Returns null to skip.
+     */
+    private fun restoredFireAt(fireAt: Long, rule: String, now: Long): Long? {
+        if (fireAt > now) return fireAt
+        if (!ReminderRepeatRule.isRepeating(rule)) return null
+        var next: Long = fireAt
+        var guard = 0
+        while (next <= now && guard++ < 5000) {
+            next = ReminderRepeatRule.computeNextFireAfter(next, rule) ?: return null
+        }
+        return next.takeIf { it > now }
+    }
+
+    /** Inserts reminders from [arr], mapping backup post ids through [postIdMap]. Returns count. */
+    private suspend fun insertRemindersFromJson(arr: JSONArray, postIdMap: (Long) -> Long?): Int {
+        val now = System.currentTimeMillis()
+        var n = 0
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            val postId = postIdMap(o.optLong("postId", -1L)) ?: continue
+            val rule = o.optString("repeatRule", ReminderRepeatRule.NONE)
+            val fireAt = restoredFireAt(o.optLong("fireAtMillis", 0L), rule, now) ?: continue
+            if (postReminderDao.listForPost(postId).isNotEmpty()) continue // one reminder per post
+            postReminderDao.insert(PostReminderEntity(postId = postId, fireAtMillis = fireAt, repeatRule = rule))
+            n++
+        }
+        return n
+    }
+
+    /** Inserts identity schedules from [arr], mapping identity ids through [identityIdMap]. Returns count. */
+    private suspend fun insertSchedulesFromJson(arr: JSONArray, identityIdMap: (Long) -> Long?): Int {
+        val existing = identityScheduleDao.listAll()
+            .map { Triple(it.identityId, it.hour * 60 + it.minute, it.daysOfWeek) }.toMutableSet()
+        var n = 0
+        for (i in 0 until arr.length()) {
+            val o = arr.optJSONObject(i) ?: continue
+            val identityId = identityIdMap(o.optLong("identityId", -1L)) ?: continue
+            val hour = o.optInt("hour", -1)
+            val minute = o.optInt("minute", -1)
+            if (hour !in 0..23 || minute !in 0..59) continue
+            val days = o.optString("daysOfWeek", "")
+            if (!existing.add(Triple(identityId, hour * 60 + minute, days))) continue
+            identityScheduleDao.insert(
+                IdentityScheduleEntity(
+                    identityId = identityId, hour = hour, minute = minute,
+                    daysOfWeek = days, enabled = o.optBoolean("enabled", true)
+                )
+            )
+            n++
+        }
+        return n
+    }
+
+    data class TimerRestoreResult(val reminders: Int, val schedules: Int)
+
+    /**
+     * Restores only timers (post reminders + identity schedules) from a JSON, ZIP or encrypted
+     * auto-backup (`.pwb`) file into the current data, without touching posts or identities.
+     * Backup rows are matched to current rows by content: posts by (createdAt, content),
+     * identities by name. Existing timers are kept; duplicates are skipped.
+     */
+    suspend fun restoreTimersFromBackup(uri: Uri): TimerRestoreResult = withContext(Dispatchers.IO) {
+        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: error("cannot read backup")
+        val text = when {
+            bytes.size >= 4 && bytes[0] == 'P'.code.toByte() && bytes[1] == 'W'.code.toByte() &&
+                bytes[2] == 'B'.code.toByte() -> String(com.pocketweibo.data.backup.AutoBackupCrypto.decrypt(bytes, context), Charsets.UTF_8)
+            bytes.size >= 2 && bytes[0] == 0x50.toByte() && bytes[1] == 0x4b.toByte() -> {
+                var found: String? = null
+                java.util.zip.ZipInputStream(bytes.inputStream()).use { zis ->
+                    var e = zis.nextEntry
+                    while (e != null && found == null) {
+                        if (ZipSafety.normalizeName(e.name) == "data.json") {
+                            found = zis.readBytes().toString(Charsets.UTF_8)
+                        }
+                        e = zis.nextEntry
+                    }
+                }
+                found ?: error("no data.json in ZIP")
+            }
+            else -> bytes.toString(Charsets.UTF_8)
+        }
+        val json = JSONObject(text.trim().trimStart('\uFEFF'))
+
+        val currentPosts = postDao.getAllPosts().first()
+            .associateBy({ it.createdAt to it.content }, { it.id })
+        val backupPostIds = mutableMapOf<Long, Long>()
+        json.optJSONArray("posts")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val p = arr.optJSONObject(i) ?: continue
+                currentPosts[p.optLong("createdAt") to p.optString("content", "")]
+                    ?.let { backupPostIds[p.optLong("id")] = it }
+            }
+        }
+        val currentIdentities = identityDao.getAllIdentities().first()
+            .groupBy { it.name }.mapValues { (_, v) -> v.first().id }
+        val backupIdentityIds = mutableMapOf<Long, Long>()
+        json.optJSONArray("identities")?.let { arr ->
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                currentIdentities[o.optString("name")]?.let { backupIdentityIds[o.optLong("id")] = it }
+            }
+        }
+
+        val result = database.withTransaction {
+            TimerRestoreResult(
+                reminders = json.optJSONArray("postReminders")
+                    ?.let { insertRemindersFromJson(it) { id -> backupPostIds[id] } } ?: 0,
+                schedules = json.optJSONArray("identitySchedules")
+                    ?.let { insertSchedulesFromJson(it) { id -> backupIdentityIds[id] } } ?: 0
+            )
+        }
+        rescheduleAllPostRemindersFromDb()
+        rescheduleAllIdentitySchedulesFromDb()
+        for (row in postReminderDao.listAll()) {
+            if (row.calendarEventId == null) syncReminderToCalendar(row.id, row.postId, row.fireAtMillis, row.repeatRule)
+        }
+        result
     }
 
     private fun firingFromJson(json: JSONObject, id: Long, postId: Long): PostReminderFiringEntity {

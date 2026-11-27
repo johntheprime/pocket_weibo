@@ -312,6 +312,22 @@ fun MeSettingsScreen(
     var showExportDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
 
+    // Restores only post reminders + identity schedules from any backup file (JSON / ZIP / .pwb).
+    val restoreTimersLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val r = runCatching { app.repository.restoreTimersFromBackup(uri) }.getOrNull()
+            Toast.makeText(
+                context,
+                if (r == null) context.getString(R.string.toast_restore_timers_fail)
+                else context.getString(R.string.toast_restore_timers_done, r.reminders, r.schedules),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
     // FP-P1: "Save to file…" streams the ZIP straight to the chosen document (no cache copy).
     val saveZipLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/zip")
@@ -378,6 +394,14 @@ fun MeSettingsScreen(
                     title = stringResource(R.string.settings_import_title),
                     subtitle = stringResource(R.string.settings_import_subtitle),
                     onClick = { showImportDialog = true }
+                )
+            }
+            item {
+                Divider()
+                MenuItem(
+                    title = stringResource(R.string.settings_restore_timers_title),
+                    subtitle = stringResource(R.string.settings_restore_timers_subtitle),
+                    onClick = { restoreTimersLauncher.launch(arrayOf("*/*")) }
                 )
             }
             item {

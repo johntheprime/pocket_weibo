@@ -171,6 +171,7 @@ All review work landed on `main` on **2026-11-26** in this order:
 | BUG-008 | Low | Notification-id collisions. | ✅ `f2ffe9c` 2026-11-26 |
 | BUG-009 | Low | `runBlocking` at app start. | ✅ `4803026` 2026-11-26 |
 | BUG-010 | Low | Unstructured coroutines in identity screens. | ✅ `02e8121` 2026-11-26 |
+| BUG-012 | High | Full exports had no post reminders and no export had identity schedules; no import read them; replace-import cleared existing ones. Found 2026-11-27 after a restore lost all timers. | ⬜ Fix written 2026-11-27 (3.75.1): both written and imported in every mode, timer-only restore in Settings, `TimersBackupTest` — commit pending. |
 | BUG-011 | Low | Notification tap ignored while a stacked screen (Settings, Compose…) is open. | ⬜ Fix with NavHost, or drop overlay states when `openPostId` arrives. |
 
 **Design observations**

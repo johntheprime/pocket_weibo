@@ -28,6 +28,9 @@ interface IdentityScheduleDao {
     """)
     fun observeAll(): Flow<List<IdentityScheduleWithIdentityName>>
 
+    @Query("SELECT * FROM identity_schedules")
+    suspend fun listAll(): List<IdentityScheduleEntity>
+
     @Query("SELECT * FROM identity_schedules WHERE enabled = 1")
     suspend fun listEnabled(): List<IdentityScheduleEntity>
 
