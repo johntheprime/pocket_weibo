@@ -32,6 +32,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.theme.postTextSize
+import com.pocketweibo.ui.theme.postTextStyle
 import com.pocketweibo.ui.util.extractTopicLinks
 
 private const val TOPIC_ANNOTATION = "topic"
@@ -61,7 +63,7 @@ fun SelectablePostBody(
     SelectionContainer {
         BasicText(
             text = annotated,
-            style = style,
+            style = postTextStyle(style),
             modifier = modifier.then(
                 if (onTopicClick != null) {
                     Modifier.pointerInput(Unit) {
@@ -106,8 +108,8 @@ fun SelectableCopyDialog(
                         text = AnnotatedString(body),
                         style = TextStyle(
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 16.sp,
-                            lineHeight = 24.sp
+                            fontSize = postTextSize(16.sp),
+                            lineHeight = postTextSize(24.sp)
                         )
                     )
                 }

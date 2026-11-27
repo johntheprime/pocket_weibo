@@ -24,6 +24,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.pocketweibo.data.prefs.FontScale
+import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.ui.components.MainTab
 import com.pocketweibo.ui.components.SwipeBackHandler
 import com.pocketweibo.ui.components.WeiboBottomTabBar
@@ -40,7 +42,7 @@ import com.pocketweibo.ui.screens.me.MeScreen
 import com.pocketweibo.ui.screens.me.IdentityScheduleScreen
 import com.pocketweibo.ui.screens.me.MeSettingsScreen
 import com.pocketweibo.ui.screens.photo.PhotoScreen
-import com.pocketweibo.data.prefs.UiPreferences
+
 import com.pocketweibo.ui.ComposeIntentViewModel
 import com.pocketweibo.ui.theme.PocketWeiboTheme
 import com.pocketweibo.ui.util.findActivity
@@ -75,7 +77,16 @@ class MainActivity : AppCompatActivity() {
             val darkTheme = isSystemInDarkTheme()
             val dynamicColor by UiPreferences.dynamicColorFlow(applicationContext)
                 .collectAsStateWithLifecycle(initialValue = false)
-            PocketWeiboTheme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
+            val uiFontPercent by UiPreferences.uiFontScalePercentFlow(applicationContext)
+                .collectAsStateWithLifecycle(initialValue = FontScale.DEFAULT)
+            val postFontPercent by UiPreferences.postFontScalePercentFlow(applicationContext)
+                .collectAsStateWithLifecycle(initialValue = FontScale.DEFAULT)
+            PocketWeiboTheme(
+                darkTheme = darkTheme,
+                dynamicColor = dynamicColor,
+                uiFontScale = uiFontPercent / 100f,
+                postFontScale = postFontPercent / 100f
+            ) {
                 MainScreen(
                     composeIntentViewModel = composeIntentViewModel,
                     onExitPrivateMode = { finishAffinity() }

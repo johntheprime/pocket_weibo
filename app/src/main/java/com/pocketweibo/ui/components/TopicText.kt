@@ -20,6 +20,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.theme.postTextStyle
 import com.pocketweibo.ui.util.extractTopicLinks
 import com.pocketweibo.ui.util.findKeywordRanges
 
@@ -105,7 +106,7 @@ fun TopicText(
     BasicText(
         text = annotated,
         modifier = clickModifier,
-        style = style,
+        style = postTextStyle(style),
         maxLines = maxLines,
         overflow = overflow,
         onTextLayout = { layoutResult = it }

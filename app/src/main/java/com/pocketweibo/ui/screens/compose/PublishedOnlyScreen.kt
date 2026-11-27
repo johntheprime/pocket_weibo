@@ -40,6 +40,7 @@ import com.pocketweibo.ui.theme.GrayLight
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.Surface
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.theme.postTextSize
 import com.pocketweibo.ui.util.RelativeTimePreset
 
 /** How long the privacy-shortcut result screen stays visible before exiting automatically. */
@@ -155,7 +156,7 @@ fun PublishedOnlyScreen(
                             if (post.content.isNotBlank()) {
                                 Text(
                                     text = post.content,
-                                    fontSize = 15.sp,
+                                    fontSize = postTextSize(15.sp),
                                     color = GrayDark
                                 )
                             } else {

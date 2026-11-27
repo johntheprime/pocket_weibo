@@ -105,6 +105,7 @@ Follow [RULES.md](RULES.md) §0 (plan → implement → verify → record → co
 | F-083 | **界面细节（FP-P3）**：首页微博卡片显示最多 **3 张配图缩略图**（多于 3 张时最后一张标「+N」，按缩略图尺寸解码以省内存），设置 → 显示可关闭；首页空状态增加操作按钮（**写第一条微博** / **显示全部动态** / **清除搜索**）；写微博时附图可用 **左右箭头调整顺序**，发布按新顺序保存；字数计数临近 2000 字变红并以无障碍方式播报剩余字数；身份定时时间选择的四个箭头按钮补上无障碍标签；设置 → 显示新增 **跟随壁纸配色**（Material You，Android 12+，默认关闭）。版本 **3.76.0 (228)**。 | ⬜ Todo · commit pending |
 | F-084 | **首页搜索改版 + 日期范围**：搜索由弹窗改为标题栏下方的**内联搜索栏**，输入即实时筛选（无需再点「搜索」），显示「找到 N 条微博」；新增日期范围 **全部时间 / 今天 / 近 7 天 / 近 30 天 / 选择日期**（日期区间选择器，按本地日期含首尾）；搜索词、光标位置与日期范围在进入微博详情再返回后保留，重新打开时**光标在末尾**便于继续追加；清空按钮先清搜索词、再点关闭搜索；双击首页标签仍清除搜索。版本 **3.77.0 (229)**。 | ⬜ Todo · commit pending |
 | F-085 | **新增繁體中文界面語言**：设置 → 界面语言新增第四种选择「繁體中文」（与跟随系统 / 简体中文 / English 并排两行显示），语言码 `zh-TW` 经 DataStore 与启动镜像持久化，应用启动时同步应用 `zh-TW` locale；新增完整的 `values-zh-rTW` 字符串与复数资源，所有 494 个文案与默认语言逐键对齐；`StringParityTest` 扩展为校验全部三种语言资源目录的键一致性。版本 **3.78.0 (230)**。 | ⬜ Todo · commit pending |
+| F-086 | **字号独立设置**：设置 → 显示新增两组四档字号选择（小 / 标准 / 大 / 特大，对应 85% / 100% / 115% / 130%）。「界面文字大小」通过根 `LocalDensity` 的 `fontScale` 缩放全应用 `sp` 文案（菜单、设置、标签等），「微博正文大小」独立缩放首页/详情/话题列表/私密预览/图片说明的正文与长按复制弹窗，以及评论正文，行高同步缩放；两项设置分别存于 DataStore 并自动纠正非法值。新增 `FontScaleTest`，三种语言补齐文案并通过 `StringParityTest`。版本 **3.79.0 (231)**。 | ⬜ Todo · commit pending |
 _Add new rows for upcoming work; keep IDs incrementing. F-001–F-003 predate the git history (initial import) and have no commit reference. F-077–F-079 shipped on feature branches and reached `main` through the integration commit `da004bd`._
 
 ---

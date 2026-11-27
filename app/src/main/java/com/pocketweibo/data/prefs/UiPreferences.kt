@@ -21,6 +21,8 @@ private val KEY_DIAGNOSTIC_LOG_CAPTURE = booleanPreferencesKey("diagnostic_log_c
 private val KEY_CALENDAR_SYNC_ENABLED = booleanPreferencesKey("calendar_sync_enabled")
 private val KEY_FEED_THUMBNAILS = booleanPreferencesKey("feed_thumbnails")
 private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+private val KEY_UI_FONT_SCALE = intPreferencesKey("ui_font_scale_percent")
+private val KEY_POST_FONT_SCALE = intPreferencesKey("post_font_scale_percent")
 
 private val KEY_SHAKE_EV_H = intPreferencesKey("shake_rem_evening_h")
 private val KEY_SHAKE_EV_M = intPreferencesKey("shake_rem_evening_m")
@@ -114,6 +116,24 @@ object UiPreferences {
 
     suspend fun setDynamicColor(context: Context, enabled: Boolean) {
         context.uiPreferencesDataStore.edit { it[KEY_DYNAMIC_COLOR] = enabled }
+    }
+
+    /** UI text size (percent). Scales every `sp` value through the root LocalDensity. */
+    fun uiFontScalePercentFlow(context: Context): Flow<Int> =
+        context.uiPreferencesDataStore.data.map { prefs -> FontScale.normalize(prefs[KEY_UI_FONT_SCALE]) }
+
+    suspend fun setUiFontScalePercent(context: Context, percent: Int) {
+        val value = FontScale.normalize(percent)
+        context.uiPreferencesDataStore.edit { it[KEY_UI_FONT_SCALE] = value }
+    }
+
+    /** Post-body and comment text size (percent), independent of the UI scale. */
+    fun postFontScalePercentFlow(context: Context): Flow<Int> =
+        context.uiPreferencesDataStore.data.map { prefs -> FontScale.normalize(prefs[KEY_POST_FONT_SCALE]) }
+
+    suspend fun setPostFontScalePercent(context: Context, percent: Int) {
+        val value = FontScale.normalize(percent)
+        context.uiPreferencesDataStore.edit { it[KEY_POST_FONT_SCALE] = value }
     }
 
     /** Shake on post detail: default “today evening” and “next morning” reminder anchors. */
