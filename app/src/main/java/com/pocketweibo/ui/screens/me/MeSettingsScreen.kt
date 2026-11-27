@@ -62,6 +62,7 @@ import com.pocketweibo.data.backup.AutoBackupCrypto
 import com.pocketweibo.data.backup.AutoDailyBackup
 import com.pocketweibo.data.backup.DayBackupSlot
 import com.pocketweibo.data.prefs.BackupPreferences
+import com.pocketweibo.data.prefs.FontScale
 import com.pocketweibo.data.prefs.ShakeReminderSettings
 import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.diagnostic.DiagnosticLog
@@ -1326,7 +1327,7 @@ private fun ExportDialog(
     )
 }
 
-/** FP-P3: Settings → Display. Feed thumbnails and Material You colors. */
+/** Settings → Display. Text sizes, feed thumbnails and Material You colors. */
 @Composable
 private fun DisplaySettingsSection() {
     val context = LocalContext.current
@@ -1334,6 +1335,10 @@ private fun DisplaySettingsSection() {
     val scope = rememberCoroutineScope()
     val thumbs by UiPreferences.feedThumbnailsFlow(appCtx).collectAsStateWithLifecycle(initialValue = true)
     val dynamic by UiPreferences.dynamicColorFlow(appCtx).collectAsStateWithLifecycle(initialValue = false)
+    val uiFontPercent by UiPreferences.uiFontScalePercentFlow(appCtx)
+        .collectAsStateWithLifecycle(initialValue = FontScale.DEFAULT)
+    val postFontPercent by UiPreferences.postFontScalePercentFlow(appCtx)
+        .collectAsStateWithLifecycle(initialValue = FontScale.DEFAULT)
     val dynamicSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     Surface(modifier = Modifier.fillMaxWidth(), color = Color.White) {
@@ -1344,6 +1349,16 @@ private fun DisplaySettingsSection() {
                 fontWeight = FontWeight.Bold,
                 color = GrayDark
             )
+            FontScaleSettingRow(
+                title = stringResource(R.string.settings_font_size_ui_title),
+                description = stringResource(R.string.settings_font_size_ui_desc),
+                selectedPercent = uiFontPercent
+            ) { percent -> scope.launch { UiPreferences.setUiFontScalePercent(appCtx, percent) } }
+            FontScaleSettingRow(
+                title = stringResource(R.string.settings_font_size_post_title),
+                description = stringResource(R.string.settings_font_size_post_desc),
+                selectedPercent = postFontPercent
+            ) { percent -> scope.launch { UiPreferences.setPostFontScalePercent(appCtx, percent) } }
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -1378,6 +1393,49 @@ private fun DisplaySettingsSection() {
                     checked = dynamic && dynamicSupported,
                     enabled = dynamicSupported,
                     onCheckedChange = { v -> scope.launch { UiPreferences.setDynamicColor(appCtx, v) } }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FontScaleSettingRow(
+    title: String,
+    description: String,
+    selectedPercent: Int,
+    onSelect: (Int) -> Unit
+) {
+    val labels = listOf(
+        stringResource(R.string.settings_font_size_small),
+        stringResource(R.string.settings_font_size_default),
+        stringResource(R.string.settings_font_size_large),
+        stringResource(R.string.settings_font_size_xlarge)
+    )
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+        Text(text = title, fontSize = 15.sp, color = GrayDark)
+        Text(
+            text = description,
+            fontSize = 12.sp, color = GrayMiddle, modifier = Modifier.padding(top = 2.dp)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            FontScale.steps.zip(labels).forEach { (percent, label) ->
+                FilterChip(
+                    selected = selectedPercent == percent,
+                    onClick = { onSelect(percent) },
+                    label = {
+                        Text(
+                            text = label,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontSize = 11.sp
+                        )
+                    },
+                    modifier = Modifier.weight(1f).heightIn(min = 36.dp)
                 )
             }
         }

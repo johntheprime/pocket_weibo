@@ -114,11 +114,12 @@ The settings hub (Me → gear icon) contains:
 3. Export data
 4. Import data
 5. Interface language (system / Simplified Chinese / Traditional Chinese / English)
-6. Shake-to-remind evening and morning times
-7. System calendar reminder sync
-8. Automatic daily text backup
-9. Diagnostic log capture / export / clear
-10. About (version, description, GitHub links)
+6. Font size for interface text and post bodies (independent)
+7. Shake-to-remind evening and morning times
+8. System calendar reminder sync
+9. Automatic daily text backup
+10. Diagnostic log capture / export / clear
+11. About (version, description, GitHub links)
 
 ### Not included
 

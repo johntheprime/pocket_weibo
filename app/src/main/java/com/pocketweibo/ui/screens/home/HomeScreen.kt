@@ -94,6 +94,7 @@ import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.theme.postTextSize
 import com.pocketweibo.ui.reminder.ReminderPickerDialog
 import com.pocketweibo.ui.util.identityDisplayName
 import com.pocketweibo.ui.util.matchesAnySearchKeyword
@@ -705,7 +706,7 @@ private fun HomeTitleQuickAccessSheet(
                     top.forEach { post ->
                         Text(
                             text = post.content,
-                            fontSize = 13.sp,
+                            fontSize = postTextSize(13.sp),
                             color = GrayDark,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,

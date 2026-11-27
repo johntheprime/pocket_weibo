@@ -115,6 +115,7 @@ import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.TodoDone
 import com.pocketweibo.ui.theme.TodoPending
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.theme.postTextSize
 import com.pocketweibo.ui.util.formatExactTime
 import com.pocketweibo.ui.util.isTodoMarked
 import kotlinx.coroutines.Dispatchers
@@ -1044,9 +1045,9 @@ private fun CommentCard(
                     }
                     Text(
                         text = bodyDisplay,
-                        fontSize = 14.sp,
+                        fontSize = postTextSize(14.sp),
                         color = GrayDark,
-                        lineHeight = 20.sp,
+                        lineHeight = postTextSize(20.sp),
                         modifier = Modifier.padding(top = 6.dp)
                     )
                     if (comment.audioPath.isNotBlank()) {

@@ -73,6 +73,7 @@ import com.pocketweibo.ui.components.RelativeTimeText
 import com.pocketweibo.ui.components.WeiboTitleBar
 import com.pocketweibo.ui.theme.Background
 import com.pocketweibo.ui.theme.GrayMiddle
+import com.pocketweibo.ui.theme.postTextSize
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.identityDisplayName
 
@@ -397,8 +398,8 @@ private fun PhotoFeedCard(
                         Text(
                             text = post.content,
                             color = Color.White,
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp,
+                            fontSize = postTextSize(14.sp),
+                            lineHeight = postTextSize(20.sp),
                             maxLines = 6,
                             overflow = TextOverflow.Ellipsis
                         )

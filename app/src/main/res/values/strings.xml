@@ -521,6 +521,14 @@
     <string name="compose_move_image_right_cd">第 %1$d 张图片后移</string>
     <string name="compose_chars_remaining_cd">还可输入 %1$d 个字</string>
     <string name="settings_display_title">显示</string>
+    <string name="settings_font_size_ui_title">界面文字大小</string>
+    <string name="settings_font_size_ui_desc">影响菜单、设置和页面文字</string>
+    <string name="settings_font_size_post_title">微博正文大小</string>
+    <string name="settings_font_size_post_desc">仅影响微博正文与评论，独立于界面文字</string>
+    <string name="settings_font_size_small">小</string>
+    <string name="settings_font_size_default">标准</string>
+    <string name="settings_font_size_large">大</string>
+    <string name="settings_font_size_xlarge">特大</string>
     <string name="settings_feed_thumbnails_title">首页显示配图缩略图</string>
     <string name="settings_feed_thumbnails_desc">每条微博最多显示 3 张小图，关闭后只显示配图图标</string>
     <string name="settings_dynamic_color_title">跟随壁纸配色</string>
