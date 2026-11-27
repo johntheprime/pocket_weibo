@@ -19,13 +19,17 @@ private val Context.uiPreferencesDataStore: DataStore<Preferences> by preference
 private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
 private val KEY_DIAGNOSTIC_LOG_CAPTURE = booleanPreferencesKey("diagnostic_log_capture")
 private val KEY_CALENDAR_SYNC_ENABLED = booleanPreferencesKey("calendar_sync_enabled")
+private val KEY_FEED_THUMBNAILS = booleanPreferencesKey("feed_thumbnails")
+private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+private val KEY_UI_FONT_SCALE = intPreferencesKey("ui_font_scale_percent")
+private val KEY_POST_FONT_SCALE = intPreferencesKey("post_font_scale_percent")
 
 private val KEY_SHAKE_EV_H = intPreferencesKey("shake_rem_evening_h")
 private val KEY_SHAKE_EV_M = intPreferencesKey("shake_rem_evening_m")
 private val KEY_SHAKE_MO_H = intPreferencesKey("shake_rem_morning_h")
 private val KEY_SHAKE_MO_M = intPreferencesKey("shake_rem_morning_m")
 
-/** Stored codes: `system`, `zh`, `en`. */
+/** Stored codes: `system`, `zh`, `zh-TW`, `en`. */
 object UiPreferences {
 
     suspend fun getLanguageCode(context: Context): String =
@@ -67,6 +71,7 @@ object UiPreferences {
         val locales = when (code) {
             "en" -> LocaleListCompat.forLanguageTags("en")
             "zh" -> LocaleListCompat.forLanguageTags("zh-CN")
+            "zh-TW" -> LocaleListCompat.forLanguageTags("zh-TW")
             else -> LocaleListCompat.getEmptyLocaleList()
         }
         AppCompatDelegate.setApplicationLocales(locales)
@@ -95,6 +100,40 @@ object UiPreferences {
 
     suspend fun setCalendarSyncEnabled(context: Context, enabled: Boolean) {
         context.uiPreferencesDataStore.edit { it[KEY_CALENDAR_SYNC_ENABLED] = enabled }
+    }
+
+    /** FP-P3: show up to 3 image thumbnails on home feed cards (default on). */
+    fun feedThumbnailsFlow(context: Context): Flow<Boolean> =
+        context.uiPreferencesDataStore.data.map { prefs -> prefs[KEY_FEED_THUMBNAILS] ?: true }
+
+    suspend fun setFeedThumbnails(context: Context, enabled: Boolean) {
+        context.uiPreferencesDataStore.edit { it[KEY_FEED_THUMBNAILS] = enabled }
+    }
+
+    /** FP-P3: Material You wallpaper colors on Android 12+ (default off). */
+    fun dynamicColorFlow(context: Context): Flow<Boolean> =
+        context.uiPreferencesDataStore.data.map { prefs -> prefs[KEY_DYNAMIC_COLOR] == true }
+
+    suspend fun setDynamicColor(context: Context, enabled: Boolean) {
+        context.uiPreferencesDataStore.edit { it[KEY_DYNAMIC_COLOR] = enabled }
+    }
+
+    /** UI text size (percent). Scales every `sp` value through the root LocalDensity. */
+    fun uiFontScalePercentFlow(context: Context): Flow<Int> =
+        context.uiPreferencesDataStore.data.map { prefs -> FontScale.normalize(prefs[KEY_UI_FONT_SCALE]) }
+
+    suspend fun setUiFontScalePercent(context: Context, percent: Int) {
+        val value = FontScale.normalize(percent)
+        context.uiPreferencesDataStore.edit { it[KEY_UI_FONT_SCALE] = value }
+    }
+
+    /** Post-body and comment text size (percent), independent of the UI scale. */
+    fun postFontScalePercentFlow(context: Context): Flow<Int> =
+        context.uiPreferencesDataStore.data.map { prefs -> FontScale.normalize(prefs[KEY_POST_FONT_SCALE]) }
+
+    suspend fun setPostFontScalePercent(context: Context, percent: Int) {
+        val value = FontScale.normalize(percent)
+        context.uiPreferencesDataStore.edit { it[KEY_POST_FONT_SCALE] = value }
     }
 
     /** Shake on post detail: default “today evening” and “next morning” reminder anchors. */

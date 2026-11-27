@@ -5,28 +5,52 @@ import org.junit.Test
 import java.io.File
 import javax.xml.parsers.DocumentBuilderFactory
 
-/** REVIEW-3 §7.4 / RULES.md §1: every string/plural/array key exists in both zh and en. */
+/** RULES.md §1: every string/plural/array key exists in every locale directory. */
 class StringParityTest {
 
-    private fun keys(path: String): Map<String, Set<String>> {
-        val file = listOf(File(path), File("app/$path")).first { it.isFile }
-        val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
-        return listOf("string", "plurals", "string-array").associateWith { tag ->
-            val nodes = doc.getElementsByTagName(tag)
-            (0 until nodes.length)
-                .map { nodes.item(it).attributes.getNamedItem("name").nodeValue }
-                .toSet()
-        }
+    private fun resDir(): File =
+        listOf(File("src/main/res"), File("app/src/main/res")).first { it.isDirectory }
+
+    private fun keys(dir: File): Map<String, Set<String>> {
+        val result = mutableMapOf<String, MutableSet<String>>()
+        listOf("strings.xml", "plurals.xml").map { File(dir, it) }.filter { it.isFile }
+            .forEach { file ->
+                val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file)
+                listOf("string", "plurals", "string-array").forEach { tag ->
+                    val nodes = doc.getElementsByTagName(tag)
+                    val names = result.getOrPut(tag) { mutableSetOf() }
+                    (0 until nodes.length).forEach {
+                        names.add(nodes.item(it).attributes.getNamedItem("name").nodeValue)
+                    }
+                }
+            }
+        return result
     }
 
     @Test
-    fun zhAndEnHaveSameKeys() {
-        val zh = keys("src/main/res/values/strings.xml")
-        val en = keys("src/main/res/values-en/strings.xml")
-        for (tag in zh.keys) {
-            val a = zh.getValue(tag)
-            val b = en.getValue(tag)
-            assertEquals("$tag only in values/: ${a - b}; only in values-en/: ${b - a}", a, b)
+    fun everyLocaleHasSameKeys() {
+        val res = resDir()
+        val locales = res.listFiles { file ->
+            file.isDirectory && file.name.startsWith("values") && File(file, "strings.xml").isFile
+        }!!.sortedBy { it.name }
+        assertEquals(
+            "Expected values/, values-en/ and values-zh-rTW/",
+            setOf("values", "values-en", "values-zh-rTW"),
+            locales.map { it.name }.toSet()
+        )
+
+        val expected = keys(locales.first { it.name == "values" })
+        locales.forEach { locale ->
+            val actual = keys(locale)
+            assertEquals("resource key groups in ${locale.name}", expected.keys, actual.keys)
+            expected.forEach { (tag, names) ->
+                val other = actual.getValue(tag)
+                assertEquals(
+                    "$tag in ${locale.name}: only in values/ = ${names - other}; only in ${locale.name} = ${other - names}",
+                    names,
+                    other
+                )
+            }
         }
     }
 }

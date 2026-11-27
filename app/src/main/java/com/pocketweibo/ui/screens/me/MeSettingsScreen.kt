@@ -62,6 +62,7 @@ import com.pocketweibo.data.backup.AutoBackupCrypto
 import com.pocketweibo.data.backup.AutoDailyBackup
 import com.pocketweibo.data.backup.DayBackupSlot
 import com.pocketweibo.data.prefs.BackupPreferences
+import com.pocketweibo.data.prefs.FontScale
 import com.pocketweibo.data.prefs.ShakeReminderSettings
 import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.diagnostic.DiagnosticLog
@@ -79,6 +80,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import com.pocketweibo.data.media.ShareCache
+import com.pocketweibo.data.media.StorageUsage
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Calendar
@@ -311,6 +313,37 @@ fun MeSettingsScreen(
     var showExportDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
 
+    // Restores only post reminders + identity schedules from any backup file (JSON / ZIP / .pwb).
+    val restoreTimersLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val r = runCatching { app.repository.restoreTimersFromBackup(uri) }.getOrNull()
+            Toast.makeText(
+                context,
+                if (r == null) context.getString(R.string.toast_restore_timers_fail)
+                else context.getString(R.string.toast_restore_timers_done, r.reminders, r.schedules),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    // FP-P1: "Save to file…" streams the ZIP straight to the chosen document (no cache copy).
+    val saveZipLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val ok = runCatching { app.repository.exportAllDataZipTo(uri) }.getOrDefault(false)
+            Toast.makeText(
+                context,
+                context.getString(if (ok) R.string.toast_export_saved else R.string.toast_export_fail),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -366,6 +399,14 @@ fun MeSettingsScreen(
             }
             item {
                 Divider()
+                MenuItem(
+                    title = stringResource(R.string.settings_restore_timers_title),
+                    subtitle = stringResource(R.string.settings_restore_timers_subtitle),
+                    onClick = { restoreTimersLauncher.launch(arrayOf("*/*")) }
+                )
+            }
+            item {
+                Divider()
                 LanguagePreferenceSection(
                     onApplied = { context.findActivity()?.recreate() }
                 )
@@ -381,6 +422,14 @@ fun MeSettingsScreen(
             item {
                 Divider()
                 AutoBackupSettingsSection()
+            }
+            item {
+                Divider()
+                DisplaySettingsSection()
+            }
+            item {
+                Divider()
+                StorageSettingsSection()
             }
             item {
                 Divider()
@@ -431,6 +480,10 @@ fun MeSettingsScreen(
     if (showExportDialog) {
         ExportDialog(
             onDismiss = { showExportDialog = false },
+            onSaveZipToFile = {
+                showExportDialog = false
+                saveZipLauncher.launch("pocket_weibo_backup_${java.time.LocalDate.now()}.zip")
+            },
             onExport = { format ->
                 scope.launch {
                     try {
@@ -502,7 +555,8 @@ fun MeSettingsScreen(
 }
 
 private fun shareDecryptedJsonForBackup(context: Context, plain: ByteArray) {
-    val out = ShareCache.file(context, "pw_decrypted_${System.currentTimeMillis()}.json")
+    // FP-P1: fixed name, overwritten on each share; CacheSweeper removes it after 24 h.
+    val out = ShareCache.file(context, "pw_decrypted.json")
     out.writeBytes(plain)
     val uri = FileProvider.getUriForFile(
         context,
@@ -772,7 +826,7 @@ private fun DiagnosticLogSection() {
                                 }
                                 val f = File(
                                     ShareCache.dir(context),
-                                    "pocket_weibo_diag_${System.currentTimeMillis()}.txt"
+                                    "pocket_weibo_diag.txt"
                                 )
                                 f.writeText(header + body + "\n")
                                 f
@@ -878,78 +932,83 @@ private fun LanguagePreferenceSection(onApplied: () -> Unit) {
                 fontWeight = FontWeight.SemiBold,
                 color = GrayMiddle
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            val chooseLanguage: (String) -> Unit = { code ->
+                scope.launch {
+                    UiPreferences.setLanguageCode(appCtx, code)
+                    UiPreferences.applyLanguageCode(code)
+                    selected = code
+                    onApplied()
+                }
+            }
+            Column(
+                modifier = Modifier.padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                val chipModifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 36.dp)
-                FilterChip(
-                    selected = selected == "system",
-                    onClick = {
-                        scope.launch {
-                            UiPreferences.setLanguageCode(appCtx, "system")
-                            UiPreferences.applyLanguageCode("system")
-                            selected = "system"
-                            onApplied()
-                        }
-                    },
-                    label = {
-                        Text(
-                            text = stringResource(R.string.settings_language_system),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 12.sp
-                        )
-                    },
-                    modifier = chipModifier
-                )
-                FilterChip(
-                    selected = selected == "zh",
-                    onClick = {
-                        scope.launch {
-                            UiPreferences.setLanguageCode(appCtx, "zh")
-                            UiPreferences.applyLanguageCode("zh")
-                            selected = "zh"
-                            onApplied()
-                        }
-                    },
-                    label = {
-                        Text(
-                            text = stringResource(R.string.settings_language_zh),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 12.sp
-                        )
-                    },
-                    modifier = chipModifier
-                )
-                FilterChip(
-                    selected = selected == "en",
-                    onClick = {
-                        scope.launch {
-                            UiPreferences.setLanguageCode(appCtx, "en")
-                            UiPreferences.applyLanguageCode("en")
-                            selected = "en"
-                            onApplied()
-                        }
-                    },
-                    label = {
-                        Text(
-                            text = stringResource(R.string.settings_language_en),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 12.sp
-                        )
-                    },
-                    modifier = chipModifier
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    LanguageChoiceChip(
+                        code = "system",
+                        label = stringResource(R.string.settings_language_system),
+                        selected = selected,
+                        onClick = chooseLanguage,
+                        modifier = Modifier.weight(1f)
+                    )
+                    LanguageChoiceChip(
+                        code = "zh",
+                        label = stringResource(R.string.settings_language_zh),
+                        selected = selected,
+                        onClick = chooseLanguage,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    LanguageChoiceChip(
+                        code = "zh-TW",
+                        label = stringResource(R.string.settings_language_zh_tw),
+                        selected = selected,
+                        onClick = chooseLanguage,
+                        modifier = Modifier.weight(1f)
+                    )
+                    LanguageChoiceChip(
+                        code = "en",
+                        label = stringResource(R.string.settings_language_en),
+                        selected = selected,
+                        onClick = chooseLanguage,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguageChoiceChip(
+    code: String,
+    label: String,
+    selected: String,
+    onClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FilterChip(
+        selected = selected == code,
+        onClick = { onClick(code) },
+        label = {
+            Text(
+                text = label,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 12.sp
+            )
+        },
+        modifier = modifier.heightIn(min = 36.dp)
+    )
 }
 
 @Composable
@@ -1205,6 +1264,7 @@ private fun ImportDialog(
 @Composable
 private fun ExportDialog(
     onDismiss: () -> Unit,
+    onSaveZipToFile: () -> Unit,
     onExport: (String) -> Unit
 ) {
     var selectedFormat by remember { mutableStateOf("ZIP") }
@@ -1253,11 +1313,209 @@ private fun ExportDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.export_cancel))
+            Row {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.export_cancel))
+                }
+                if (selectedFormat == "ZIP") {
+                    TextButton(onClick = onSaveZipToFile) {
+                        Text(stringResource(R.string.export_save_to_file))
+                    }
+                }
             }
         }
     )
+}
+
+/** Settings → Display. Text sizes, feed thumbnails and Material You colors. */
+@Composable
+private fun DisplaySettingsSection() {
+    val context = LocalContext.current
+    val appCtx = context.applicationContext
+    val scope = rememberCoroutineScope()
+    val thumbs by UiPreferences.feedThumbnailsFlow(appCtx).collectAsStateWithLifecycle(initialValue = true)
+    val dynamic by UiPreferences.dynamicColorFlow(appCtx).collectAsStateWithLifecycle(initialValue = false)
+    val uiFontPercent by UiPreferences.uiFontScalePercentFlow(appCtx)
+        .collectAsStateWithLifecycle(initialValue = FontScale.DEFAULT)
+    val postFontPercent by UiPreferences.postFontScalePercentFlow(appCtx)
+        .collectAsStateWithLifecycle(initialValue = FontScale.DEFAULT)
+    val dynamicSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+    Surface(modifier = Modifier.fillMaxWidth(), color = Color.White) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.settings_display_title),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = GrayDark
+            )
+            FontScaleSettingRow(
+                title = stringResource(R.string.settings_font_size_ui_title),
+                description = stringResource(R.string.settings_font_size_ui_desc),
+                selectedPercent = uiFontPercent
+            ) { percent -> scope.launch { UiPreferences.setUiFontScalePercent(appCtx, percent) } }
+            FontScaleSettingRow(
+                title = stringResource(R.string.settings_font_size_post_title),
+                description = stringResource(R.string.settings_font_size_post_desc),
+                selectedPercent = postFontPercent
+            ) { percent -> scope.launch { UiPreferences.setPostFontScalePercent(appCtx, percent) } }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_feed_thumbnails_title), fontSize = 15.sp, color = GrayDark)
+                    Text(
+                        stringResource(R.string.settings_feed_thumbnails_desc),
+                        fontSize = 12.sp, color = GrayMiddle, modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+                Switch(
+                    checked = thumbs,
+                    onCheckedChange = { v -> scope.launch { UiPreferences.setFeedThumbnails(appCtx, v) } }
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_dynamic_color_title), fontSize = 15.sp, color = GrayDark)
+                    Text(
+                        stringResource(
+                            if (dynamicSupported) R.string.settings_dynamic_color_desc
+                            else R.string.settings_dynamic_color_unsupported
+                        ),
+                        fontSize = 12.sp, color = GrayMiddle, modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+                Switch(
+                    checked = dynamic && dynamicSupported,
+                    enabled = dynamicSupported,
+                    onCheckedChange = { v -> scope.launch { UiPreferences.setDynamicColor(appCtx, v) } }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FontScaleSettingRow(
+    title: String,
+    description: String,
+    selectedPercent: Int,
+    onSelect: (Int) -> Unit
+) {
+    val labels = listOf(
+        stringResource(R.string.settings_font_size_small),
+        stringResource(R.string.settings_font_size_default),
+        stringResource(R.string.settings_font_size_large),
+        stringResource(R.string.settings_font_size_xlarge)
+    )
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+        Text(text = title, fontSize = 15.sp, color = GrayDark)
+        Text(
+            text = description,
+            fontSize = 12.sp, color = GrayMiddle, modifier = Modifier.padding(top = 2.dp)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            FontScale.steps.zip(labels).forEach { (percent, label) ->
+                FilterChip(
+                    selected = selectedPercent == percent,
+                    onClick = { onSelect(percent) },
+                    label = {
+                        Text(
+                            text = label,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontSize = 11.sp
+                        )
+                    },
+                    modifier = Modifier.weight(1f).heightIn(min = 36.dp)
+                )
+            }
+        }
+    }
+}
+
+/** FP-P1: Settings → Storage. Shows data vs cache size and clears the cache on request. */
+@Composable
+private fun StorageSettingsSection() {
+    val context = LocalContext.current
+    val appCtx = context.applicationContext
+    val scope = rememberCoroutineScope()
+    var usage by remember { mutableStateOf<StorageUsage.Usage?>(null) }
+    var clearing by remember { mutableStateOf(false) }
+
+    fun refresh() {
+        scope.launch {
+            usage = withContext(Dispatchers.IO) { StorageUsage.measure(appCtx) }
+        }
+    }
+
+    LaunchedEffect(Unit) { refresh() }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.settings_storage_title),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = GrayDark
+            )
+            val u = usage
+            Text(
+                text = if (u == null) {
+                    stringResource(R.string.settings_storage_measuring)
+                } else {
+                    stringResource(
+                        R.string.settings_storage_summary,
+                        android.text.format.Formatter.formatShortFileSize(context, u.dataBytes),
+                        android.text.format.Formatter.formatShortFileSize(context, u.cacheBytes)
+                    )
+                },
+                fontSize = 13.sp,
+                color = GrayMiddle,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+            Text(
+                text = stringResource(R.string.settings_storage_hint),
+                fontSize = 12.sp,
+                color = GrayLight,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            OutlinedButton(
+                onClick = {
+                    clearing = true
+                    scope.launch {
+                        withContext(Dispatchers.IO) { StorageUsage.clearCache(appCtx) }
+                        clearing = false
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.settings_storage_cleared),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        refresh()
+                    }
+                },
+                enabled = !clearing && (usage?.cacheBytes ?: 0L) > 0L,
+                modifier = Modifier.padding(top = 10.dp)
+            ) {
+                Text(stringResource(R.string.settings_storage_clear))
+            }
+        }
+    }
 }
 
 private fun queryDisplayName(context: android.content.Context, uri: Uri): String? {

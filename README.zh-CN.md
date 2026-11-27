@@ -4,7 +4,7 @@
 
 一款本地优先（local-first）的 Android 微博风格笔记应用。你可以用不同历史人物的身份写短微博、添加配图、发表文字或语音评论、设置系统提醒，并完全离线浏览所有内容。
 
-所有数据都保存在设备上：**没有账号、没有后端、没有网络 API**。应用支持中英双语（默认简体中文，可在设置中切换 English），并支持浅色/深色主题。
+所有数据都保存在设备上：**没有账号、没有后端、没有网络 API**。应用界面支持简体中文（默认）、繁體中文和 English（可在设置中切换），并支持浅色/深色主题。
 
 ## 功能亮点
 
@@ -78,12 +78,13 @@
 2. 身份切换定时
 3. 导出数据
 4. 导入数据
-5. 界面语言（跟随系统 / 简体中文 / English）
-6. 详情页摇一摇提醒的晚间和早晨时间
-7. 系统日历提醒同步
-8. 每日自动文本备份
-9. 诊断日志捕获 / 导出 / 清空
-10. 关于（版本、简介、GitHub 链接）
+5. 界面语言（跟随系统 / 简体中文 / 繁體中文 / English）
+6. 界面文字与微博正文字号（可分别设置）
+7. 详情页摇一摇提醒的晚间和早晨时间
+8. 系统日历提醒同步
+9. 每日自动文本备份
+10. 诊断日志捕获 / 导出 / 清空
+11. 关于（版本、简介、GitHub 链接）
 
 ### 未包含
 
@@ -257,7 +258,8 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
 - [`docs/RULES.md`](docs/RULES.md) — 工作流、双语规则、版本管理
 - [`docs/FEATURE.md`](docs/FEATURE.md) — 已交付功能记录（F-xxx）和 backlog 说明
 - [`docs/FIX.md`](docs/FIX.md) — 修复记录、CI/签名说明
-- [`docs/BACKUP_ARCHIVE.md`](docs/BACKUP_ARCHIVE.md) — JSON/ZIP/Markdown 备份格式
+- [`docs/REVIEW.md`](docs/REVIEW.md) — 工程评审汇总、缺陷清单与后续路线图
+- 备份格式（JSON/ZIP/Markdown）：[`docs/RULES.md` §5](docs/RULES.md)
 - [English README](README.md) — 英文版说明
 
 ## 隐私与许可

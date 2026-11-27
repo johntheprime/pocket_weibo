@@ -5,8 +5,9 @@
 A local-first, Weibo-style notes app for Android. Write short posts as historical figures, attach
 images, comment (with text or voice), set system reminders, and browse everything offline.
 
-Everything is stored on the device: **no account, no backend, no network API**. The app is bilingual
-(Simplified Chinese by default, English available in Settings) and supports light/dark themes.
+Everything is stored on the device: **no account, no backend, no network API**. The UI is available
+in Simplified Chinese (default), Traditional Chinese and English (switch in Settings), and supports
+light/dark themes.
 
 ## Highlights
 
@@ -112,12 +113,13 @@ The settings hub (Me → gear icon) contains:
 2. Scheduled identity switching
 3. Export data
 4. Import data
-5. Interface language (system / Simplified Chinese / English)
-6. Shake-to-remind evening and morning times
-7. System calendar reminder sync
-8. Automatic daily text backup
-9. Diagnostic log capture / export / clear
-10. About (version, description, GitHub links)
+5. Interface language (system / Simplified Chinese / Traditional Chinese / English)
+6. Font size for interface text and post bodies (independent)
+7. Shake-to-remind evening and morning times
+8. System calendar reminder sync
+9. Automatic daily text backup
+10. Diagnostic log capture / export / clear
+11. About (version, description, GitHub links)
 
 ### Not included
 
@@ -309,10 +311,11 @@ The captures under `docs/screenshots/` are older than the current UI: the bottom
 ## Documentation
 
 - [`AGENTS.md`](AGENTS.md) — compact repo guidance for coding agents
-- [`docs/RULES.md`](docs/RULES.md) — workflow, bilingual rules, versioning
+- [`docs/RULES.md`](docs/RULES.md) — workflow, localization rules, versioning
 - [`docs/FEATURE.md`](docs/FEATURE.md) — shipped feature ledger (F-xxx) and backlog detail
 - [`docs/FIX.md`](docs/FIX.md) — fix ledger, CI/signing notes
-- [`docs/BACKUP_ARCHIVE.md`](docs/BACKUP_ARCHIVE.md) — JSON/ZIP/Markdown backup formats
+- [`docs/REVIEW.md`](docs/REVIEW.md) — consolidated engineering review, bug register, remaining roadmap
+- Backup formats (JSON/ZIP/Markdown): [`docs/RULES.md` §5](docs/RULES.md)
 - [Chinese README](README.zh-CN.md) — full Chinese translation
 
 ## Privacy and license

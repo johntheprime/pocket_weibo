@@ -12,7 +12,7 @@ object CacheSweeper {
     private const val MIN_AGE_MS = 24L * 60 * 60 * 1000
 
     private val prefixes = listOf(
-        "pocket_weibo_backup", "pocket_weibo_diag_", "pw_decrypted_", "pw_import_",
+        "pocket_weibo_backup", "pocket_weibo_diag", "pw_decrypted", "pw_import_",
         "pw_src_", "pw_voice_", "compose_capture_"
     )
 

@@ -97,14 +97,6 @@ interface CommentDao {
     @Query("DELETE FROM comments")
     suspend fun deleteAll()
 
-    /** BUG-002: exact-id, idempotent like (no-op if already liked). Single statement = atomic. */
-    @Query("UPDATE comments SET likeCount = likeCount + 1, likedBy = likedBy || :identityId || ',' WHERE id = :commentId AND (',' || likedBy) NOT LIKE '%,' || :identityId || ',%'")
-    suspend fun likeCommentById(commentId: Long, identityId: String)
-
-    /** BUG-002: removes exactly this id (not substrings); no-op if not liked. */
-    @Query("UPDATE comments SET likeCount = MAX(likeCount - 1, 0), likedBy = substr(REPLACE(',' || likedBy, ',' || :identityId || ',', ','), 2) WHERE id = :commentId AND (',' || likedBy) LIKE '%,' || :identityId || ',%'")
-    suspend fun unlikeCommentById(commentId: Long, identityId: String)
-
     @Query("UPDATE comments SET content = :newContent WHERE id = :commentId")
     suspend fun updateCommentContent(commentId: Long, newContent: String)
 

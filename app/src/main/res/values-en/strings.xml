@@ -93,6 +93,7 @@
     <string name="settings_language_section">Display language</string>
     <string name="settings_language_system">Follow system</string>
     <string name="settings_language_zh">简体中文</string>
+    <string name="settings_language_zh_tw">繁體中文</string>
     <string name="settings_language_en">English</string>
 
     <string name="settings_diagnostic_section">Diagnostic log</string>
@@ -493,4 +494,54 @@
     <string name="schedule_edit_title">Edit schedule</string>
     <string name="schedule_updated_toast">Schedule updated</string>
     <string name="remind_selection_pick_time">Pick time</string>
+    <!-- FP-P1 storage / export -->
+    <string name="export_save_to_file">Save to file…</string>
+    <string name="toast_export_saved">Backup saved</string>
+    <string name="settings_storage_title">Storage</string>
+    <string name="settings_storage_measuring">Calculating…</string>
+    <string name="settings_storage_summary">Data %1$s · Cache %2$s</string>
+    <string name="settings_storage_hint">Cache only holds temporary files that can be recreated (shared copies, image cache). Clearing it does not delete posts, images or backups.</string>
+    <string name="settings_storage_clear">Clear cache</string>
+    <string name="settings_storage_cleared">Cache cleared</string>
+    <!-- Timer restore -->
+    <string name="settings_restore_timers_title">Restore reminders &amp; schedules</string>
+    <string name="settings_restore_timers_subtitle">Restores only post reminders and identity schedules; posts and identities stay as they are. Works with ZIP, JSON and auto-backup (.pwb) files</string>
+    <string name="toast_restore_timers_done">Restored %1$d reminders and %2$d identity schedules</string>
+    <string name="toast_restore_timers_fail">Could not read this backup file</string>
+    <!-- FP-P3 UI -->
+    <string name="post_thumbnails_cd">%1$d attached images</string>
+    <string name="empty_feed_action">Write your first post</string>
+    <string name="home_empty_show_all">Show all posts</string>
+    <string name="home_empty_clear_search">Clear search</string>
+    <string name="schedule_hour_up_cd">Hour up</string>
+    <string name="schedule_hour_down_cd">Hour down</string>
+    <string name="schedule_minute_up_cd">Minutes up by 5</string>
+    <string name="schedule_minute_down_cd">Minutes down by 5</string>
+    <string name="compose_move_image_left_cd">Move image %1$d earlier</string>
+    <string name="compose_move_image_right_cd">Move image %1$d later</string>
+    <string name="compose_chars_remaining_cd">%1$d characters left</string>
+    <string name="settings_display_title">Display</string>
+    <string name="settings_font_size_ui_title">Interface text size</string>
+    <string name="settings_font_size_ui_desc">Affects menus, settings and screen labels</string>
+    <string name="settings_font_size_post_title">Post text size</string>
+    <string name="settings_font_size_post_desc">Scales post bodies and comments independently of the interface text</string>
+    <string name="settings_font_size_small">Small</string>
+    <string name="settings_font_size_default">Default</string>
+    <string name="settings_font_size_large">Large</string>
+    <string name="settings_font_size_xlarge">X-Large</string>
+    <string name="settings_feed_thumbnails_title">Image thumbnails in feed</string>
+    <string name="settings_feed_thumbnails_desc">Show up to 3 small images per post; off shows only an image icon</string>
+    <string name="settings_dynamic_color_title">Wallpaper colors</string>
+    <string name="settings_dynamic_color_desc">Use system wallpaper colors (Material You)</string>
+    <string name="settings_dynamic_color_unsupported">Requires Android 12 or later</string>
+    <!-- Home search -->
+    <string name="home_search_clear_text_cd">Clear search text</string>
+    <string name="home_search_close_cd">Close search</string>
+    <string name="home_search_range_all">Any time</string>
+    <string name="home_search_range_today">Today</string>
+    <string name="home_search_range_7d">Last 7 days</string>
+    <string name="home_search_range_30d">Last 30 days</string>
+    <string name="home_search_range_custom">Pick dates</string>
+    <string name="home_search_range_apply">OK</string>
+    <string name="home_search_result_count">%1$d posts found</string>
 </resources>

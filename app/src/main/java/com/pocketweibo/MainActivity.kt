@@ -24,6 +24,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.pocketweibo.data.prefs.FontScale
+import com.pocketweibo.data.prefs.UiPreferences
 import com.pocketweibo.ui.components.MainTab
 import com.pocketweibo.ui.components.SwipeBackHandler
 import com.pocketweibo.ui.components.WeiboBottomTabBar
@@ -40,7 +42,7 @@ import com.pocketweibo.ui.screens.me.MeScreen
 import com.pocketweibo.ui.screens.me.IdentityScheduleScreen
 import com.pocketweibo.ui.screens.me.MeSettingsScreen
 import com.pocketweibo.ui.screens.photo.PhotoScreen
-import com.pocketweibo.data.prefs.UiPreferences
+
 import com.pocketweibo.ui.ComposeIntentViewModel
 import com.pocketweibo.ui.theme.PocketWeiboTheme
 import com.pocketweibo.ui.util.findActivity
@@ -73,7 +75,18 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContent {
             val darkTheme = isSystemInDarkTheme()
-            PocketWeiboTheme(darkTheme = darkTheme) {
+            val dynamicColor by UiPreferences.dynamicColorFlow(applicationContext)
+                .collectAsStateWithLifecycle(initialValue = false)
+            val uiFontPercent by UiPreferences.uiFontScalePercentFlow(applicationContext)
+                .collectAsStateWithLifecycle(initialValue = FontScale.DEFAULT)
+            val postFontPercent by UiPreferences.postFontScalePercentFlow(applicationContext)
+                .collectAsStateWithLifecycle(initialValue = FontScale.DEFAULT)
+            PocketWeiboTheme(
+                darkTheme = darkTheme,
+                dynamicColor = dynamicColor,
+                uiFontScale = uiFontPercent / 100f,
+                postFontScale = postFontPercent / 100f
+            ) {
                 MainScreen(
                     composeIntentViewModel = composeIntentViewModel,
                     onExitPrivateMode = { finishAffinity() }
@@ -131,6 +144,8 @@ fun MainScreen(
     var selectedTopicKey by remember { mutableStateOf<String?>(null) }
     var showTopicManage by remember { mutableStateOf(false) }
     var topicQuery by remember { mutableStateOf("") }
+    /** Home search survives opening a post and coming back (cursor position included). */
+    var homeSearch by remember { mutableStateOf(com.pocketweibo.ui.screens.home.HomeSearchState()) }
     var topicSection by remember { mutableStateOf(TopicsSection.TOPICS) }
     var showTopicCompleted by remember { mutableStateOf(false) }
     /** Topic a “Post again” draft came from; return there after publishing. */
@@ -377,12 +392,15 @@ fun MainScreen(
                             onTopicClick = ::openTopic,
                             onOpenSettings = { showMeSettings = true },
                             onNavigateToDiscover = { selectedTab = MainTab.DISCOVER },
+                            onCompose = { showCompose = true },
                             listState = homeListState,
                             scrollToLatestSignal = homeScrollToLatestSignal,
                             scrollToLatestConsumedSignal = homeScrollToLatestConsumed,
                             onScrollToLatestConsumed = {
                                 homeScrollToLatestConsumed = homeScrollToLatestSignal
                             },
+                            search = homeSearch,
+                            onSearchChange = { homeSearch = it },
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.PHOTO -> PhotoScreen(modifier = Modifier.padding(paddingValues))

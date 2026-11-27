@@ -58,6 +58,7 @@ import com.pocketweibo.data.media.VoiceRecordingController
 import com.pocketweibo.ui.theme.GrayDark
 import com.pocketweibo.ui.theme.GrayMiddle
 import com.pocketweibo.ui.theme.WeiboOrange
+import com.pocketweibo.ui.theme.postTextSize
 import com.pocketweibo.ui.util.RelativeTimePreset
 import com.pocketweibo.ui.util.copyPlainToClipboard
 import com.pocketweibo.ui.util.identityDisplayName
@@ -92,7 +93,6 @@ fun CommentBottomSheet(
     onSendComment: (String, File?) -> Unit,
     onDeleteComment: (Long) -> Unit,
     onEditComment: (Long, String) -> Unit = { _, _ -> },
-    onLikeComment: (Long, Boolean) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -370,7 +370,7 @@ private fun CommentItem(
             }
             Text(
                 text = bodyDisplay,
-                fontSize = 14.sp,
+                fontSize = postTextSize(14.sp),
                 color = GrayDark,
                 modifier = Modifier.padding(top = 4.dp)
             )

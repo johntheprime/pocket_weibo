@@ -411,7 +411,7 @@ private fun EditScheduleDialog(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         IconButton(onClick = { selectedHour = (selectedHour + 1) % 24 }) {
-                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = null)
+                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(R.string.schedule_hour_up_cd))
                         }
                         Text(
                             text = String.format("%02d", selectedHour),
@@ -420,7 +420,7 @@ private fun EditScheduleDialog(
                             color = GrayDark
                         )
                         IconButton(onClick = { selectedHour = (selectedHour + 23) % 24 }) {
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(R.string.schedule_hour_down_cd))
                         }
                     }
                     Text(
@@ -432,7 +432,7 @@ private fun EditScheduleDialog(
                     )
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         IconButton(onClick = { selectedMinute = (selectedMinute + 5) % 60 }) {
-                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = null)
+                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = stringResource(R.string.schedule_minute_up_cd))
                         }
                         Text(
                             text = String.format("%02d", selectedMinute),
@@ -441,7 +441,7 @@ private fun EditScheduleDialog(
                             color = GrayDark
                         )
                         IconButton(onClick = { selectedMinute = (selectedMinute + 55) % 60 }) {
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = stringResource(R.string.schedule_minute_down_cd))
                         }
                     }
                 }

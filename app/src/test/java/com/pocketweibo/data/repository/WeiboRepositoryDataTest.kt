@@ -94,6 +94,8 @@ class WeiboRepositoryDataTest {
     }
 
     // ---- BUG-002 ----
+    // Comment likes have no UI; like/unlike were removed (2026-11-27). The stored `likedBy` column
+    // stays for backups, and `isLikedByMe` must still use exact delimited id matching.
 
     @Test
     fun likeState_usesExactIdNotSubstring() = runBlocking {
@@ -102,40 +104,24 @@ class WeiboRepositoryDataTest {
         val eleven = identity("eleven")                    // id 11
         assertEquals(11L, eleven)
         val post = db.postDao().insert(PostEntity(identityId = one, content = "p"))
-        val c = db.commentDao().insert(CommentEntity(postId = post, identityId = one, content = "c"))
+        val c = db.commentDao().insert(
+            CommentEntity(postId = post, identityId = one, content = "c", likeCount = 1, likedBy = "11,")
+        )
+        assertFalse("id 1 must not match likedBy \"11,\"", repo.getCommentsByPost(post).first().single().isLikedByMe)
 
-        repo.likeComment(c, eleven)
-        val asOne = repo.getCommentsByPost(post).first().single()
-        assertFalse("id 1 must not match likedBy \"11,\"", asOne.isLikedByMe)
-
-        repo.likeComment(c, one)
+        db.commentDao().update(db.commentDao().getEntityById(c)!!.copy(likeCount = 2, likedBy = "11,1,"))
         assertTrue(repo.getCommentsByPost(post).first().single().isLikedByMe)
     }
 
     @Test
-    fun like_isIdempotent_andUnlikeRemovesOnlyThatId() = runBlocking {
+    fun likedBy_survivesExportImport() = runBlocking {
         val one = identity("one", active = true)
-        repeat(9) { identity("filler$it") }
-        val eleven = identity("eleven")
         val post = db.postDao().insert(PostEntity(identityId = one, content = "p"))
-        val c = db.commentDao().insert(CommentEntity(postId = post, identityId = one, content = "c"))
-
-        repo.likeComment(c, eleven)
-        repo.likeComment(c, one)
-        repo.likeComment(c, one) // double tap: no-op
-        var row = db.commentDao().getEntityById(c)!!
-        assertEquals(2, row.likeCount)
-        assertEquals("11,1,", row.likedBy)
-
-        repo.unlikeComment(c, one)
-        row = db.commentDao().getEntityById(c)!!
+        db.commentDao().insert(CommentEntity(postId = post, identityId = one, content = "c", likeCount = 1, likedBy = "1,"))
+        assertTrue(repo.importData(repo.exportAllData(), override = true))
+        val row = db.commentDao().listAllForBackup().single()
         assertEquals(1, row.likeCount)
-        assertEquals("11,", row.likedBy)
-
-        repo.unlikeComment(c, one) // not liked: no-op, no negative drift
-        row = db.commentDao().getEntityById(c)!!
-        assertEquals(1, row.likeCount)
-        assertEquals("11,", row.likedBy)
+        assertEquals("1,", row.likedBy)
     }
 
     // ---- atomic override import ----

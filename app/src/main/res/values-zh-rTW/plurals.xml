@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="post_detail_remind_minutes">
+        <item quantity="other">%d 分鐘</item>
+    </plurals>
+    <plurals name="post_detail_remind_hours">
+        <item quantity="other">%d 時</item>
+    </plurals>
+    <plurals name="reminder_in_minutes_future">
+        <item quantity="other">%d 分鐘後</item>
+    </plurals>
+    <plurals name="reminder_in_hours_future">
+        <item quantity="other">%d 時後</item>
+    </plurals>
+</resources>

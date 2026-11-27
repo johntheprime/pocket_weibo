@@ -9,7 +9,7 @@ Compact, repo-specific guidance for coding agents. Read `docs/RULES.md` §0 and 
 - Navigation is manual: `MainScreen` uses remembered booleans/IDs and a `when` block. There is no `NavHost` despite the navigation dependency.
 - Screens/ViewModels live under `ui/screens/<area>`; reusable Compose UI under `ui/components`; time/clipboard/format helpers under `ui/util`.
 - `WeiboRepository` wraps Room DAOs and exposes `Flow`s; screen ViewModels expose `StateFlow`. Prefer extending these over introducing new data layers.
-- UI is bilingual, default Chinese (`values/`) with English (`values-en/`). Every user-visible string must exist in both files.
+- UI ships in three languages: default Simplified Chinese (`values/`), English (`values-en/`) and Traditional Chinese (`values-zh-rTW/`). Every user-visible string must exist in all three locales.
 - Background work is `AlarmManager` + `BroadcastReceiver` (`reminder/`), not WorkManager. `PocketWeiboApp.onCreate` reschedules reminders and identity schedules from Room; boot/package-update receivers re-register alarms.
 - Automatic daily text backup runs at app startup (`AutoDailyBackup`) and retains the latest 3 local calendar days.
 
@@ -53,8 +53,8 @@ export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"  
 - Work on a short-lived branch (`feat/…`, `fix/…`, `chore/…`) and open a pull request; `main` only changes through a merged PR with a green `CI / build` check. Do not push directly to `main`.
 - One commit per user request; do not bundle unrelated changes.
 - Bump `versionCode` by 1 for every shippable change. Bump `versionName`: MINOR for a new user-facing feature, PATCH for a fix/small correction.
-- Record user-facing features in `docs/FEATURE.md` (next `F-xxx` row) and notable fixes in `docs/FIX.md`. The ledgers are written in Chinese; match the existing table style.
-- Verify with `./gradlew test assembleDebug` before committing. Also run `./gradlew assembleRelease` when touching signing, `app/build.gradle.kts`, or CI.
+- Record user-facing features in `docs/FEATURE.md` (next `F-xxx` row) and notable fixes in `docs/FIX.md`, with the commit hash and date. Engineering findings live in `docs/REVIEW.md`; the backup format contract is `docs/RULES.md` §5. Keep `docs/` to these four files. The ledgers are written in Chinese; match the existing table style.
+- Verify with `./gradlew test lint assembleDebug` before committing. Also run `./gradlew assembleRelease` when touching signing, `app/build.gradle.kts`, or CI.
 - Never commit `local.properties`, `secrets/*`, keystores, passwords, or generated build output. `secrets/README.md` documents the signing layout.
 
 ## Data and migration gotchas
