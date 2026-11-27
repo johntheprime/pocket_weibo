@@ -27,7 +27,7 @@ private val KEY_SHAKE_EV_M = intPreferencesKey("shake_rem_evening_m")
 private val KEY_SHAKE_MO_H = intPreferencesKey("shake_rem_morning_h")
 private val KEY_SHAKE_MO_M = intPreferencesKey("shake_rem_morning_m")
 
-/** Stored codes: `system`, `zh`, `en`. */
+/** Stored codes: `system`, `zh`, `zh-TW`, `en`. */
 object UiPreferences {
 
     suspend fun getLanguageCode(context: Context): String =
@@ -69,6 +69,7 @@ object UiPreferences {
         val locales = when (code) {
             "en" -> LocaleListCompat.forLanguageTags("en")
             "zh" -> LocaleListCompat.forLanguageTags("zh-CN")
+            "zh-TW" -> LocaleListCompat.forLanguageTags("zh-TW")
             else -> LocaleListCompat.getEmptyLocaleList()
         }
         AppCompatDelegate.setApplicationLocales(locales)

@@ -9,7 +9,7 @@ Compact, repo-specific guidance for coding agents. Read `docs/RULES.md` §0 and 
 - Navigation is manual: `MainScreen` uses remembered booleans/IDs and a `when` block. There is no `NavHost` despite the navigation dependency.
 - Screens/ViewModels live under `ui/screens/<area>`; reusable Compose UI under `ui/components`; time/clipboard/format helpers under `ui/util`.
 - `WeiboRepository` wraps Room DAOs and exposes `Flow`s; screen ViewModels expose `StateFlow`. Prefer extending these over introducing new data layers.
-- UI is bilingual, default Chinese (`values/`) with English (`values-en/`). Every user-visible string must exist in both files.
+- UI ships in three languages: default Simplified Chinese (`values/`), English (`values-en/`) and Traditional Chinese (`values-zh-rTW/`). Every user-visible string must exist in all three locales.
 - Background work is `AlarmManager` + `BroadcastReceiver` (`reminder/`), not WorkManager. `PocketWeiboApp.onCreate` reschedules reminders and identity schedules from Room; boot/package-update receivers re-register alarms.
 - Automatic daily text backup runs at app startup (`AutoDailyBackup`) and retains the latest 3 local calendar days.
 

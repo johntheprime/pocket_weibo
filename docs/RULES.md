@@ -23,17 +23,17 @@ When recording, always add the **commit hash and date**: FEATURE.md status `✅ 
 
 ---
 
-## 1. Bilingual app (required)
+## 1. Localized app (required)
 
-PocketWeibo is a **bilingual** UI: default locale strings live in `app/src/main/res/values/strings.xml`; English in `app/src/main/res/values-en/strings.xml`. Per-app language is controlled in settings (`UiPreferences` / `AppCompatDelegate.setApplicationLocales`).
+PocketWeibo ships in **three languages**: default locale strings live in `app/src/main/res/values/strings.xml` (Simplified Chinese), with `values-en/strings.xml` (English) and `values-zh-rTW/strings.xml` (Traditional Chinese). Per-app language is controlled in settings (`UiPreferences` / `AppCompatDelegate.setApplicationLocales`) with codes `system`, `zh`, `zh-TW` and `en`.
 
 **For every user-visible change:**
 
-- Add or update the **same string keys** in **both** `values/strings.xml` and `values-en/strings.xml`. Do not leave English-only or Chinese-only keys used by the UI.
+- Add or update the **same string keys** in **all three** `values/` directories (`strings.xml`, and `plurals.xml` where relevant). Do not leave a key missing from any locale used by the UI.
 - Prefer `stringResource(R.string.*)` in Compose and `context.getString(R.string.*)` where a `Context` is available.
 - Covers **all** UI chrome: titles, tabs, placeholders, content descriptions, toasts, dialogs, empty states, relative times, clipboard labels, markdown export headings/labels, etc. (Seed/demo **data** in `DataSeeder.kt` does not need translation.)
 
-**Parity check:** any `R.string.*` referenced in code must exist in **both** resource files before you merge. `StringParityTest` enforces matching string / plurals / string-array keys in `./gradlew test`.
+**Parity check:** any `R.string.*` referenced in code must exist in **every** locale resource directory before you merge. `StringParityTest` enforces matching string / plurals / string-array keys across all three locales in `./gradlew test`.
 
 ---
 

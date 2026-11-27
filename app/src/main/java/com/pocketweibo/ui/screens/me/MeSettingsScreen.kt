@@ -931,78 +931,83 @@ private fun LanguagePreferenceSection(onApplied: () -> Unit) {
                 fontWeight = FontWeight.SemiBold,
                 color = GrayMiddle
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            val chooseLanguage: (String) -> Unit = { code ->
+                scope.launch {
+                    UiPreferences.setLanguageCode(appCtx, code)
+                    UiPreferences.applyLanguageCode(code)
+                    selected = code
+                    onApplied()
+                }
+            }
+            Column(
+                modifier = Modifier.padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                val chipModifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 36.dp)
-                FilterChip(
-                    selected = selected == "system",
-                    onClick = {
-                        scope.launch {
-                            UiPreferences.setLanguageCode(appCtx, "system")
-                            UiPreferences.applyLanguageCode("system")
-                            selected = "system"
-                            onApplied()
-                        }
-                    },
-                    label = {
-                        Text(
-                            text = stringResource(R.string.settings_language_system),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 12.sp
-                        )
-                    },
-                    modifier = chipModifier
-                )
-                FilterChip(
-                    selected = selected == "zh",
-                    onClick = {
-                        scope.launch {
-                            UiPreferences.setLanguageCode(appCtx, "zh")
-                            UiPreferences.applyLanguageCode("zh")
-                            selected = "zh"
-                            onApplied()
-                        }
-                    },
-                    label = {
-                        Text(
-                            text = stringResource(R.string.settings_language_zh),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 12.sp
-                        )
-                    },
-                    modifier = chipModifier
-                )
-                FilterChip(
-                    selected = selected == "en",
-                    onClick = {
-                        scope.launch {
-                            UiPreferences.setLanguageCode(appCtx, "en")
-                            UiPreferences.applyLanguageCode("en")
-                            selected = "en"
-                            onApplied()
-                        }
-                    },
-                    label = {
-                        Text(
-                            text = stringResource(R.string.settings_language_en),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 12.sp
-                        )
-                    },
-                    modifier = chipModifier
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    LanguageChoiceChip(
+                        code = "system",
+                        label = stringResource(R.string.settings_language_system),
+                        selected = selected,
+                        onClick = chooseLanguage,
+                        modifier = Modifier.weight(1f)
+                    )
+                    LanguageChoiceChip(
+                        code = "zh",
+                        label = stringResource(R.string.settings_language_zh),
+                        selected = selected,
+                        onClick = chooseLanguage,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    LanguageChoiceChip(
+                        code = "zh-TW",
+                        label = stringResource(R.string.settings_language_zh_tw),
+                        selected = selected,
+                        onClick = chooseLanguage,
+                        modifier = Modifier.weight(1f)
+                    )
+                    LanguageChoiceChip(
+                        code = "en",
+                        label = stringResource(R.string.settings_language_en),
+                        selected = selected,
+                        onClick = chooseLanguage,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguageChoiceChip(
+    code: String,
+    label: String,
+    selected: String,
+    onClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FilterChip(
+        selected = selected == code,
+        onClick = { onClick(code) },
+        label = {
+            Text(
+                text = label,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 12.sp
+            )
+        },
+        modifier = modifier.heightIn(min = 36.dp)
+    )
 }
 
 @Composable
