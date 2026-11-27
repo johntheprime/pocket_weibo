@@ -19,6 +19,8 @@ private val Context.uiPreferencesDataStore: DataStore<Preferences> by preference
 private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
 private val KEY_DIAGNOSTIC_LOG_CAPTURE = booleanPreferencesKey("diagnostic_log_capture")
 private val KEY_CALENDAR_SYNC_ENABLED = booleanPreferencesKey("calendar_sync_enabled")
+private val KEY_FEED_THUMBNAILS = booleanPreferencesKey("feed_thumbnails")
+private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
 
 private val KEY_SHAKE_EV_H = intPreferencesKey("shake_rem_evening_h")
 private val KEY_SHAKE_EV_M = intPreferencesKey("shake_rem_evening_m")
@@ -95,6 +97,22 @@ object UiPreferences {
 
     suspend fun setCalendarSyncEnabled(context: Context, enabled: Boolean) {
         context.uiPreferencesDataStore.edit { it[KEY_CALENDAR_SYNC_ENABLED] = enabled }
+    }
+
+    /** FP-P3: show up to 3 image thumbnails on home feed cards (default on). */
+    fun feedThumbnailsFlow(context: Context): Flow<Boolean> =
+        context.uiPreferencesDataStore.data.map { prefs -> prefs[KEY_FEED_THUMBNAILS] ?: true }
+
+    suspend fun setFeedThumbnails(context: Context, enabled: Boolean) {
+        context.uiPreferencesDataStore.edit { it[KEY_FEED_THUMBNAILS] = enabled }
+    }
+
+    /** FP-P3: Material You wallpaper colors on Android 12+ (default off). */
+    fun dynamicColorFlow(context: Context): Flow<Boolean> =
+        context.uiPreferencesDataStore.data.map { prefs -> prefs[KEY_DYNAMIC_COLOR] == true }
+
+    suspend fun setDynamicColor(context: Context, enabled: Boolean) {
+        context.uiPreferencesDataStore.edit { it[KEY_DYNAMIC_COLOR] = enabled }
     }
 
     /** Shake on post detail: default “today evening” and “next morning” reminder anchors. */

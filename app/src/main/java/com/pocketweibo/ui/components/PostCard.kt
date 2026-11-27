@@ -63,6 +63,8 @@ fun PostCard(
     onTopicClick: (String) -> Unit = {},
     /** List feeds are text-first; images remain visible in post detail. */
     showPostImages: Boolean = false,
+    /** FP-P3: small thumbnail strip (≤ 3) instead of the image badge. */
+    showThumbnails: Boolean = false,
     /** Next pending reminder for this post; shows an orange badge when non-null. */
     reminderFireAtMillis: Long? = null,
     /** Search terms to highlight in the author name and body. */
@@ -152,7 +154,7 @@ fun PostCard(
                                     .size(14.dp)
                             )
                         }
-                        if (!showPostImages && hasStoredImages) {
+                        if (!showPostImages && !showThumbnails && hasStoredImages) {
                             ListPostImageIndicator(
                                 imageUris = post.imageUris,
                                 modifier = Modifier.padding(start = 4.dp)
@@ -185,6 +187,13 @@ fun PostCard(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 8.dp)
             )
+
+            if (showThumbnails && !showPostImages && hasStoredImages) {
+                PostThumbnailStrip(
+                    imageUris = post.imageUris,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
 
             if (showPostImages && hasStoredImages) {
                 PostImageGallery(

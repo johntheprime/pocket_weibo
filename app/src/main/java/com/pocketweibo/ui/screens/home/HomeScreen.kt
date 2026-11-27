@@ -110,6 +110,8 @@ fun HomeScreen(
     onTopicClick: (String) -> Unit = {},
     onOpenSettings: () -> Unit = {},
     onNavigateToDiscover: () -> Unit = {},
+    /** FP-P3: empty-feed action opens the composer. */
+    onCompose: () -> Unit = {},
     listState: LazyListState,
     /** Incremented when user double-taps the Home tab or publishes a post: clear search filter and replay refresh affordance. */
     scrollToLatestSignal: Int = 0,
@@ -268,6 +270,8 @@ fun HomeScreen(
     )
 
     val searchKeywords = remember(searchQuery) { parseSearchKeywords(searchQuery) }
+    val feedThumbnails by com.pocketweibo.data.prefs.UiPreferences.feedThumbnailsFlow(context.applicationContext)
+        .collectAsStateWithLifecycle(initialValue = true)
     val filteredPosts = remember(posts, searchQuery, homeIdentityFilterId, commentSearchRows) {
         var list = posts
         val fid = homeIdentityFilterId
@@ -430,9 +434,13 @@ fun HomeScreen(
                     .pullRefresh(pullRefreshState)
             ) {
                 when {
-                    posts.isEmpty() -> EmptyFeed()
-                    filteredPosts.isEmpty() && searchQuery.isNotBlank() -> EmptySearch()
-                    filteredPosts.isEmpty() -> EmptyFilteredFeed()
+                    posts.isEmpty() -> EmptyFeed(onCompose = onCompose)
+                    filteredPosts.isEmpty() && searchQuery.isNotBlank() -> EmptySearch(
+                        onClear = { searchQuery = "" }
+                    )
+                    filteredPosts.isEmpty() -> EmptyFilteredFeed(
+                        onShowAll = { homeIdentityFilterId = null }
+                    )
                     else -> {
                         LazyColumn(
                             state = listState,
@@ -456,7 +464,8 @@ fun HomeScreen(
                                     onTopicClick = onTopicClick,
                                     reminderFireAtMillis =
                                         nextReminderByPostId[post.id]?.fireAtMillis,
-                                    highlightKeywords = searchKeywords
+                                    highlightKeywords = searchKeywords,
+                                    showThumbnails = feedThumbnails
                                 )
                             }
                             if (showCommentSheet) {
@@ -791,30 +800,40 @@ private fun HomeTitleQuickAccessSheet(
 }
 
 @Composable
-private fun EmptyFilteredFeed() {
+private fun EmptyFilteredFeed(onShowAll: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = stringResource(R.string.home_empty_filter_identity),
-            fontSize = 16.sp,
-            color = GrayMiddle
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = stringResource(R.string.home_empty_filter_identity),
+                fontSize = 16.sp,
+                color = GrayMiddle
+            )
+            TextButton(onClick = onShowAll, modifier = Modifier.padding(top = 8.dp)) {
+                Text(stringResource(R.string.home_empty_show_all))
+            }
+        }
     }
 }
 
 @Composable
-private fun EmptySearch() {
+private fun EmptySearch(onClear: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = stringResource(R.string.home_empty_search),
-            fontSize = 16.sp,
-            color = GrayMiddle
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = stringResource(R.string.home_empty_search),
+                fontSize = 16.sp,
+                color = GrayMiddle
+            )
+            TextButton(onClick = onClear, modifier = Modifier.padding(top = 8.dp)) {
+                Text(stringResource(R.string.home_empty_clear_search))
+            }
+        }
     }
 }
 
@@ -837,7 +856,7 @@ private fun sharePost(context: Context, authorName: String, content: String) {
 }
 
 @Composable
-private fun EmptyFeed() {
+private fun EmptyFeed(onCompose: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -856,6 +875,13 @@ private fun EmptyFeed() {
                 color = GrayMiddle,
                 modifier = Modifier.padding(top = 8.dp)
             )
+            // FP-P3: first-run state offers the action directly.
+            androidx.compose.material3.Button(
+                onClick = onCompose,
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                Text(stringResource(R.string.empty_feed_action))
+            }
         }
     }
 }

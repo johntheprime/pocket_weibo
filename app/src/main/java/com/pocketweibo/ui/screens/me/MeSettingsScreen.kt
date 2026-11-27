@@ -424,6 +424,10 @@ fun MeSettingsScreen(
             }
             item {
                 Divider()
+                DisplaySettingsSection()
+            }
+            item {
+                Divider()
                 StorageSettingsSection()
             }
             item {
@@ -1315,6 +1319,64 @@ private fun ExportDialog(
             }
         }
     )
+}
+
+/** FP-P3: Settings → Display. Feed thumbnails and Material You colors. */
+@Composable
+private fun DisplaySettingsSection() {
+    val context = LocalContext.current
+    val appCtx = context.applicationContext
+    val scope = rememberCoroutineScope()
+    val thumbs by UiPreferences.feedThumbnailsFlow(appCtx).collectAsStateWithLifecycle(initialValue = true)
+    val dynamic by UiPreferences.dynamicColorFlow(appCtx).collectAsStateWithLifecycle(initialValue = false)
+    val dynamicSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+    Surface(modifier = Modifier.fillMaxWidth(), color = Color.White) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.settings_display_title),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = GrayDark
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_feed_thumbnails_title), fontSize = 15.sp, color = GrayDark)
+                    Text(
+                        stringResource(R.string.settings_feed_thumbnails_desc),
+                        fontSize = 12.sp, color = GrayMiddle, modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+                Switch(
+                    checked = thumbs,
+                    onCheckedChange = { v -> scope.launch { UiPreferences.setFeedThumbnails(appCtx, v) } }
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_dynamic_color_title), fontSize = 15.sp, color = GrayDark)
+                    Text(
+                        stringResource(
+                            if (dynamicSupported) R.string.settings_dynamic_color_desc
+                            else R.string.settings_dynamic_color_unsupported
+                        ),
+                        fontSize = 12.sp, color = GrayMiddle, modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+                Switch(
+                    checked = dynamic && dynamicSupported,
+                    enabled = dynamicSupported,
+                    onCheckedChange = { v -> scope.launch { UiPreferences.setDynamicColor(appCtx, v) } }
+                )
+            }
+        }
+    }
 }
 
 /** FP-P1: Settings → Storage. Shows data vs cache size and clears the cache on request. */

@@ -73,7 +73,9 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContent {
             val darkTheme = isSystemInDarkTheme()
-            PocketWeiboTheme(darkTheme = darkTheme) {
+            val dynamicColor by UiPreferences.dynamicColorFlow(applicationContext)
+                .collectAsStateWithLifecycle(initialValue = false)
+            PocketWeiboTheme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
                 MainScreen(
                     composeIntentViewModel = composeIntentViewModel,
                     onExitPrivateMode = { finishAffinity() }
@@ -377,6 +379,7 @@ fun MainScreen(
                             onTopicClick = ::openTopic,
                             onOpenSettings = { showMeSettings = true },
                             onNavigateToDiscover = { selectedTab = MainTab.DISCOVER },
+                            onCompose = { showCompose = true },
                             listState = homeListState,
                             scrollToLatestSignal = homeScrollToLatestSignal,
                             scrollToLatestConsumedSignal = homeScrollToLatestConsumed,

@@ -507,4 +507,22 @@
     <string name="settings_restore_timers_subtitle">Restores only post reminders and identity schedules; posts and identities stay as they are. Works with ZIP, JSON and auto-backup (.pwb) files</string>
     <string name="toast_restore_timers_done">Restored %1$d reminders and %2$d identity schedules</string>
     <string name="toast_restore_timers_fail">Could not read this backup file</string>
+    <!-- FP-P3 UI -->
+    <string name="post_thumbnails_cd">%1$d attached images</string>
+    <string name="empty_feed_action">Write your first post</string>
+    <string name="home_empty_show_all">Show all posts</string>
+    <string name="home_empty_clear_search">Clear search</string>
+    <string name="schedule_hour_up_cd">Hour up</string>
+    <string name="schedule_hour_down_cd">Hour down</string>
+    <string name="schedule_minute_up_cd">Minutes up by 5</string>
+    <string name="schedule_minute_down_cd">Minutes down by 5</string>
+    <string name="compose_move_image_left_cd">Move image %1$d earlier</string>
+    <string name="compose_move_image_right_cd">Move image %1$d later</string>
+    <string name="compose_chars_remaining_cd">%1$d characters left</string>
+    <string name="settings_display_title">Display</string>
+    <string name="settings_feed_thumbnails_title">Image thumbnails in feed</string>
+    <string name="settings_feed_thumbnails_desc">Show up to 3 small images per post; off shows only an image icon</string>
+    <string name="settings_dynamic_color_title">Wallpaper colors</string>
+    <string name="settings_dynamic_color_desc">Use system wallpaper colors (Material You)</string>
+    <string name="settings_dynamic_color_unsupported">Requires Android 12 or later</string>
 </resources>

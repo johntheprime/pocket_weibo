@@ -1,6 +1,10 @@
 package com.pocketweibo.ui.theme
 
 import android.app.Activity
+import android.os.Build
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -49,9 +53,17 @@ val LocalDarkTheme = compositionLocalOf { false }
 @Composable
 fun PocketWeiboTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    /** FP-P3: wallpaper-based colors (Android 12+); ignored on older devices. */
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val context = LocalContext.current
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
     
     CompositionLocalProvider(LocalDarkTheme provides darkTheme) {
         MaterialTheme(

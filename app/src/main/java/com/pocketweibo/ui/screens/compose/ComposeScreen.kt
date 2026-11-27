@@ -27,6 +27,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -66,6 +69,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -618,10 +622,18 @@ fun ComposeScreen(
                                 .padding(top = 4.dp),
                             horizontalArrangement = Arrangement.End
                         ) {
+                            // FP-P3: counter turns red and is announced when close to the limit.
+                            val nearLimit = content.text.length > COMPOSE_MAX_CHARS - 100
+                            val remaining = (COMPOSE_MAX_CHARS - content.text.length).coerceAtLeast(0)
+                            val counterCd = stringResource(R.string.compose_chars_remaining_cd, remaining)
                             Text(
                                 text = "${content.text.length}/$COMPOSE_MAX_CHARS",
                                 fontSize = 12.sp,
-                                color = if (content.text.length > COMPOSE_MAX_CHARS - 100) Color(0xFFFF5136) else GrayMiddle
+                                color = if (nearLimit) Color(0xFFFF5136) else GrayMiddle,
+                                modifier = Modifier.semantics {
+                                    contentDescription = counterCd
+                                    if (nearLimit) liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite
+                                }
                             )
                         }
                         if (preparedImageFiles.isNotEmpty()) {
@@ -665,7 +677,7 @@ fun ComposeScreen(
                                     .padding(top = 8.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                items(preparedImageFiles, key = { it.absolutePath }) { file ->
+                                itemsIndexed(preparedImageFiles, key = { _, f -> f.absolutePath }) { index, file ->
                                     Box(
                                         modifier = Modifier.size(80.dp)
                                     ) {
@@ -697,6 +709,54 @@ fun ComposeScreen(
                                                 tint = Color.White,
                                                 modifier = Modifier.size(12.dp)
                                             )
+                                        }
+                                        // FP-P3: reorder attached images; order is kept when publishing.
+                                        if (preparedImageFiles.size > 1) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .align(Alignment.BottomCenter)
+                                                    .fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                if (index > 0) {
+                                                    IconButton(
+                                                        onClick = {
+                                                            preparedImageFiles = preparedImageFiles.toMutableList()
+                                                                .apply { add(index - 1, removeAt(index)) }
+                                                        },
+                                                        modifier = Modifier
+                                                            .size(24.dp)
+                                                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.KeyboardArrowLeft,
+                                                            contentDescription = stringResource(R.string.compose_move_image_left_cd, index + 1),
+                                                            tint = Color.White,
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    }
+                                                } else {
+                                                    Box(modifier = Modifier.size(24.dp))
+                                                }
+                                                if (index < preparedImageFiles.lastIndex) {
+                                                    IconButton(
+                                                        onClick = {
+                                                            preparedImageFiles = preparedImageFiles.toMutableList()
+                                                                .apply { add(index + 1, removeAt(index)) }
+                                                        },
+                                                        modifier = Modifier
+                                                            .size(24.dp)
+                                                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.KeyboardArrowRight,
+                                                            contentDescription = stringResource(R.string.compose_move_image_right_cd, index + 1),
+                                                            tint = Color.White,
+                                                            modifier = Modifier.size(16.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
