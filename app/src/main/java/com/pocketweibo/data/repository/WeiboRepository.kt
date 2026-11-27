@@ -556,14 +556,6 @@ class WeiboRepository(
         CommentAttachmentStorage.deleteForComment(context, commentId)
     }
 
-    suspend fun likeComment(commentId: Long, identityId: Long) {
-        commentDao.likeCommentById(commentId, identityId.toString())
-    }
-
-    suspend fun unlikeComment(commentId: Long, identityId: Long) {
-        commentDao.unlikeCommentById(commentId, identityId.toString())
-    }
-
     suspend fun updateComment(comment: CommentEntity) {
         commentDao.updateCommentContent(comment.id, comment.content)
     }

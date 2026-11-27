@@ -136,7 +136,7 @@ Merged from the former `FEATURE-PROPOSALS.md` (2026-11-26). Engineering items fr
 | FP-P2 | **Offline location (province / country)** | ⬜ Todo | GPS via `LocationManager` (last-known first, 15–30 s timeout); bundled province boundary data + point-in-polygon, no `Geocoder`; never store lat/lng. `PostEntity.provinceCode` (GB/T 2260) via a new migration (needs migration tests, REVIEW.md decision 3). Opt-in 📍 chip in composer (off by default), manual picker fallback, footer display, optional Discover filter, permission rationale. Include in every export/import path (avoid repeating BUG-001); update the backup contract in RULES.md, README (both languages). Tests: known cities, border points, migration, backup round-trip. **Answered:** outside China → show the **country name**; location is editable **before** posting but **not after**; **comments** can carry a location too. |
 | FP-P3 | **UI improvements** | ⬜ Todo | Feed thumbnails (≤ 3, Coil with `size()`); empty / first-run states; live character counter near 2,000 and drag-to-reorder images; 200 % font-scale and content-description pass; optional dynamic color (Android 12+); edge-to-edge / predictive back together with targetSdk 35 (REVIEW.md §6 Phase 6); review `docs/screenshots/` for concrete suggestions. |
 
-Suggested order: finish FP-P1 → migration tests → FP-P2 (can share the next migration with the `comment_likes` table) → FP-P3 anytime.
+Suggested order: finish FP-P1 → migration tests → FP-P2 → FP-P3 anytime.
 
 ---
 

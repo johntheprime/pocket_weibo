@@ -162,7 +162,7 @@ All review work landed on `main` on **2026-11-26** in this order:
 | ID | Sev | Summary | Status |
 |---|---|---|---|
 | BUG-001 | High | Restore wiped `isPinned` (JSON, ZIP, auto-backup). | ✅ `fd9049e` 2026-11-26 — exported and imported; export `version` 4 (full) / 3 (auto). |
-| BUG-002 | High | Comment like-state: substring `LIKE`, default identity 0, non-idempotent like, corrupting unlike. | 🟡 `fd9049e` 2026-11-26 — active identity passed in; exact delimited match; idempotent like/unlike. ⬜ Proper fix: `comment_likes(commentId, identityId)` table + migration 16→17. |
+| BUG-002 | High | Comment like-state: substring `LIKE`, default identity 0, non-idempotent like, corrupting unlike. | ✅ `fd9049e` 2026-11-26 — active identity passed in; exact delimited match. 2026-11-27 (3.75.2, commit pending): comment likes have no UI, so like/unlike code and the unused `onLikeComment` parameter were removed; the `comment_likes` table / migration 16→17 is **not needed**. `likedBy` / `likeCount` stay in the schema and backups. |
 | BUG-003 | Medium | `clearAllData()` left alarms armed. | ✅ `7894874` 2026-11-26 |
 | BUG-004 | Medium | BC (negative) years lost their minus on edit. | ✅ `f2ffe9c` 2026-11-26 — `signedYearInput` + `SignedYearInputTest`. |
 | BUG-005 | Low | Identity schedule lacked 工作日 / 周末 one-tap presets (F-059). | ✅ `f2ffe9c` 2026-11-26 |
@@ -204,7 +204,7 @@ Phases kept from the 2026-11-26 roadmap; only open work is listed.
 | Phase | Theme | Open items |
 |---|---|---|
 | 0 — Safety net | Tests before risky changes | Full ZIP round-trip (fields + media hashes); truncated / missing-`data.json` / old v1–v2 fixtures; migration tests (decision 3); schema v1 check (decision 2). |
-| 1 — Backup safety | Remaining P0/P1 | `comment_likes` table (BUG-002 proper fix, migration 16→17); auto-backup key (decision 1) + one keystore; exclude `auto_text_backups/` from device transfer; `opt*` import normalization (R3 §2.5); optional pre-import snapshot. |
+| 1 — Backup safety | Remaining P0/P1 | auto-backup key (decision 1) + one keystore; exclude `auto_text_backups/` from device transfer; `opt*` import normalization (R3 §2.5); optional pre-import snapshot. |
 | 2 — Reliability | Startup, alarms, storage | Reschedule only on boot/update/time change; remaining transactions (post + attachments + reminders); `LOCKED_BOOT_COMPLETED`; DST tests; move composition-scope writes into ViewModels. |
 | 3 — Refactor | Maintainability | Split `WeiboRepository` (`BackupCodec` first, streaming `JsonWriter`, versioned DTOs); slim screens > 500 lines; `AppContainer`; move double-back state off `Application`. |
 | 4 — Navigation | NavHost | Typed routes; remove nav `!!`; route notification / shortcut / share intents (BUG-011); keep `SwipeBackHandler` semantics; back-navigation UI test. |

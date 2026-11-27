@@ -92,7 +92,6 @@ fun CommentBottomSheet(
     onSendComment: (String, File?) -> Unit,
     onDeleteComment: (Long) -> Unit,
     onEditComment: (Long, String) -> Unit = { _, _ -> },
-    onLikeComment: (Long, Boolean) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
