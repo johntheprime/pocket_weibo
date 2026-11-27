@@ -493,4 +493,13 @@
     <string name="schedule_edit_title">编辑定时切换</string>
     <string name="schedule_updated_toast">定时切换已更新</string>
     <string name="remind_selection_pick_time">选择时间</string>
+    <!-- FP-P1 storage / export -->
+    <string name="export_save_to_file">保存到文件…</string>
+    <string name="toast_export_saved">备份已保存</string>
+    <string name="settings_storage_title">存储空间</string>
+    <string name="settings_storage_measuring">正在计算…</string>
+    <string name="settings_storage_summary">数据 %1$s · 缓存 %2$s</string>
+    <string name="settings_storage_hint">缓存只包含可再生成的临时文件（分享副本、图片缓存等），清除不会删除微博、图片或备份。</string>
+    <string name="settings_storage_clear">清除缓存</string>
+    <string name="settings_storage_cleared">缓存已清除</string>
 </resources>

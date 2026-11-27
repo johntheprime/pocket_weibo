@@ -79,6 +79,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import com.pocketweibo.data.media.ShareCache
+import com.pocketweibo.data.media.StorageUsage
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Calendar
@@ -311,6 +312,21 @@ fun MeSettingsScreen(
     var showExportDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
 
+    // FP-P1: "Save to file…" streams the ZIP straight to the chosen document (no cache copy).
+    val saveZipLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val ok = runCatching { app.repository.exportAllDataZipTo(uri) }.getOrDefault(false)
+            Toast.makeText(
+                context,
+                context.getString(if (ok) R.string.toast_export_saved else R.string.toast_export_fail),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -384,6 +400,10 @@ fun MeSettingsScreen(
             }
             item {
                 Divider()
+                StorageSettingsSection()
+            }
+            item {
+                Divider()
                 DiagnosticLogSection()
             }
             item {
@@ -431,6 +451,10 @@ fun MeSettingsScreen(
     if (showExportDialog) {
         ExportDialog(
             onDismiss = { showExportDialog = false },
+            onSaveZipToFile = {
+                showExportDialog = false
+                saveZipLauncher.launch("pocket_weibo_backup_${java.time.LocalDate.now()}.zip")
+            },
             onExport = { format ->
                 scope.launch {
                     try {
@@ -502,7 +526,8 @@ fun MeSettingsScreen(
 }
 
 private fun shareDecryptedJsonForBackup(context: Context, plain: ByteArray) {
-    val out = ShareCache.file(context, "pw_decrypted_${System.currentTimeMillis()}.json")
+    // FP-P1: fixed name, overwritten on each share; CacheSweeper removes it after 24 h.
+    val out = ShareCache.file(context, "pw_decrypted.json")
     out.writeBytes(plain)
     val uri = FileProvider.getUriForFile(
         context,
@@ -772,7 +797,7 @@ private fun DiagnosticLogSection() {
                                 }
                                 val f = File(
                                     ShareCache.dir(context),
-                                    "pocket_weibo_diag_${System.currentTimeMillis()}.txt"
+                                    "pocket_weibo_diag.txt"
                                 )
                                 f.writeText(header + body + "\n")
                                 f
@@ -1205,6 +1230,7 @@ private fun ImportDialog(
 @Composable
 private fun ExportDialog(
     onDismiss: () -> Unit,
+    onSaveZipToFile: () -> Unit,
     onExport: (String) -> Unit
 ) {
     var selectedFormat by remember { mutableStateOf("ZIP") }
@@ -1253,11 +1279,94 @@ private fun ExportDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.export_cancel))
+            Row {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.export_cancel))
+                }
+                if (selectedFormat == "ZIP") {
+                    TextButton(onClick = onSaveZipToFile) {
+                        Text(stringResource(R.string.export_save_to_file))
+                    }
+                }
             }
         }
     )
+}
+
+/** FP-P1: Settings → Storage. Shows data vs cache size and clears the cache on request. */
+@Composable
+private fun StorageSettingsSection() {
+    val context = LocalContext.current
+    val appCtx = context.applicationContext
+    val scope = rememberCoroutineScope()
+    var usage by remember { mutableStateOf<StorageUsage.Usage?>(null) }
+    var clearing by remember { mutableStateOf(false) }
+
+    fun refresh() {
+        scope.launch {
+            usage = withContext(Dispatchers.IO) { StorageUsage.measure(appCtx) }
+        }
+    }
+
+    LaunchedEffect(Unit) { refresh() }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.White
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.settings_storage_title),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = GrayDark
+            )
+            val u = usage
+            Text(
+                text = if (u == null) {
+                    stringResource(R.string.settings_storage_measuring)
+                } else {
+                    stringResource(
+                        R.string.settings_storage_summary,
+                        android.text.format.Formatter.formatShortFileSize(context, u.dataBytes),
+                        android.text.format.Formatter.formatShortFileSize(context, u.cacheBytes)
+                    )
+                },
+                fontSize = 13.sp,
+                color = GrayMiddle,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+            Text(
+                text = stringResource(R.string.settings_storage_hint),
+                fontSize = 12.sp,
+                color = GrayLight,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            OutlinedButton(
+                onClick = {
+                    clearing = true
+                    scope.launch {
+                        withContext(Dispatchers.IO) { StorageUsage.clearCache(appCtx) }
+                        clearing = false
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.settings_storage_cleared),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        refresh()
+                    }
+                },
+                enabled = !clearing && (usage?.cacheBytes ?: 0L) > 0L,
+                modifier = Modifier.padding(top = 10.dp)
+            ) {
+                Text(stringResource(R.string.settings_storage_clear))
+            }
+        }
+    }
 }
 
 private fun queryDisplayName(context: android.content.Context, uri: Uri): String? {

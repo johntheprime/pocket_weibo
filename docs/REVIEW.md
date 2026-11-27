@@ -112,7 +112,7 @@ All review work landed on `main` on **2026-11-26** in this order:
 
 | ID | Finding | Sev | Status |
 |---|---|---|---|
-| R2 §3 · R3 §5.1 | FileProvider exposed the whole cache dir (plaintext decrypted backups, import staging). | P2 | ✅ `f0c2f70` 2026-11-26 — only `cache/shared/` (`ShareCache`). 🟡 Stale share files: swept after 24 h by `CacheSweeper` (`7894874`); ⬜ delete right after the share returns. |
+| R2 §3 · R3 §5.1 | FileProvider exposed the whole cache dir (plaintext decrypted backups, import staging). | P2 | ✅ `f0c2f70` 2026-11-26 — only `cache/shared/` (`ShareCache`). ✅ Stale share files: swept after 24 h by `CacheSweeper` (`7894874`); fixed share filenames + SAF export (F-082, 3.75.0, commit pending). |
 | R2 §3 · R3 §5.2 | `READ_EXTERNAL_STORAGE` without `maxSdkVersion`. | P2 | ✅ `f0c2f70` 2026-11-26 — `maxSdkVersion="32"`. ⬜ Remove both media permissions if Photo Picker / `GetContent` covers every image path. |
 | R3 §5.3 | Calendar permissions should only be requested when the mirror toggle is turned on. | P3 | ⬜ Verify. |
 | R3 §5.4 | `DiagnosticLog` wrote D/I to logcat in release. | P2 | ✅ `7894874` 2026-11-26 — D/I only in debug builds or while in-app capture is on. ⬜ Audit call sites so post body text is never logged. |
@@ -204,7 +204,7 @@ Phases kept from the 2026-11-26 roadmap; only open work is listed.
 |---|---|---|
 | 0 — Safety net | Tests before risky changes | Full ZIP round-trip (fields + media hashes); truncated / missing-`data.json` / old v1–v2 fixtures; migration tests (decision 3); schema v1 check (decision 2). |
 | 1 — Backup safety | Remaining P0/P1 | `comment_likes` table (BUG-002 proper fix, migration 16→17); auto-backup key (decision 1) + one keystore; exclude `auto_text_backups/` from device transfer; `opt*` import normalization (R3 §2.5); optional pre-import snapshot. |
-| 2 — Reliability | Startup, alarms, storage | Reschedule only on boot/update/time change; remaining transactions (post + attachments + reminders); `LOCKED_BOOT_COMPLETED`; DST tests; SAF `ACTION_CREATE_DOCUMENT` export; delete share files after use; Settings → Storage panel (see FEATURE.md backlog); move composition-scope writes into ViewModels. |
+| 2 — Reliability | Startup, alarms, storage | Reschedule only on boot/update/time change; remaining transactions (post + attachments + reminders); `LOCKED_BOOT_COMPLETED`; DST tests; move composition-scope writes into ViewModels. |
 | 3 — Refactor | Maintainability | Split `WeiboRepository` (`BackupCodec` first, streaming `JsonWriter`, versioned DTOs); slim screens > 500 lines; `AppContainer`; move double-back state off `Application`. |
 | 4 — Navigation | NavHost | Typed routes; remove nav `!!`; route notification / shortcut / share intents (BUG-011); keep `SwipeBackHandler` semantics; back-navigation UI test. |
 | 5 — Features | See FEATURE.md "Proposed backlog" | Offline province/country location; UI improvements. |

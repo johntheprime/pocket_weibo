@@ -493,4 +493,13 @@
     <string name="schedule_edit_title">Edit schedule</string>
     <string name="schedule_updated_toast">Schedule updated</string>
     <string name="remind_selection_pick_time">Pick time</string>
+    <!-- FP-P1 storage / export -->
+    <string name="export_save_to_file">Save to file…</string>
+    <string name="toast_export_saved">Backup saved</string>
+    <string name="settings_storage_title">Storage</string>
+    <string name="settings_storage_measuring">Calculating…</string>
+    <string name="settings_storage_summary">Data %1$s · Cache %2$s</string>
+    <string name="settings_storage_hint">Cache only holds temporary files that can be recreated (shared copies, image cache). Clearing it does not delete posts, images or backups.</string>
+    <string name="settings_storage_clear">Clear cache</string>
+    <string name="settings_storage_cleared">Cache cleared</string>
 </resources>

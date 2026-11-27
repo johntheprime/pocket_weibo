@@ -811,10 +811,30 @@ class WeiboRepository(
      * [CommentAttachmentStorage.REL_ROOT], and custom avatars into a ZIP under cache.
      * Re-import via Settings → Import (merge or replace).
      */
+    /**
+     * FP-P1: ZIP for the share sheet. Uses one fixed file name in [com.pocketweibo.data.media.ShareCache]
+     * so repeated exports overwrite instead of piling up full copies of all media in cache.
+     */
     suspend fun exportAllDataZip(): File = withContext(Dispatchers.IO) {
+        val dir = com.pocketweibo.data.media.ShareCache.dir(context)
+        // Remove timestamped copies written by older versions.
+        dir.listFiles()?.filter { it.name.startsWith("pocket_weibo_backup_") && it.name.endsWith(".zip") }
+            ?.forEach { it.delete() }
+        val outFile = com.pocketweibo.data.media.ShareCache.file(context, "pocket_weibo_backup.zip")
+        FileOutputStream(outFile).use { writeAllDataZip(it) }
+        outFile
+    }
+
+    /** FP-P1: streams the ZIP straight to a user-chosen document (SAF); no cache copy. */
+    suspend fun exportAllDataZipTo(uri: Uri): Boolean = withContext(Dispatchers.IO) {
+        val out = context.contentResolver.openOutputStream(uri, "w") ?: return@withContext false
+        out.use { writeAllDataZip(it) }
+        true
+    }
+
+    private suspend fun writeAllDataZip(target: java.io.OutputStream) {
         val json = exportAllData()
-        val outFile = com.pocketweibo.data.media.ShareCache.file(context, "pocket_weibo_backup_${System.currentTimeMillis()}.zip")
-        ZipOutputStream(FileOutputStream(outFile).buffered()).use { zos ->
+        ZipOutputStream(target.buffered()).use { zos ->
             val jsonBytes = json.toByteArray(Charsets.UTF_8)
             zos.putNextEntry(ZipEntry("data.json"))
             zos.write(jsonBytes)
@@ -862,7 +882,6 @@ class WeiboRepository(
                 }
             }
         }
-        outFile
     }
 
     suspend fun exportAllDataToMarkdown(): String {
