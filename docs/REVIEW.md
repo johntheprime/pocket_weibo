@@ -112,7 +112,7 @@ All review work landed on `main` on **2026-11-26** in this order:
 
 | ID | Finding | Sev | Status |
 |---|---|---|---|
-| R2 §3 · R3 §5.1 | FileProvider exposed the whole cache dir (plaintext decrypted backups, import staging). | P2 | ✅ `f0c2f70` 2026-11-26 — only `cache/shared/` (`ShareCache`). ✅ Stale share files: swept after 24 h by `CacheSweeper` (`7894874`); fixed share filenames + SAF export (F-082, 3.75.0, commit pending). |
+| R2 §3 · R3 §5.1 | FileProvider exposed the whole cache dir (plaintext decrypted backups, import staging). | P2 | ✅ `f0c2f70` 2026-11-26 — only `cache/shared/` (`ShareCache`). ✅ Stale share files: swept after 24 h by `CacheSweeper` (`7894874`); fixed share filenames + SAF export (F-082, 3.75.0, `7092c96` 2026-11-27). |
 | R2 §3 · R3 §5.2 | `READ_EXTERNAL_STORAGE` without `maxSdkVersion`. | P2 | ✅ `f0c2f70` 2026-11-26 — `maxSdkVersion="32"`. ⬜ Remove both media permissions if Photo Picker / `GetContent` covers every image path. |
 | R3 §5.3 | Calendar permissions should only be requested when the mirror toggle is turned on. | P3 | ⬜ Verify. |
 | R3 §5.4 | `DiagnosticLog` wrote D/I to logcat in release. | P2 | ✅ `7894874` 2026-11-26 — D/I only in debug builds or while in-app capture is on. ⬜ Audit call sites so post body text is never logged. |
@@ -171,7 +171,7 @@ All review work landed on `main` on **2026-11-26** in this order:
 | BUG-008 | Low | Notification-id collisions. | ✅ `f2ffe9c` 2026-11-26 |
 | BUG-009 | Low | `runBlocking` at app start. | ✅ `4803026` 2026-11-26 |
 | BUG-010 | Low | Unstructured coroutines in identity screens. | ✅ `02e8121` 2026-11-26 |
-| BUG-012 | High | Full exports had no post reminders and no export had identity schedules; no import read them; replace-import cleared existing ones. Found 2026-11-27 after a restore lost all timers. | ⬜ Fix written 2026-11-27 (3.75.1): both written and imported in every mode, timer-only restore in Settings, `TimersBackupTest` — commit pending. |
+| BUG-012 | High | Full exports had no post reminders and no export had identity schedules; no import read them; replace-import cleared existing ones. Found 2026-11-27 after a restore lost all timers. | ✅ `f4b90be` 2026-11-27 (3.75.1) — both written and imported in every mode, timer-only restore in Settings, `TimersBackupTest`. |
 | BUG-011 | Low | Notification tap ignored while a stacked screen (Settings, Compose…) is open. | ⬜ Fix with NavHost, or drop overlay states when `openPostId` arrives. |
 
 **Design observations**
