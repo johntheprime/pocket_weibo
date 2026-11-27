@@ -133,6 +133,8 @@ fun MainScreen(
     var selectedTopicKey by remember { mutableStateOf<String?>(null) }
     var showTopicManage by remember { mutableStateOf(false) }
     var topicQuery by remember { mutableStateOf("") }
+    /** Home search survives opening a post and coming back (cursor position included). */
+    var homeSearch by remember { mutableStateOf(com.pocketweibo.ui.screens.home.HomeSearchState()) }
     var topicSection by remember { mutableStateOf(TopicsSection.TOPICS) }
     var showTopicCompleted by remember { mutableStateOf(false) }
     /** Topic a “Post again” draft came from; return there after publishing. */
@@ -386,6 +388,8 @@ fun MainScreen(
                             onScrollToLatestConsumed = {
                                 homeScrollToLatestConsumed = homeScrollToLatestSignal
                             },
+                            search = homeSearch,
+                            onSearchChange = { homeSearch = it },
                             modifier = Modifier.padding(paddingValues)
                         )
                         MainTab.PHOTO -> PhotoScreen(modifier = Modifier.padding(paddingValues))

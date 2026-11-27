@@ -118,6 +118,9 @@ fun HomeScreen(
     /** Last `scrollToLatestSignal` already applied (lives in `MainScreen` so remounting this composable does not replay the affordance). */
     scrollToLatestConsumedSignal: Int = 0,
     onScrollToLatestConsumed: () -> Unit = {},
+    /** Search lives in MainScreen so it survives opening a post and coming back. */
+    search: HomeSearchState = HomeSearchState(),
+    onSearchChange: (HomeSearchState) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -240,9 +243,7 @@ fun HomeScreen(
     }
 
     var showTitleQuickAccessSheet by remember { mutableStateOf(false) }
-    var showSearchDialog by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
-    var searchDraft by remember { mutableStateOf("") }
+    val searchQuery = search.query
     val searchFocusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     /** `null` = show every identity on the home feed; non-null = only posts by that identity. */
@@ -250,8 +251,9 @@ fun HomeScreen(
     var moreMenuExpanded by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
 
-    LaunchedEffect(showSearchDialog) {
-        if (showSearchDialog) {
+    // Focus the bar when it opens; the cursor is placed at the end (append position).
+    LaunchedEffect(search.open) {
+        if (search.open) {
             withFrameNanos { }
             searchFocusRequester.requestFocus()
             keyboardController?.show()
@@ -272,44 +274,14 @@ fun HomeScreen(
     val searchKeywords = remember(searchQuery) { parseSearchKeywords(searchQuery) }
     val feedThumbnails by com.pocketweibo.data.prefs.UiPreferences.feedThumbnailsFlow(context.applicationContext)
         .collectAsStateWithLifecycle(initialValue = true)
-    val filteredPosts = remember(posts, searchQuery, homeIdentityFilterId, commentSearchRows) {
-        var list = posts
-        val fid = homeIdentityFilterId
-        if (fid != null) {
-            list = list.filter { it.identityId == fid }
-        }
-        if (searchQuery.isBlank()) list
-        else {
-            val keywords = parseSearchKeywords(searchQuery)
-            if (keywords.isEmpty()) {
-                emptyList()
-            } else {
-                val postIdsFromComments = commentSearchRows.mapNotNull { row ->
-                    if (matchesAnySearchKeyword(
-                            keywords,
-                            row.content,
-                            row.commentAuthorName,
-                            row.postContent,
-                            row.postAuthorName
-                        )
-                    ) {
-                        row.postId
-                    } else {
-                        null
-                    }
-                }.toSet()
-                list.filter { p ->
-                    matchesAnySearchKeyword(keywords, p.content, p.identityName) ||
-                        p.id in postIdsFromComments
-                }
-            }
-        }
+    val filteredPosts = remember(posts, searchQuery, search.range, homeIdentityFilterId, commentSearchRows) {
+        val byIdentity = homeIdentityFilterId?.let { fid -> posts.filter { it.identityId == fid } } ?: posts
+        filterHomeSearch(byIdentity, searchQuery, search.range, commentSearchRows)
     }
 
     LaunchedEffect(scrollToLatestSignal, scrollToLatestConsumedSignal) {
         if (scrollToLatestSignal <= scrollToLatestConsumedSignal) return@LaunchedEffect
-        searchQuery = ""
-        searchDraft = ""
+        onSearchChange(HomeSearchState())
         homeIdentityFilterId = null
         isRefreshing = true
         delay(450L)
@@ -344,8 +316,7 @@ fun HomeScreen(
                 titleDropdownContentDescription = stringResource(R.string.home_title_open_menu_cd),
                 leftIcon = {
                     IconButton(onClick = {
-                        searchDraft = searchQuery
-                        showSearchDialog = true
+                        onSearchChange(search.copy(open = !search.open).cursorAtEnd())
                     }) {
                         Icon(
                             imageVector = Icons.Default.PersonSearch,
@@ -389,6 +360,21 @@ fun HomeScreen(
             )
 
             Divider(thickness = 0.5.dp)
+
+            if (search.open || search.isActive) {
+                HomeSearchBar(
+                    state = search,
+                    resultCount = filteredPosts.size,
+                    focusRequester = searchFocusRequester,
+                    onChange = onSearchChange,
+                    onDone = { keyboardController?.hide() },
+                    onClose = {
+                        keyboardController?.hide()
+                        onSearchChange(HomeSearchState())
+                    }
+                )
+                Divider(thickness = 0.5.dp)
+            }
 
             homeIdentityFilterId?.let { fid ->
                 val labelName = identities.find { it.id == fid }?.name?.let { identityDisplayName(it) } ?: "—"
@@ -435,8 +421,8 @@ fun HomeScreen(
             ) {
                 when {
                     posts.isEmpty() -> EmptyFeed(onCompose = onCompose)
-                    filteredPosts.isEmpty() && searchQuery.isNotBlank() -> EmptySearch(
-                        onClear = { searchQuery = "" }
+                    filteredPosts.isEmpty() && search.isActive -> EmptySearch(
+                        onClear = { onSearchChange(HomeSearchState()) }
                     )
                     filteredPosts.isEmpty() -> EmptyFilteredFeed(
                         onShowAll = { homeIdentityFilterId = null }
@@ -542,57 +528,6 @@ fun HomeScreen(
                 }
             )
         }
-    }
-
-    if (showSearchDialog) {
-        AlertDialog(
-            onDismissRequest = { showSearchDialog = false },
-            title = { Text(stringResource(R.string.home_search_dialog_title)) },
-            text = {
-                OutlinedTextField(
-                    value = searchDraft,
-                    onValueChange = { searchDraft = it },
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.home_search_hint),
-                            color = GrayMiddle
-                        )
-                    },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(
-                        onSearch = {
-                            searchQuery = searchDraft.trim()
-                            showSearchDialog = false
-                        }
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(searchFocusRequester)
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        searchQuery = searchDraft.trim()
-                        showSearchDialog = false
-                    }
-                ) {
-                    Text(stringResource(R.string.home_search_apply))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        searchQuery = ""
-                        searchDraft = ""
-                        showSearchDialog = false
-                    }
-                ) {
-                    Text(stringResource(R.string.home_search_clear))
-                }
-            }
-        )
     }
 }
 

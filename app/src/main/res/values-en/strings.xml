@@ -525,4 +525,14 @@
     <string name="settings_dynamic_color_title">Wallpaper colors</string>
     <string name="settings_dynamic_color_desc">Use system wallpaper colors (Material You)</string>
     <string name="settings_dynamic_color_unsupported">Requires Android 12 or later</string>
+    <!-- Home search -->
+    <string name="home_search_clear_text_cd">Clear search text</string>
+    <string name="home_search_close_cd">Close search</string>
+    <string name="home_search_range_all">Any time</string>
+    <string name="home_search_range_today">Today</string>
+    <string name="home_search_range_7d">Last 7 days</string>
+    <string name="home_search_range_30d">Last 30 days</string>
+    <string name="home_search_range_custom">Pick dates</string>
+    <string name="home_search_range_apply">OK</string>
+    <string name="home_search_result_count">%1$d posts found</string>
 </resources>

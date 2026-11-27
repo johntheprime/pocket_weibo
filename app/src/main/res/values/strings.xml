@@ -525,4 +525,14 @@
     <string name="settings_dynamic_color_title">跟随壁纸配色</string>
     <string name="settings_dynamic_color_desc">使用系统壁纸颜色（Material You）</string>
     <string name="settings_dynamic_color_unsupported">需要 Android 12 或更高版本</string>
+    <!-- Home search -->
+    <string name="home_search_clear_text_cd">清空搜索词</string>
+    <string name="home_search_close_cd">关闭搜索</string>
+    <string name="home_search_range_all">全部时间</string>
+    <string name="home_search_range_today">今天</string>
+    <string name="home_search_range_7d">近 7 天</string>
+    <string name="home_search_range_30d">近 30 天</string>
+    <string name="home_search_range_custom">选择日期</string>
+    <string name="home_search_range_apply">确定</string>
+    <string name="home_search_result_count">找到 %1$d 条微博</string>
 </resources>
